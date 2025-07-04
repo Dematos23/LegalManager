@@ -53,7 +53,7 @@ export default function ImportPage() {
       const workbook = XLSX.read(data);
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false });
       
       if (Array.isArray(jsonData[0])) {
         const fileHeaders = (jsonData[0] as string[]).filter(h => h);
