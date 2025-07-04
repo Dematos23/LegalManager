@@ -1,9 +1,10 @@
+
 'use server';
 
 import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
-import { Country, TrademarkType } from '@prisma/client';
+import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 
 // Define schemas for validation
 const TrademarkSchema = z.object({
@@ -59,55 +60,65 @@ export async function importDataAction(formData: FormData) {
           return header ? row[header] : undefined;
         };
         
-        const agentData = AgentSchema.parse({
-          name: getVal('agent', 'name'),
-          country: getVal('agent', 'country')?.toUpperCase().replace(/\s/g, '_'),
-        });
-        
-        const contactData = ContactSchema.parse({
-            firstName: getVal('contact', 'firstName'),
-            lastName: getVal('contact', 'lastName'),
-            email: getVal('contact', 'email'),
-        });
-
-        const ownerData = OwnerSchema.parse({
-            name: getVal('owner', 'name'),
-            country: getVal('owner', 'country')?.toUpperCase().replace(/\s/g, '_'),
-        });
-        
-        const expirationValue = getVal('trademark', 'expiration');
-        const trademarkData = TrademarkSchema.parse({
-            trademark: getVal('trademark', 'trademark'),
-            class: getVal('trademark', 'class'),
-            type: getVal('trademark', 'type')?.toUpperCase(),
-            certificate: getVal('trademark', 'certificate'),
-            expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
-            products: getVal('trademark', 'products'),
-        });
-
         await prisma.$transaction(async (tx) => {
-          const agent = await tx.agent.upsert({
-            where: { name: agentData.name },
-            update: agentData,
-            create: agentData,
-          });
+          let agent: Agent | null = null;
+          const agentName = getVal('agent', 'name');
+          if (agentName) {
+            const agentData = AgentSchema.parse({
+              name: agentName,
+              country: getVal('agent', 'country')?.toUpperCase().replace(/\s/g, '_'),
+            });
+            agent = await tx.agent.upsert({
+              where: { name: agentData.name },
+              update: agentData,
+              create: agentData,
+            });
+          }
 
-          const contact = await tx.contact.upsert({
-            where: { email: contactData.email },
-            update: { ...contactData, agentId: agent.id },
-            create: { ...contactData, agentId: agent.id },
+          let contact: Contact | null = null;
+          const contactEmail = getVal('contact', 'email');
+          
+          if (contactEmail) {
+            if (!agent) {
+              throw new Error(`Row ${index + 2}: Contact email provided without a mapped Agent. An agent is required to create a contact.`);
+            }
+            const contactData = ContactSchema.parse({
+                firstName: getVal('contact', 'firstName'),
+                lastName: getVal('contact', 'lastName'),
+                email: contactEmail,
+            });
+            contact = await tx.contact.upsert({
+              where: { email: contactData.email },
+              update: { ...contactData, agentId: agent.id },
+              create: { ...contactData, agentId: agent.id },
+            });
+          }
+          
+          const ownerData = OwnerSchema.parse({
+              name: getVal('owner', 'name'),
+              country: getVal('owner', 'country')?.toUpperCase().replace(/\s/g, '_'),
           });
-
+          
           const owner = await tx.owner.upsert({
             where: { name: ownerData.name },
             update: {
               ...ownerData,
-              contacts: { connect: { id: contact.id } }
+              ...(contact && { contacts: { connect: { id: contact.id } } })
             },
             create: {
               ...ownerData,
-              contacts: { connect: { id: contact.id } }
+              ...(contact && { contacts: { connect: { id: contact.id } } })
             },
+          });
+          
+          const expirationValue = getVal('trademark', 'expiration');
+          const trademarkData = TrademarkSchema.parse({
+              trademark: getVal('trademark', 'trademark'),
+              class: getVal('trademark', 'class'),
+              type: getVal('trademark', 'type')?.toUpperCase(),
+              certificate: getVal('trademark', 'certificate'),
+              expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
+              products: getVal('trademark', 'products'),
           });
 
           await tx.trademark.create({
@@ -122,7 +133,7 @@ export async function importDataAction(formData: FormData) {
         results.success++;
       } catch (e) {
         results.errors++;
-        const errorMessage = e instanceof Error ? e.message : String(e);
+        const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.errors) : e instanceof Error ? e.message : String(e);
         results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
       }
     }
