@@ -1,6 +1,6 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider      = "postgresql"
+  url           = env("DATABASE_URL")
 }
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 
 model Agent {
   id       Int       @id @default(autoincrement())
-  name     String
+  name     String    @unique
   country  Country
   contacts Contact[]
 }
@@ -27,14 +27,14 @@ model Contact {
 
 model Owner {
   id         Int         @id @default(autoincrement())
-  name       String
+  name       String      @unique
   country    Country
   trademarks Trademark[]
   contacts   Contact[]   @relation("ContactOwner")
 }
 
 model Trademark {
-  id          Int           @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   trademark   String
   class       Int // Must be between 1 and 45
   type        TrademarkType
@@ -42,18 +42,19 @@ model Trademark {
   expiration  DateTime
   products    String?
   ownerId     Int
-  owner       Owner         @relation(fields: [ownerId], references: [id])
-  cases       Case[]
+  owner       Owner    @relation(fields: [ownerId], references: [id])
+  cases       Case[]   @relation("TrademarkCase")
 }
 
 model Case {
-  id          Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   trademarkId Int
-  trademark   Trademark @relation(fields: [trademarkId], references: [id])
+  trademark   Trademark   @relation(fields: [trademarkId], references: [id])
   ownerId     Int
-  owner       Owner     @relation(fields: [ownerId], references: [id])
+  owner       Owner       @relation(fields: [ownerId], references: [id])
   orders      Order[]
+  trademarks  Trademark[] @relation("TrademarkCase")
 }
 
 model Order {

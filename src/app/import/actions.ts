@@ -109,17 +109,13 @@ export async function importDataAction(formData: FormData) {
               contacts: { connect: { id: contact.id } }
             },
           });
-          
-          await tx.owner.update({
-            where: { id: owner.id },
-            data: { contacts: { connect: { id: contact.id } } }
-          });
 
           await tx.trademark.create({
             data: {
               ...trademarkData,
               ownerId: owner.id,
             },
+
           });
         });
 
