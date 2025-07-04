@@ -123,7 +123,7 @@ export async function importDataAction(formData: FormData) {
       } catch (e) {
         results.errors++;
         const errorMessage = e instanceof Error ? e.message : String(e);
-        results.errorDetails.push({ row: index + 2, data: row, error: errorMessage });
+        results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
       }
     }
 
