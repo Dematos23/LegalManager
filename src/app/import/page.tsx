@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, FileSpreadsheet, Loader2 } from 'lucide-react';
@@ -12,21 +13,50 @@ import * as XLSX from 'xlsx';
 import { importDataAction } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const MAPPABLE_FIELDS = [
-  { value: 'agent.name', label: 'Agent: Name' },
-  { value: 'agent.country', label: 'Agent: Country' },
-  { value: 'contact.firstName', label: 'Contact: First Name' },
-  { value: 'contact.lastName', label: 'Contact: Last Name' },
-  { value: 'contact.email', label: 'Contact: Email' },
-  { value: 'owner.name', label: 'Owner: Name' },
-  { value: 'owner.country', label: 'Owner: Country' },
-  { value: 'trademark.trademark', label: 'Trademark: Name' },
-  { value: 'trademark.class', label: 'Trademark: Class (1-45)' },
-  { value: 'trademark.type', label: 'Trademark: Type (WORD, FIGURATIVE, MIXED)' },
-  { value: 'trademark.certificate', label: 'Trademark: Certificate' },
-  { value: 'trademark.expiration', label: 'Trademark: Expiration Date (YYYY-MM-DD)' },
-  { value: 'trademark.products', label: 'Trademark: Products' },
+const MAPPABLE_FIELD_GROUPS = [
+  {
+    label: 'Agent',
+    fields: [
+      { value: 'agent.name', label: 'Name' },
+      { value: 'agent.country', label: 'Country' },
+    ]
+  },
+  {
+    label: 'Contact',
+    fields: [
+      { value: 'contact.firstName', label: 'First Name' },
+      { value: 'contact.lastName', label: 'Last Name' },
+      { value: 'contact.email', label: 'Email' },
+    ]
+  },
+  {
+    label: 'Owner',
+    fields: [
+      { value: 'owner.name', label: 'Name' },
+      { value: 'owner.country', label: 'Country' },
+    ]
+  },
+  {
+    label: 'Trademark',
+    fields: [
+      { value: 'trademark.trademark', label: 'Name' },
+      { value: 'trademark.class', label: 'Class (1-45)' },
+      { value: 'trademark.type', label: 'Type (WORD, FIGURATIVE, MIXED)' },
+      { value: 'trademark.certificate', label: 'Certificate' },
+      { value: 'trademark.expiration', label: 'Expiration Date (YYYY-MM-DD)' },
+      { value: 'trademark.products', label: 'Products' },
+    ]
+  }
 ];
+
+// For auto-mapping logic, we create the flat array with full labels
+const MAPPABLE_FIELDS = MAPPABLE_FIELD_GROUPS.flatMap(group =>
+  group.fields.map(field => ({
+    value: field.value,
+    label: `${group.label}: ${field.label}`
+  }))
+);
+
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -195,8 +225,13 @@ export default function ImportPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="ignore">-- Ignore this column --</SelectItem>
-                                            {MAPPABLE_FIELDS.map(field => (
-                                                <SelectItem key={field.value} value={field.value}>{field.label}</SelectItem>
+                                            {MAPPABLE_FIELD_GROUPS.map(group => (
+                                                <SelectGroup key={group.label}>
+                                                    <SelectLabel>{group.label}</SelectLabel>
+                                                    {group.fields.map(field => (
+                                                        <SelectItem key={field.value} value={field.value}>{field.label}</SelectItem>
+                                                    ))}
+                                                </SelectGroup>
                                             ))}
                                         </SelectContent>
                                     </Select>
