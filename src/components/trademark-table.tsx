@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Mail, MoreHorizontal, ArrowUpDown } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 type TrademarkTableProps = {
   trademarks: TrademarkWithDetails[];
