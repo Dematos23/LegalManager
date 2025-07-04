@@ -122,7 +122,8 @@ export async function importDataAction(formData: FormData) {
         results.success++;
       } catch (e) {
         results.errors++;
-        results.errorDetails.push({ row: index + 2, data: row, error: e instanceof z.ZodError ? e.errors : (e as Error).message });
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        results.errorDetails.push({ row: index + 2, data: row, error: errorMessage });
       }
     }
 
