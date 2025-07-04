@@ -1,31 +1,14 @@
-export interface Agent {
-  id: number;
-  name: string;
-}
+import type { Trademark, Owner, Contact, Agent } from '@prisma/client';
 
-export interface Contact {
-  id: number;
-  name: string;
-  email: string;
-  agentId: number;
-}
+// Re-export all types from Prisma Client
+export * from '@prisma/client';
 
-export interface Owner {
-  id: number;
-  name: string;
-}
-
-export interface Trademark {
-  id: number;
-  trademark: string;
-  class: string;
-  certificate: string;
-  expiration: Date;
-  ownerId: number;
-}
-
-export interface TrademarkWithDetails extends Trademark {
-  owner: Owner;
-  agent: Agent;
-  contact: Contact;
-}
+// Define a composite type for the Trademark table, including its related owner,
+// contacts, and agents. This simplifies passing data to components.
+export type TrademarkWithDetails = Trademark & {
+  owner: Owner & {
+    contacts: (Contact & {
+      agent: Agent;
+    })[];
+  };
+};

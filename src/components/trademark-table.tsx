@@ -21,35 +21,51 @@ import {
   SortingState,
   useReactTable,
   ColumnFiltersState,
+  FilterFn,
 } from '@tanstack/react-table';
-import { format, differenceInDays, isPast } from 'date-fns';
+import { format, differenceInDays, isPast, addDays } from 'date-fns';
 import type { TrademarkWithDetails } from '@/types';
 import { cn } from '@/lib/utils';
-import { EmailModal } from './email-modal';
+import { ArrowUpDown, Mail, MoreHorizontal } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Mail, MoreHorizontal, ArrowUpDown } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { EmailModal } from '@/components/email-modal';
 
 type TrademarkTableProps = {
   trademarks: TrademarkWithDetails[];
 };
 
+const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
+    const expiration = row.getValue(columnId) as Date;
+    if (!value) return true;
+
+    const [start, end] = value;
+    if (!start || !end) return true;
+
+    const expirationDate = new Date(expiration);
+
+    return expirationDate >= start && expirationDate <= end;
+};
+
 export function TrademarkTable({ trademarks }: TrademarkTableProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'expiration', desc: false },
+  ]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [selectedContactEmail, setSelectedContactEmail] = React.useState<string | null>(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
+  const [selectedContactEmail, setSelectedContactEmail] = React.useState('');
 
   const handleGenerateEmail = (email: string) => {
     setSelectedContactEmail(email);
-    setIsModalOpen(true);
+    setIsEmailModalOpen(true);
   };
-  
+
   const columns: ColumnDef<TrademarkWithDetails>[] = [
     {
       accessorKey: 'trademark',
@@ -64,6 +80,10 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     {
       accessorKey: 'owner.name',
       header: 'Owner',
+      cell: ({ row }) => {
+        const owner = row.original.owner;
+        return owner ? owner.name : 'N/A';
+      }
     },
     {
       accessorKey: 'class',
@@ -77,8 +97,11 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      filterFn: expirationFilterFn,
       cell: ({ row }) => {
-        const expirationDate = row.getValue('expiration') as Date;
+        const expirationDate = new Date(row.getValue('expiration'));
+        if (!expirationDate) return 'N/A';
+        
         const daysUntilExpiration = differenceInDays(expirationDate, new Date());
         const hasExpired = isPast(expirationDate);
         
@@ -101,34 +124,58 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
       },
     },
     {
-      accessorKey: 'agent.name',
-      header: 'Agent',
+        accessorKey: 'owner.contacts',
+        header: 'Contact',
+        cell: ({ row }) => {
+            const contacts = row.original.owner.contacts;
+            if (!contacts || contacts.length === 0) return 'N/A';
+            const primaryContact = contacts[0];
+            return (
+            <div>
+                <div>{`${primaryContact.firstName} ${primaryContact.lastName}`}</div>
+                <div className="text-xs text-muted-foreground">{primaryContact.email}</div>
+            </div>
+            );
+        },
+        enableSorting: false,
+        enableColumnFilter: false,
     },
     {
-      accessorKey: 'contact.name',
-      header: 'Contact',
+        accessorKey: 'owner.contacts[0].agent.name',
+        header: 'Agent',
+        cell: ({ row }) => {
+            const agent = row.original.owner.contacts?.[0]?.agent;
+            return agent ? agent.name : 'N/A';
+        },
+        enableSorting: false,
+        enableColumnFilter: false,
     },
     {
-      id: 'actions',
-      cell: ({ row }) => {
-        const trademark = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleGenerateEmail(trademark.contact.email)}>
-                <Mail className="mr-2 h-4 w-4" />
-                <span>Generate Email</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+        id: 'actions',
+        cell: ({ row }) => {
+          const contact = row.original.owner.contacts?.[0];
+  
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem
+                  disabled={!contact}
+                  onClick={() => handleGenerateEmail(contact.email)}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Generate Email
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
     },
   ];
 
@@ -141,6 +188,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: 'auto',
     state: {
       sorting,
       columnFilters,
@@ -148,16 +196,18 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
   });
 
   const setExpirationFilter = (days: number | null) => {
-    table.getColumn('expiration')?.setFilterValue((old: unknown) => {
-      if (days === null) return undefined;
-      const now = new Date();
-      const futureDate = new Date(now.setDate(now.getDate() + days));
-      return [new Date(), futureDate];
-    });
+    if (days === null) {
+        table.getColumn('expiration')?.setFilterValue(undefined);
+    } else {
+        const now = new Date();
+        const futureDate = addDays(now, days);
+        table.getColumn('expiration')?.setFilterValue([now, futureDate]);
+    }
   };
 
   return (
     <div className="space-y-4">
+      <EmailModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} contactEmail={selectedContactEmail} />
       <div className="flex items-center justify-between">
         <Input
           placeholder="Search trademarks..."
@@ -226,13 +276,6 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
           Next
         </Button>
       </div>
-      {selectedContactEmail && (
-        <EmailModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          contactEmail={selectedContactEmail}
-        />
-      )}
     </div>
   );
 }

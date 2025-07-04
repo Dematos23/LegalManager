@@ -1,0 +1,145 @@
+'use server';
+
+import prisma from '@/lib/prisma';
+import * as XLSX from 'xlsx';
+import { z } from 'zod';
+import { Country, TrademarkType } from '@prisma/client';
+
+// Define schemas for validation
+const TrademarkSchema = z.object({
+  trademark: z.string().min(1),
+  class: z.coerce.number().int().min(1).max(45),
+  type: z.nativeEnum(TrademarkType),
+  certificate: z.string().min(1),
+  expiration: z.coerce.date(),
+  products: z.string().optional().nullable(),
+});
+
+const OwnerSchema = z.object({
+  name: z.string().min(1),
+  country: z.nativeEnum(Country),
+});
+
+const ContactSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+});
+
+const AgentSchema = z.object({
+  name: z.string().min(1),
+  country: z.nativeEnum(Country),
+});
+
+export async function importDataAction(formData: FormData) {
+  const file = formData.get('file') as File;
+  const mappings = JSON.parse(formData.get('mappings') as string);
+  
+  if (!file) {
+    return { error: 'No file uploaded.' };
+  }
+
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+
+    const results = {
+      success: 0,
+      errors: 0,
+      errorDetails: [] as any[],
+    };
+
+    for (const [index, row] of jsonData.entries()) {
+      try {
+        const getVal = (prefix: string, field: string) => {
+          const header = Object.keys(mappings).find(h => mappings[h] === `${prefix}.${field}`);
+          return header ? row[header] : undefined;
+        };
+        
+        const agentData = AgentSchema.parse({
+          name: getVal('agent', 'name'),
+          country: getVal('agent', 'country')?.toUpperCase().replace(/\s/g, '_'),
+        });
+        
+        const contactData = ContactSchema.parse({
+            firstName: getVal('contact', 'firstName'),
+            lastName: getVal('contact', 'lastName'),
+            email: getVal('contact', 'email'),
+        });
+
+        const ownerData = OwnerSchema.parse({
+            name: getVal('owner', 'name'),
+            country: getVal('owner', 'country')?.toUpperCase().replace(/\s/g, '_'),
+        });
+        
+        const expirationValue = getVal('trademark', 'expiration');
+        const trademarkData = TrademarkSchema.parse({
+            trademark: getVal('trademark', 'trademark'),
+            class: getVal('trademark', 'class'),
+            type: getVal('trademark', 'type')?.toUpperCase(),
+            certificate: getVal('trademark', 'certificate'),
+            expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
+            products: getVal('trademark', 'products'),
+        });
+
+        await prisma.$transaction(async (tx) => {
+          const agent = await tx.agent.upsert({
+            where: { name: agentData.name },
+            update: agentData,
+            create: agentData,
+          });
+
+          const contact = await tx.contact.upsert({
+            where: { email: contactData.email },
+            update: { ...contactData, agentId: agent.id },
+            create: { ...contactData, agentId: agent.id },
+          });
+
+          const owner = await tx.owner.upsert({
+            where: { name: ownerData.name },
+            update: {
+              ...ownerData,
+              contacts: { connect: { id: contact.id } }
+            },
+            create: {
+              ...ownerData,
+              contacts: { connect: { id: contact.id } }
+            },
+          });
+          
+          await tx.owner.update({
+            where: { id: owner.id },
+            data: { contacts: { connect: { id: contact.id } } }
+          });
+
+          await tx.trademark.create({
+            data: {
+              ...trademarkData,
+              ownerId: owner.id,
+            },
+          });
+        });
+
+        results.success++;
+      } catch (e) {
+        results.errors++;
+        results.errorDetails.push({ row: index + 2, data: row, error: e instanceof z.ZodError ? e.errors : (e as Error).message });
+      }
+    }
+
+    if (results.errors > 0) {
+      console.error("Import errors:", JSON.stringify(results.errorDetails, null, 2));
+    }
+    return { 
+      message: `Import complete. ${results.success} rows successfully imported. ${results.errors} rows failed.`,
+      errorDetails: results.errors > 0 ? results.errorDetails : undefined,
+    };
+
+  } catch (error) {
+    console.error('Import failed:', error);
+    return { error: 'An unexpected error occurred during import.' };
+  }
+}

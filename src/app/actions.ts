@@ -1,7 +1,7 @@
 'use server';
 
 import { generateTrademarkEmailDraft } from '@/ai/flows/generate-trademark-email-draft';
-import { getContactData } from '@/lib/data';
+import { getContactAndTrademarksForEmail } from '@/lib/data';
 import { format } from 'date-fns';
 
 interface GenerateEmailPayload {
@@ -9,33 +9,34 @@ interface GenerateEmailPayload {
 }
 
 export async function generateEmailAction(payload: GenerateEmailPayload) {
-  const data = getContactData(payload.contactEmail);
+  const { contactEmail } = payload;
+  const result = await getContactAndTrademarksForEmail(contactEmail);
 
-  if (!data) {
-    throw new Error('Contact not found');
+  if (result.error || !result.contact || !result.trademarks) {
+    return { error: result.error || 'Failed to retrieve data for email generation.' };
   }
 
-  const { contact, trademarks } = data;
+  const { contact, trademarks } = result;
 
-  const formattedTrademarks = trademarks.map((tm) => ({
-    trademark: tm.trademark,
-    class: tm.class,
-    certificate: tm.certificate,
-    expiration: format(tm.expiration, 'yyyy-MM-dd'),
-  }));
+  const emailInput = {
+    contact: {
+        name: `${contact.firstName} ${contact.lastName}`,
+        email: contact.email,
+    },
+    trademarks: trademarks.map(tm => ({
+        trademark: tm.trademark,
+        class: String(tm.class),
+        certificate: tm.certificate,
+        expiration: format(tm.expiration, 'yyyy-MM-dd'),
+    })),
+    crmData: `Contact since ${format(contact.createdAt, 'yyyy-MM-dd')}. Associated with agent: ${contact.agent.name}.`
+  };
 
   try {
-    const result = await generateTrademarkEmailDraft({
-      contact: {
-        name: contact.name,
-        email: contact.email,
-      },
-      trademarks: formattedTrademarks,
-      crmData: `Contact associated with Agent: ${trademarks[0]?.agent.name || 'N/A'}.`,
-    });
-    return { emailDraft: result.emailDraft };
+    const { emailDraft } = await generateTrademarkEmailDraft(emailInput);
+    return { emailDraft };
   } catch (error) {
-    console.error('Error generating email draft:', error);
-    return { error: 'Failed to generate email draft.' };
+    console.error("AI email generation failed:", error);
+    return { error: 'Failed to generate email draft with AI.' };
   }
 }
