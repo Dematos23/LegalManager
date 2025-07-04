@@ -1,11 +1,18 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 datasource db {
-  provider      = "postgresql"
-  url           = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 model Agent {
@@ -16,13 +23,14 @@ model Agent {
 }
 
 model Contact {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   firstName String
   lastName  String
-  email     String  @unique
+  email     String   @unique
   agentId   Int
-  agent     Agent   @relation(fields: [agentId], references: [id])
-  owners    Owner[] @relation("ContactOwner")
+  agent     Agent    @relation(fields: [agentId], references: [id])
+  owners    Owner[]  @relation("ContactToOwner")
+  createdAt DateTime @default(now())
 }
 
 model Owner {
@@ -30,31 +38,31 @@ model Owner {
   name       String      @unique
   country    Country
   trademarks Trademark[]
-  contacts   Contact[]   @relation("ContactOwner")
+  contacts   Contact[]   @relation("ContactToOwner")
 }
 
 model Trademark {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   trademark   String
-  class       Int // Must be between 1 and 45
+  class       Int
   type        TrademarkType
   certificate String
   expiration  DateTime
   products    String?
   ownerId     Int
-  owner       Owner    @relation(fields: [ownerId], references: [id])
-  cases       Case[]   @relation("TrademarkCase")
+  owner       Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+
+  @@unique([trademark, ownerId])
 }
 
 model Case {
-  id          Int         @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   trademarkId Int
-  trademark   Trademark   @relation(fields: [trademarkId], references: [id])
   ownerId     Int
-  owner       Owner       @relation(fields: [ownerId], references: [id])
   orders      Order[]
-  trademarks  Trademark[] @relation("TrademarkCase")
+  trademarks  Trademark[] @relation("TrademarkCases")
 }
 
 model Order {
@@ -62,6 +70,15 @@ model Order {
   type   OrderType
   caseId Int
   case   Case      @relation(fields: [caseId], references: [id])
+}
+
+model EmailTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  subject   String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum TrademarkType {

@@ -16,6 +16,7 @@ import {
   FileUp,
   Settings,
   Gavel,
+  LayoutTemplate,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -24,7 +25,8 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    return pathname === path;
+    // Exact match for root, partial for others
+    return path === '/' ? pathname === path : pathname.startsWith(path);
   };
 
   return (
@@ -60,6 +62,17 @@ export function AppSidebar() {
               >
                 <FileUp />
                 <span>Import</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/templates" passHref>
+              <SidebarMenuButton
+                isActive={isActive('/templates')}
+                tooltip={{ children: 'Email Templates' }}
+              >
+                <LayoutTemplate />
+                <span>Templates</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
