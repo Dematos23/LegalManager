@@ -86,3 +86,72 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Quill styles to match ShadCN */
+.ql-toolbar {
+  @apply rounded-t-md border-input bg-transparent;
+}
+
+.ql-container {
+  @apply rounded-b-md border-input text-sm;
+}
+
+.ql-editor {
+  @apply min-h-[500px] bg-background;
+}
+
+.ql-toolbar .ql-stroke {
+  @apply stroke-foreground;
+}
+
+.ql-toolbar .ql-fill {
+  @apply fill-foreground;
+}
+
+.ql-toolbar .ql-picker-label {
+  @apply text-foreground;
+}
+
+.ql-toolbar button:hover,
+.ql-toolbar .ql-picker-label:hover {
+  @apply bg-accent text-accent-foreground;
+}
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar .ql-picker-label:hover .ql-stroke {
+  @apply stroke-accent-foreground;
+}
+
+.ql-snow.ql-toolbar button.ql-active,
+.ql-snow .ql-toolbar button.ql-active,
+.ql-snow.ql-toolbar .ql-picker-label.ql-active,
+.ql-snow .ql-toolbar .ql-picker-label.ql-active,
+.ql-snow.ql-toolbar button:focus,
+.ql-snow .ql-toolbar button:focus,
+.ql-snow.ql-toolbar .ql-picker-label:focus,
+.ql-snow .ql-toolbar .ql-picker-label:focus,
+.ql-snow.ql-toolbar button:hover,
+.ql-snow .ql-toolbar button:hover,
+.ql-snow.ql-toolbar .ql-picker-label:hover,
+.ql-snow .ql-toolbar .ql-picker-label:hover {
+    @apply bg-accent text-accent-foreground;
+}
+
+.ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.ql-snow .ql-toolbar button.ql-active .ql-stroke,
+.ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+.ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+.ql-snow.ql-toolbar button:focus .ql-stroke,
+.ql-snow .ql-toolbar button:focus .ql-stroke,
+.ql-snow.ql-toolbar .ql-picker-label:focus .ql-stroke,
+.ql-snow .ql-toolbar .ql-picker-label:focus .ql-stroke,
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow .ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,
+.ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke
+{
+    @apply stroke-accent-foreground;
+}
+
+.ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg {
+  @apply mt-1;
+}

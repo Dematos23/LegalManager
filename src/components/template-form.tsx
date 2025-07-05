@@ -1,6 +1,5 @@
 "use client";
 
-import { useFormState } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -17,18 +16,27 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { EmailTemplate } from "@prisma/client";
 import {
   createEmailTemplate,
   updateEmailTemplate,
 } from "@/app/templates/actions";
+import dynamic from "next/dynamic";
+import 'react-quill/dist/quill.snow.css';
+import { cn } from "@/lib/utils";
+
+const ReactQuill = dynamic(() => import('react-quill'), { 
+    ssr: false,
+    loading: () => <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
+});
 
 const TemplateSchema = z.object({
   name: z
@@ -73,6 +81,7 @@ const MERGE_FIELDS = [
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
+  const [editorMode, setEditorMode] = useState<"rich" | "html">("rich");
 
   const form = useForm<z.infer<typeof TemplateSchema>>({
     resolver: zodResolver(TemplateSchema),
@@ -87,32 +96,31 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const onSubmit = async (data: z.infer<typeof TemplateSchema>) => {
     let result;
+    const formData = new FormData();
+    formData.append("name", data.name);
+    formData.append("subject", data.subject);
+    formData.append("body", data.body);
+    
     if (template) {
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("subject", data.subject);
-      formData.append("body", data.body);
       result = await updateEmailTemplate(template.id, formData);
     } else {
-      const formData = new FormData();
-      formData.append("name", data.name);
-      formData.append("subject", data.subject);
-      formData.append("body", data.body);
       result = await createEmailTemplate(formData);
     }
+
     setState(result);
+
     if (result?.errors) {
       const { errors } = result;
-      if ("name" in errors && Array.isArray(errors.name))
+      if (errors.name && Array.isArray(errors.name))
         form.setError("name", { type: "manual", message: errors.name[0] });
-      if ("subject" in errors && Array.isArray(errors.subject))
+      if (errors.subject && Array.isArray(errors.subject))
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
-      if ("body" in errors && Array.isArray(errors.body))
+      if (errors.body && Array.isArray(errors.body))
         form.setError("body", { type: "manual", message: errors.body[0] });
-      if ("_form" in errors && Array.isArray(errors._form)) {
+      if (errors._form && Array.isArray(errors._form)) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -125,6 +133,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const handleCopy = (value: string) => {
     navigator.clipboard.writeText(value);
     toast({ title: "Copied to clipboard", description: value });
+  };
+  
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline','strike', 'blockquote'],
+      [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
+      ['link'],
+      ['clean']
+    ],
   };
 
   return (
@@ -176,14 +194,46 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 name="body"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Body (HTML)</FormLabel>
+                    <div className="flex justify-between items-center">
+                        <FormLabel>Email Body</FormLabel>
+                        <div className="flex items-center gap-1 rounded-md bg-muted p-1">
+                            <Button 
+                                type="button" 
+                                size="sm" 
+                                className={cn("h-7", editorMode === 'rich' ? "bg-background shadow-sm" : "bg-transparent")}
+                                onClick={() => setEditorMode('rich')}>
+                                Rich Text
+                            </Button>
+                            <Button 
+                                type="button" 
+                                size="sm" 
+                                className={cn("h-7", editorMode === 'html' ? "bg-background shadow-sm" : "bg-transparent")}
+                                onClick={() => setEditorMode('html')}>
+                                HTML
+                            </Button>
+                        </div>
+                    </div>
                     <FormControl>
-                      <Textarea
-                        placeholder="<html>...</html>"
-                        className="min-h-[500px] font-code text-sm"
-                        {...field}
-                      />
+                      <div>
+                        {editorMode === "rich" ? (
+                            <ReactQuill 
+                                theme="snow"
+                                value={field.value}
+                                onChange={field.onChange}
+                                modules={quillModules}
+                            />
+                        ) : (
+                            <Textarea
+                                placeholder="<html>...</html>"
+                                className="min-h-[500px] font-code text-sm"
+                                {...field}
+                            />
+                        )}
+                      </div>
                     </FormControl>
+                    <FormDescription>
+                        Warning: Switching from HTML to Rich Text may alter complex HTML or custom merge fields.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
