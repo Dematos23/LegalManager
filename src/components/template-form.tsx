@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,7 +23,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { EmailTemplate } from "@prisma/client";
 import {
@@ -30,12 +30,14 @@ import {
   updateEmailTemplate,
 } from "@/app/templates/actions";
 import dynamic from "next/dynamic";
-import 'react-quill/dist/quill.snow.css';
+import "react-quill/dist/quill.snow.css";
 import { cn } from "@/lib/utils";
 
-const ReactQuill = dynamic(() => import('react-quill'), { 
-    ssr: false,
-    loading: () => <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
+const ReactQuill = dynamic(() => import("react-quill"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
+  ),
 });
 
 const TemplateSchema = z.object({
@@ -82,6 +84,7 @@ const MERGE_FIELDS = [
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const [editorMode, setEditorMode] = useState<"rich" | "html">("rich");
+  const [mounted, setMounted] = useState(false);
 
   const form = useForm<z.infer<typeof TemplateSchema>>({
     resolver: zodResolver(TemplateSchema),
@@ -100,7 +103,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     formData.append("name", data.name);
     formData.append("subject", data.subject);
     formData.append("body", data.body);
-    
+
     if (template) {
       result = await updateEmailTemplate(template.id, formData);
     } else {
@@ -111,16 +114,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if (errors.name && Array.isArray(errors.name))
+      if ("name" in errors && errors.name && Array.isArray(errors.name))
         form.setError("name", { type: "manual", message: errors.name[0] });
-      if (errors.subject && Array.isArray(errors.subject))
+      if (
+        "subject" in errors &&
+        errors.subject &&
+        Array.isArray(errors.subject)
+      )
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
-      if (errors.body && Array.isArray(errors.body))
+      if ("body" in errors && errors.body && Array.isArray(errors.body))
         form.setError("body", { type: "manual", message: errors.body[0] });
-      if (errors._form && Array.isArray(errors._form)) {
+      if ("_form" in errors && errors._form && Array.isArray(errors._form)) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -134,16 +141,25 @@ export function TemplateForm({ template }: TemplateFormProps) {
     navigator.clipboard.writeText(value);
     toast({ title: "Copied to clipboard", description: value });
   };
-  
+
   const quillModules = {
     toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline','strike', 'blockquote'],
-      [{'list': 'ordered'}, {'list': 'bullet'}, {'indent': '-1'}, {'indent': '+1'}],
-      ['link'],
-      ['clean']
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike", "blockquote"],
+      [
+        { list: "ordered" },
+        { list: "bullet" },
+        { indent: "-1" },
+        { indent: "+1" },
+      ],
+      ["link"],
+      ["clean"],
     ],
   };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -195,44 +211,61 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex justify-between items-center">
-                        <FormLabel>Email Body</FormLabel>
-                        <div className="flex items-center gap-1 rounded-md bg-muted p-1">
-                            <Button 
-                                type="button" 
-                                size="sm" 
-                                className={cn("h-7", editorMode === 'rich' ? "bg-background shadow-sm" : "bg-transparent")}
-                                onClick={() => setEditorMode('rich')}>
-                                Rich Text
-                            </Button>
-                            <Button 
-                                type="button" 
-                                size="sm" 
-                                className={cn("h-7", editorMode === 'html' ? "bg-background shadow-sm" : "bg-transparent")}
-                                onClick={() => setEditorMode('html')}>
-                                HTML
-                            </Button>
-                        </div>
+                      <FormLabel>Email Body</FormLabel>
+                      <div className="flex items-center gap-1 rounded-md bg-muted p-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className={cn(
+                            "h-7",
+                            editorMode === "rich"
+                              ? "bg-background shadow-sm"
+                              : "bg-transparent"
+                          )}
+                          onClick={() => setEditorMode("rich")}
+                        >
+                          Rich Text
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className={cn(
+                            "h-7",
+                            editorMode === "html"
+                              ? "bg-background shadow-sm"
+                              : "bg-transparent"
+                          )}
+                          onClick={() => setEditorMode("html")}
+                        >
+                          HTML
+                        </Button>
+                      </div>
                     </div>
                     <FormControl>
                       <div>
                         {editorMode === "rich" ? (
-                            <ReactQuill 
-                                theme="snow"
-                                value={field.value}
-                                onChange={field.onChange}
-                                modules={quillModules}
+                          mounted ? (
+                            <ReactQuill
+                              theme="snow"
+                              value={field.value}
+                              onChange={field.onChange}
+                              modules={quillModules}
                             />
+                          ) : (
+                            <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
+                          )
                         ) : (
-                            <Textarea
-                                placeholder="<html>...</html>"
-                                className="min-h-[500px] font-code text-sm"
-                                {...field}
-                            />
+                          <Textarea
+                            placeholder="<html>...</html>"
+                            className="min-h-[500px] font-code text-sm"
+                            {...field}
+                          />
                         )}
                       </div>
                     </FormControl>
                     <FormDescription>
-                        Warning: Switching from HTML to Rich Text may alter complex HTML or custom merge fields.
+                      Warning: Switching from HTML to Rich Text may alter
+                      complex HTML or custom merge fields.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
