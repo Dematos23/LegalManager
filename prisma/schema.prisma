@@ -1,4 +1,3 @@
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -10,12 +9,12 @@ generator client {
 }
 
 model Agent {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  country   Country
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  country   Country?
   contacts  Contact[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Contact {
@@ -33,7 +32,7 @@ model Contact {
 model Owner {
   id         Int         @id @default(autoincrement())
   name       String      @unique
-  country    Country
+  country    Country?
   trademarks Trademark[]
   contacts   Contact[]   @relation("ContactToOwner")
   createdAt  DateTime    @default(now())
@@ -41,18 +40,18 @@ model Owner {
 }
 
 model Trademark {
-  id          Int           @id @default(autoincrement())
-  trademark   String
-  class       Int
-  type        TrademarkType
-  certificate String
-  expiration  DateTime
-  products    String?
-  ownerId     Int
-  owner       Owner         @relation(fields: [ownerId], references: [id])
-  cases       Case[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           Int            @id @default(autoincrement())
+  denomination String
+  class        Int
+  type         TrademarkType?
+  certificate  String?
+  expiration   DateTime?
+  products     String?
+  ownerId      Int
+  owner        Owner          @relation(fields: [ownerId], references: [id])
+  cases        Case[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 model Case {
@@ -67,6 +66,7 @@ model Case {
 
 model Order {
   id        Int       @id @default(autoincrement())
+  name      String
   type      OrderType
   caseId    Int
   case      Case      @relation(fields: [caseId], references: [id])
@@ -84,7 +84,7 @@ model EmailTemplate {
 }
 
 enum TrademarkType {
-  WORD
+  NOMINATIVE
   FIGURATIVE
   MIXED
 }
