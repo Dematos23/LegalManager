@@ -1,12 +1,13 @@
-
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
+  previewFeatures = ["driverAdapters"]
 }
 
 model Agent {
@@ -25,7 +26,7 @@ model Contact {
   email     String   @unique
   agentId   Int
   agent     Agent    @relation(fields: [agentId], references: [id])
-  owners    Owner[]  @relation("ContactOwner")
+  owners    Owner[]  @relation("ContactToOwner")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -35,7 +36,7 @@ model Owner {
   name       String      @unique
   country    Country
   trademarks Trademark[]
-  contacts   Contact[]   @relation("ContactOwner")
+  contacts   Contact[]   @relation("ContactToOwner")
   cases      Case[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -50,28 +51,29 @@ model Trademark {
   expiration  DateTime
   products    String?
   ownerId     Int
-  owner       Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  cases       Case[]        @relation("TrademarkCases")
+  owner       Owner         @relation(fields: [ownerId], references: [id])
+  cases       Case[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 }
 
 model Case {
-  id         Int         @id @default(autoincrement())
-  name       String
-  ownerId    Int
-  owner      Owner       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  orders     Order[]
-  trademarks Trademark[] @relation("TrademarkCases")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          Int       @id @default(autoincrement())
+  name        String
+  trademarkId Int
+  trademark   Trademark @relation(fields: [trademarkId], references: [id])
+  ownerId     Int
+  owner       Owner     @relation(fields: [ownerId], references: [id])
+  orders      Order[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Order {
   id        Int       @id @default(autoincrement())
   type      OrderType
   caseId    Int
-  case      Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case      Case      @relation(fields: [caseId], references: [id])
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
