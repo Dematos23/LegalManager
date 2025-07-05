@@ -1,22 +1,21 @@
+
 datasource db {
-  provider     = "postgresql"
-  url          = env("DATABASE_URL")
-  relationMode = "prisma"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider        = "prisma-client-js"
-  binaryTargets   = ["native", "debian-openssl-3.0.x"]
-  previewFeatures = ["driverAdapters"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 model Agent {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
   country   Country
   contacts  Contact[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Contact {
@@ -37,7 +36,6 @@ model Owner {
   country    Country
   trademarks Trademark[]
   contacts   Contact[]   @relation("ContactToOwner")
-  cases      Case[]
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
 }
@@ -62,8 +60,6 @@ model Case {
   name        String
   trademarkId Int
   trademark   Trademark @relation(fields: [trademarkId], references: [id])
-  ownerId     Int
-  owner       Owner     @relation(fields: [ownerId], references: [id])
   orders      Order[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -82,7 +78,7 @@ model EmailTemplate {
   id        Int      @id @default(autoincrement())
   name      String   @unique
   subject   String
-  body      String   @db.Text
+  body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
