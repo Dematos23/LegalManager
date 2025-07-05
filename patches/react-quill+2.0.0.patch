@@ -1,11 +1,11 @@
---- a/node_modules/react-quill/lib/index.js
-+++ b/node_modules/react-quill/lib/index.js
-@@ -231,7 +231,7 @@
+--- a/node_modules/react-quill/lib/component.js
++++ b/node_modules/react-quill/lib/component.js
+@@ -470,7 +470,7 @@
  	},
  
  	getEditorNode: function getEditorNode() {
--		return ReactDOM.findDOMNode(this);
-+		return this.editingArea;
+-		return _reactDom2.default.findDOMNode(this.editor);
++		return this.editor;
  	},
  
  	getEditingArea: function getEditingArea() {
