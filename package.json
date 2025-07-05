@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && patch-package"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.13.0",
