@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -17,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -82,7 +80,6 @@ const MERGE_FIELDS = [
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
-  const [editorMode, setEditorMode] = useState<"rich" | "html">("rich");
   const [mounted, setMounted] = useState(false);
 
   const form = useForm<z.infer<typeof TemplateSchema>>({
@@ -211,45 +208,17 @@ export function TemplateForm({ template }: TemplateFormProps) {
                   <FormItem>
                     <FormLabel>Email Body</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <div className="absolute top-2 right-2 z-10">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setEditorMode(
-                                editorMode === "rich" ? "html" : "rich"
-                              )
-                            }
-                          >
-                            {editorMode === "rich" ? "View HTML" : "Rich Editor"}
-                          </Button>
-                        </div>
-                        {editorMode === "rich" ? (
-                          mounted ? (
-                            <ReactQuill
-                              theme="snow"
-                              value={field.value}
-                              onChange={field.onChange}
-                              modules={quillModules}
-                            />
-                          ) : (
-                            <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
-                          )
-                        ) : (
-                          <Textarea
-                            placeholder="<html>...</html>"
-                            className="min-h-[500px] font-code text-sm pt-12"
-                            {...field}
-                          />
-                        )}
-                      </div>
+                      {mounted ? (
+                        <ReactQuill
+                          theme="snow"
+                          value={field.value}
+                          onChange={field.onChange}
+                          modules={quillModules}
+                        />
+                      ) : (
+                        <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
+                      )}
                     </FormControl>
-                    <FormDescription>
-                      Warning: Switching from HTML to Rich Text may alter
-                      complex HTML or custom merge fields.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
