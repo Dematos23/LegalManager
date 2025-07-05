@@ -31,7 +31,6 @@ import {
 } from "@/app/templates/actions";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
-import { cn } from "@/lib/utils";
 
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
@@ -210,39 +209,23 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 name="body"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-center">
-                      <FormLabel>Email Body</FormLabel>
-                      <div className="flex items-center gap-1 rounded-md bg-muted p-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          className={cn(
-                            "h-7",
-                            editorMode === "rich"
-                              ? "bg-background shadow-sm"
-                              : "bg-transparent"
-                          )}
-                          onClick={() => setEditorMode("rich")}
-                        >
-                          Rich Text
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className={cn(
-                            "h-7",
-                            editorMode === "html"
-                              ? "bg-background shadow-sm"
-                              : "bg-transparent"
-                          )}
-                          onClick={() => setEditorMode("html")}
-                        >
-                          HTML
-                        </Button>
-                      </div>
-                    </div>
+                    <FormLabel>Email Body</FormLabel>
                     <FormControl>
-                      <div>
+                      <div className="relative">
+                        <div className="absolute top-2 right-2 z-10">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setEditorMode(
+                                editorMode === "rich" ? "html" : "rich"
+                              )
+                            }
+                          >
+                            {editorMode === "rich" ? "View HTML" : "Rich Editor"}
+                          </Button>
+                        </div>
                         {editorMode === "rich" ? (
                           mounted ? (
                             <ReactQuill
@@ -257,7 +240,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                         ) : (
                           <Textarea
                             placeholder="<html>...</html>"
-                            className="min-h-[500px] font-code text-sm"
+                            className="min-h-[500px] font-code text-sm pt-12"
                             {...field}
                           />
                         )}
