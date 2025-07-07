@@ -125,10 +125,7 @@ export default function TemplatesPage() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
-                                <form action={async () => {
-                                  'use server';
-                                  await deleteEmailTemplate(template.id);
-                                }}>
+                                <form action={deleteEmailTemplate.bind(null, template.id)}>
                                   <AlertDialogAction type="submit">{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
                                 </form>
                               </AlertDialogFooter>
