@@ -74,7 +74,9 @@ export const es: Dictionary = {
         description: 'Esta acción no se puede deshacer. Esto eliminará permanentemente la plantilla.',
         cancel: 'Cancelar',
         continue: 'Continuar',
-    }
+    },
+    previewTitle: 'Vista Previa de Plantilla',
+    selectPreview: 'Seleccione una plantilla de la lista para ver una vista previa aquí.',
   },
   templateForm: {
     createTitle: 'Crear Nueva Plantilla',

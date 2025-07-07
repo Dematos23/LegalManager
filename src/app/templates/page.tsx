@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlusCircle, MoreHorizontal, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,30 +22,40 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/context/language-context';
 import { useState, useEffect } from 'react';
 import type { EmailTemplate } from '@prisma/client';
+import { Separator } from '@/components/ui/separator';
 
 export default function TemplatesPage() {
   const { dictionary } = useLanguage();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
 
   useEffect(() => {
     const fetchTemplates = async () => {
       setLoading(true);
       const data = await getEmailTemplates();
       setTemplates(data);
+      if (data.length > 0) {
+        setSelectedTemplate(data[0]);
+      }
       setLoading(false);
     };
     fetchTemplates();
   }, []);
 
   const handleDelete = async (id: number) => {
-    await deleteEmailTemplate(id);
-    setTemplates(templates.filter(t => t.id !== id));
+    const result = await deleteEmailTemplate(id);
+    if(result.success) {
+      const newTemplates = templates.filter(t => t.id !== id);
+      setTemplates(newTemplates);
+      if (selectedTemplate?.id === id) {
+          setSelectedTemplate(newTemplates.length > 0 ? newTemplates[0] : null);
+      }
+    }
   }
 
   return (
@@ -63,89 +72,115 @@ export default function TemplatesPage() {
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{dictionary.templates.cardTitle}</CardTitle>
-          <CardDescription>
-            {dictionary.templates.cardDescription}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{dictionary.templates.table.name}</TableHead>
-                <TableHead>{dictionary.templates.table.subject}</TableHead>
-                <TableHead>{dictionary.templates.table.lastUpdated}</TableHead>
-                <TableHead className="text-right">{dictionary.templates.table.actions}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : templates.length === 0 ? (
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+            <CardHeader>
+            <CardTitle>{dictionary.templates.cardTitle}</CardTitle>
+            <CardDescription>
+                {dictionary.templates.cardDescription}
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Table>
+                <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    {dictionary.templates.table.noTemplates}
-                  </TableCell>
+                    <TableHead>{dictionary.templates.table.name}</TableHead>
+                    <TableHead className="text-right">{dictionary.templates.table.actions}</TableHead>
                 </TableRow>
-              ) : (
-                templates.map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.name}</TableCell>
-                    <TableCell>{template.subject}</TableCell>
-                    <TableCell>{format(new Date(template.updatedAt), 'PPP')}</TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/templates/edit/${template.id}`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                {dictionary.templates.table.edit}
-                              </Link>
-                            </DropdownMenuItem>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {dictionary.templates.table.delete}
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {dictionary.templates.deleteDialog.description}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
-                            <form action={deleteEmailTemplate.bind(null, template.id)}>
-                               <AlertDialogAction type="submit">{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
-                            </form>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                </TableHeader>
+                <TableBody>
+                {loading ? (
+                    <TableRow>
+                    <TableCell colSpan={2} className="h-24 text-center">
+                        Loading...
                     </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                    </TableRow>
+                ) : templates.length === 0 ? (
+                    <TableRow>
+                    <TableCell colSpan={2} className="h-24 text-center">
+                        {dictionary.templates.table.noTemplates}
+                    </TableCell>
+                    </TableRow>
+                ) : (
+                    templates.map((template) => (
+                    <TableRow 
+                        key={template.id} 
+                        onClick={() => setSelectedTemplate(template)}
+                        data-state={selectedTemplate?.id === template.id ? 'selected' : ''}
+                        className="cursor-pointer"
+                    >
+                        <TableCell className="font-medium">{template.name}</TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild>
+                                  <Link href={`/templates/edit/${template.id}`}>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      {dictionary.templates.table.edit}
+                                  </Link>
+                                  </DropdownMenuItem>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => {e.preventDefault(); e.stopPropagation();}}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        {dictionary.templates.table.delete}
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                  {dictionary.templates.deleteDialog.description}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(template.id)}>{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                    </TableRow>
+                    ))
+                )}
+                </TableBody>
+            </Table>
+            </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle>{dictionary.templates.previewTitle}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {selectedTemplate ? (
+                    <div className="space-y-4">
+                         <div>
+                            <p className="text-sm text-muted-foreground">{dictionary.templates.table.subject}</p>
+                            <p className="font-semibold">{selectedTemplate.subject}</p>
+                        </div>
+                        <Separator />
+                        <div 
+                            className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black"
+                            dangerouslySetInnerHTML={{ __html: selectedTemplate.body }}
+                        />
+                    </div>
+                ) : !loading && (
+                    <div className="flex items-center justify-center min-h-[400px] text-muted-foreground rounded-md border border-dashed">
+                        <p>{dictionary.templates.selectPreview}</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

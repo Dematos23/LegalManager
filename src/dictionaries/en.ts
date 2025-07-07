@@ -72,7 +72,9 @@ export const en = {
         description: 'This action cannot be undone. This will permanently delete the template.',
         cancel: 'Cancel',
         continue: 'Continue',
-    }
+    },
+    previewTitle: 'Template Preview',
+    selectPreview: 'Select a template from the list to see a preview here.',
   },
   templateForm: {
     createTitle: 'Create New Template',
