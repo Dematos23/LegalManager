@@ -80,10 +80,17 @@ export async function importDataAction(formData: FormData) {
         await prisma.$transaction(async (tx) => {
           let agent: Agent | null = null;
           const agentName = getValue('agent.name');
+          
+          // Get owner country first as it might be needed for the agent.
+          const ownerCountryValue = getValue('owner.country');
+
           if (agentName) {
+            // Use agent.country if available, otherwise fallback to owner.country
+            const agentCountryForDb = getValue('agent.country') || ownerCountryValue;
+
             const agentData = AgentSchema.parse({
               name: agentName,
-              country: getCountryEnumValue(getValue('agent.country')),
+              country: getCountryEnumValue(agentCountryForDb),
             });
             agent = await tx.agent.upsert({
               where: { name: agentData.name },
@@ -112,7 +119,7 @@ export async function importDataAction(formData: FormData) {
           
           const ownerData = OwnerSchema.parse({
               name: getValue('owner.name'),
-              country: getCountryEnumValue(getValue('owner.country')),
+              country: getCountryEnumValue(ownerCountryValue),
           });
           const owner = await tx.owner.upsert({
             where: { name: ownerData.name },
@@ -122,7 +129,7 @@ export async function importDataAction(formData: FormData) {
             },
             create: {
               ...ownerData,
-              ...(contact && { contacts: { connect: { connect: { id: contact.id } } } })
+              ...(contact && { contacts: { connect: { id: contact.id } } })
             },
           });
           
