@@ -69,13 +69,21 @@ export async function importDataAction(formData: FormData) {
           return header ? row[header] : undefined;
         };
 
+        // Helper to sanitize country strings to match the Enum
+        const getCountryEnumValue = (value: any) => {
+          if (typeof value === 'string') {
+            return value.trim().toUpperCase().replace(/\s/g, '_');
+          }
+          return value;
+        };
+
         await prisma.$transaction(async (tx) => {
           let agent: Agent | null = null;
           const agentName = getValue('agent.name');
           if (agentName) {
             const agentData = AgentSchema.parse({
               name: agentName,
-              country: getValue('agent.country')?.toUpperCase().replace(/\s/g, '_'),
+              country: getCountryEnumValue(getValue('agent.country')),
             });
             agent = await tx.agent.upsert({
               where: { name: agentData.name },
@@ -104,7 +112,7 @@ export async function importDataAction(formData: FormData) {
           
           const ownerData = OwnerSchema.parse({
               name: getValue('owner.name'),
-              country: getValue('owner.country')?.toUpperCase().replace(/\s/g, '_'),
+              country: getCountryEnumValue(getValue('owner.country')),
           });
           const owner = await tx.owner.upsert({
             where: { name: ownerData.name },
@@ -114,7 +122,7 @@ export async function importDataAction(formData: FormData) {
             },
             create: {
               ...ownerData,
-              ...(contact && { contacts: { connect: { id: contact.id } } })
+              ...(contact && { contacts: { connect: { connect: { id: contact.id } } } })
             },
           });
           
