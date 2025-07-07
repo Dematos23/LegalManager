@@ -34,7 +34,7 @@ const AgentSchema = z.object({
 
 export async function importDataAction(formData: FormData) {
   const file = formData.get('file') as File;
-  const mappings = JSON.parse(formData.get('mappings') as string);
+  const mappings = JSON.parse(formData.get('mappings') as string); // { "File Header": "model.field" }
   
   if (!file) {
     return { error: 'No file uploaded.' };
@@ -53,20 +53,29 @@ export async function importDataAction(formData: FormData) {
       errorDetails: [] as any[],
     };
 
+    // Create a reverse mapping for easier lookup: { "model.field": "File Header" }
+    const reverseMappings: Record<string, string> = {};
+    for (const header in mappings) {
+      if (mappings[header] && mappings[header] !== 'ignore') {
+        reverseMappings[mappings[header]] = header;
+      }
+    }
+
     for (const [index, row] of jsonData.entries()) {
       try {
-        const getVal = (prefix: string, field: string) => {
-          const header = Object.keys(mappings).find(h => mappings[h] === `${prefix}.${field}`);
+        // Helper to get a value from the row using the model property path (e.g., 'agent.name')
+        const getValue = (modelPropertyPath: string) => {
+          const header = reverseMappings[modelPropertyPath];
           return header ? row[header] : undefined;
         };
-        
+
         await prisma.$transaction(async (tx) => {
           let agent: Agent | null = null;
-          const agentName = getVal('agent', 'name');
+          const agentName = getValue('agent.name');
           if (agentName) {
             const agentData = AgentSchema.parse({
               name: agentName,
-              country: getVal('agent', 'country')?.toUpperCase().replace(/\s/g, '_'),
+              country: getValue('agent.country')?.toUpperCase().replace(/\s/g, '_'),
             });
             agent = await tx.agent.upsert({
               where: { name: agentData.name },
@@ -76,15 +85,14 @@ export async function importDataAction(formData: FormData) {
           }
 
           let contact: Contact | null = null;
-          const contactEmail = getVal('contact', 'email');
-          
+          const contactEmail = getValue('contact.email');
           if (contactEmail) {
             if (!agent) {
               throw new Error(`Row ${index + 2}: Contact email provided without a mapped Agent. An agent is required to create a contact.`);
             }
             const contactData = ContactSchema.parse({
-                firstName: getVal('contact', 'firstName'),
-                lastName: getVal('contact', 'lastName'),
+                firstName: getValue('contact.firstName'),
+                lastName: getValue('contact.lastName'),
                 email: contactEmail,
             });
             contact = await tx.contact.upsert({
@@ -95,10 +103,9 @@ export async function importDataAction(formData: FormData) {
           }
           
           const ownerData = OwnerSchema.parse({
-              name: getVal('owner', 'name'),
-              country: getVal('owner', 'country')?.toUpperCase().replace(/\s/g, '_'),
+              name: getValue('owner.name'),
+              country: getValue('owner.country')?.toUpperCase().replace(/\s/g, '_'),
           });
-          
           const owner = await tx.owner.upsert({
             where: { name: ownerData.name },
             update: {
@@ -111,14 +118,14 @@ export async function importDataAction(formData: FormData) {
             },
           });
           
-          const expirationValue = getVal('trademark', 'expiration');
+          const expirationValue = getValue('trademark.expiration');
           const trademarkData = TrademarkSchema.parse({
-              denomination: getVal('trademark', 'denomination'),
-              class: getVal('trademark', 'class'),
-              type: getVal('trademark', 'type')?.toUpperCase(),
-              certificate: getVal('trademark', 'certificate'),
+              denomination: getValue('trademark.denomination'),
+              class: getValue('trademark.class'),
+              type: getValue('trademark.type')?.toUpperCase(),
+              certificate: getValue('trademark.certificate'),
               expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
-              products: getVal('trademark', 'products'),
+              products: getValue('trademark.products'),
           });
 
           await tx.trademark.create({
@@ -126,7 +133,6 @@ export async function importDataAction(formData: FormData) {
               ...trademarkData,
               ownerId: owner.id,
             },
-
           });
         });
 
