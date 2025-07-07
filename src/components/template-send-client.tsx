@@ -240,14 +240,14 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
                 <CardTitle>{dictionary.sendTemplate.filterTitle}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <Input
                     placeholder={dictionary.sendTemplate.searchPlaceholder}
                     value={globalFilter ?? ''}
                     onChange={(event) => setGlobalFilter(String(event.target.value))}
-                    className="max-w-sm"
+                    className="w-full md:max-w-sm"
                     />
-                    <div className="space-x-2">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                     <Button variant="outline" onClick={() => setExpirationFilter(30)}>{dictionary.dashboard.expiring30}</Button>
                     <Button variant="outline" onClick={() => setExpirationFilter(60)}>{dictionary.dashboard.expiring60}</Button>
                     <Button variant="outline" onClick={() => setExpirationFilter(90)}>{dictionary.dashboard.expiring90}</Button>
@@ -258,14 +258,14 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
         </Card>
 
         <Card>
-            <CardHeader className="flex-row items-center justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <CardTitle>{dictionary.sendTemplate.recipientsTitle}</CardTitle>
                     <CardDescription>
                         {dictionary.sendTemplate.recipientsDescription}
                     </CardDescription>
                 </div>
-                <Button onClick={handleSendCampaign} disabled={table.getFilteredSelectedRowModel().rows.length === 0}>
+                <Button onClick={handleSendCampaign} disabled={table.getFilteredSelectedRowModel().rows.length === 0} className="w-full md:w-auto">
                     <Send className="mr-2" />
                     {dictionary.sendTemplate.sendButton} ({table.getFilteredSelectedRowModel().rows.length})
                 </Button>

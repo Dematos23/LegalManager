@@ -31,7 +31,7 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
         {/* Contact Info Card */}
         <Card className="md:col-span-1">
           <CardHeader>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile person" />
                 <AvatarFallback className="text-2xl">{initials}</AvatarFallback>

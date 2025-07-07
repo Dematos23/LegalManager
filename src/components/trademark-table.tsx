@@ -214,14 +214,14 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
   return (
     <div className="space-y-4">
       <EmailModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} contactEmail={selectedContactEmail} />
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <Input
           placeholder={dictionary.dashboard.searchPlaceholder}
           value={(table.getColumn('denomination')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('denomination')?.setFilterValue(event.target.value)}
-          className="max-w-sm"
+          className="w-full md:max-w-sm"
         />
-        <div className="space-x-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button variant="outline" onClick={() => setExpirationFilter(30)}>{dictionary.dashboard.expiring30}</Button>
           <Button variant="outline" onClick={() => setExpirationFilter(60)}>{dictionary.dashboard.expiring60}</Button>
           <Button variant="outline" onClick={() => setExpirationFilter(90)}>{dictionary.dashboard.expiring90}</Button>
