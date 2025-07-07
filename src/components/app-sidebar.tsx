@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -26,16 +27,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
+import { useLanguage } from '@/context/language-context';
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const [language, setLanguage] = useState('Spanish');
+  const { language, dictionary, switchLanguage } = useLanguage();
 
   const isActive = (path: string) => {
     // Exact match for root, partial for others
     return path === '/' ? pathname === path : pathname.startsWith(path);
   };
+
+  const currentLanguageLabel = language === 'es' ? dictionary.sidebar.spanish : dictionary.sidebar.english;
 
   return (
     <Sidebar>
@@ -55,10 +58,10 @@ export function AppSidebar() {
             <Link href="/" passHref>
               <SidebarMenuButton
                 isActive={isActive('/')}
-                tooltip={{ children: 'Dashboard' }}
+                tooltip={{ children: dictionary.sidebar.dashboard }}
               >
                 <LayoutDashboard />
-                <span>Dashboard</span>
+                <span>{dictionary.sidebar.dashboard}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -66,10 +69,10 @@ export function AppSidebar() {
             <Link href="/import" passHref>
               <SidebarMenuButton
                 isActive={isActive('/import')}
-                tooltip={{ children: 'Import Data' }}
+                tooltip={{ children: dictionary.sidebar.import }}
               >
                 <FileUp />
-                <span>Import</span>
+                <span>{dictionary.sidebar.import}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -77,10 +80,10 @@ export function AppSidebar() {
             <Link href="/templates" passHref>
               <SidebarMenuButton
                 isActive={isActive('/templates')}
-                tooltip={{ children: 'Email Templates' }}
+                tooltip={{ children: dictionary.sidebar.templates }}
               >
                 <LayoutTemplate />
-                <span>Templates</span>
+                <span>{dictionary.sidebar.templates}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
@@ -91,25 +94,25 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton tooltip={{ children: 'Language', side: 'right', align: 'center' }}>
+                <SidebarMenuButton tooltip={{ children: dictionary.sidebar.language, side: 'right', align: 'center' }}>
                   <Languages />
-                  <span>{language}</span>
+                  <span>{currentLanguageLabel}</span>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent side="top" align="start">
-                <DropdownMenuItem onSelect={() => setLanguage('English')}>
-                  English
+                <DropdownMenuItem onSelect={() => switchLanguage('en')}>
+                  {dictionary.sidebar.english}
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setLanguage('Spanish')}>
-                  Spanish
+                <DropdownMenuItem onSelect={() => switchLanguage('es')}>
+                  {dictionary.sidebar.spanish}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={{ children: 'Settings' }}>
+            <SidebarMenuButton tooltip={{ children: dictionary.sidebar.settings }}>
               <Settings />
-              <span>Settings</span>
+              <span>{dictionary.sidebar.settings}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

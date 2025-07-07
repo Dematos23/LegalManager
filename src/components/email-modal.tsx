@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -14,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { generateEmailAction } from '@/app/actions';
+import { useLanguage } from '@/context/language-context';
 
 type EmailModalProps = {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export function EmailModal({ isOpen, onClose, contactEmail }: EmailModalProps) {
   const [emailContent, setEmailContent] = useState('');
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const { dictionary } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -51,7 +54,7 @@ export function EmailModal({ isOpen, onClose, contactEmail }: EmailModalProps) {
   };
   
   const handleSend = () => {
-    toast({ title: 'Email Sent (Simulated)', description: `An email has been sent to ${contactEmail}.` });
+    toast({ title: dictionary.emailModal.sentToast, description: `${dictionary.emailModal.sentToastDesc} ${contactEmail}.` });
     onClose();
   }
 
@@ -59,9 +62,9 @@ export function EmailModal({ isOpen, onClose, contactEmail }: EmailModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Generated Email Draft</DialogTitle>
+          <DialogTitle>{dictionary.emailModal.title}</DialogTitle>
           <DialogDescription>
-            Review and edit the AI-generated email below.
+            {dictionary.emailModal.description}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -84,13 +87,13 @@ export function EmailModal({ isOpen, onClose, contactEmail }: EmailModalProps) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Close
+            {dictionary.emailModal.close}
           </Button>
           <Button onClick={handleCopy} disabled={isPending || !emailContent}>
-            Copy HTML
+            {dictionary.emailModal.copy}
           </Button>
           <Button onClick={handleSend} disabled={isPending || !emailContent}>
-            Send Email
+            {dictionary.emailModal.send}
           </Button>
         </DialogFooter>
       </DialogContent>

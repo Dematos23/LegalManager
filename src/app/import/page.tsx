@@ -12,6 +12,7 @@ import { useState, useTransition } from 'react';
 import * as XLSX from 'xlsx';
 import { importDataAction } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useLanguage } from '@/context/language-context';
 
 const MAPPABLE_FIELD_GROUPS = [
   {
@@ -67,6 +68,7 @@ export default function ImportPage() {
   const [importResult, setImportResult] = useState<{ message: string; errorDetails?: any[] } | null>(null);
 
   const { toast } = useToast();
+  const { dictionary } = useLanguage();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -157,14 +159,14 @@ export default function ImportPage() {
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">
-          Import Trademarks
+          {dictionary.import.title}
         </h1>
       </div>
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle>1. Upload Excel File</CardTitle>
+          <CardTitle>{dictionary.import.uploadTitle}</CardTitle>
           <CardDescription>
-            Import data from an .xlsx file. The first row should contain the column headers.
+            {dictionary.import.uploadDescription}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -178,7 +180,7 @@ export default function ImportPage() {
                 <>
                     <UploadCloud className="w-16 h-16 text-muted-foreground" />
                     <p className="mt-4 text-sm text-muted-foreground">
-                        Drag & drop your file here or click to browse
+                        {dictionary.import.fileDrop}
                     </p>
                 </>
             )}
@@ -192,22 +194,22 @@ export default function ImportPage() {
             />
           </div>
 
-          {isParsing && <p className="text-center">Parsing file...</p>}
+          {isParsing && <p className="text-center">{dictionary.import.parsingFile}</p>}
 
           {headers.length > 0 && (
             <div className="space-y-4">
                <CardHeader className="p-0">
-                <CardTitle>2. Map Columns</CardTitle>
+                <CardTitle>{dictionary.import.mapTitle}</CardTitle>
                 <CardDescription>
-                  Match the columns from your file to the corresponding fields in the database.
+                  {dictionary.import.mapDescription}
                 </CardDescription>
               </CardHeader>
               <Card>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-1/2">File Column Header</TableHead>
-                            <TableHead className="w-1/2">Database Field</TableHead>
+                            <TableHead className="w-1/2">{dictionary.import.fileColumn}</TableHead>
+                            <TableHead className="w-1/2">{dictionary.import.dbField}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -224,7 +226,7 @@ export default function ImportPage() {
                                             <SelectValue placeholder="Select a field..." />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="ignore">-- Ignore this column --</SelectItem>
+                                            <SelectItem value="ignore">{dictionary.import.ignoreOption}</SelectItem>
                                             {MAPPABLE_FIELD_GROUPS.map(group => (
                                                 <SelectGroup key={group.label}>
                                                     <SelectLabel>{group.label}</SelectLabel>
@@ -246,18 +248,18 @@ export default function ImportPage() {
           
           <div className="pt-4">
             <CardHeader className="p-0">
-              <CardTitle>3. Import</CardTitle>
+              <CardTitle>{dictionary.import.importTitle}</CardTitle>
               <CardDescription>
-                Once columns are mapped, process the file to import the data.
+                {dictionary.import.importDescription}
               </CardDescription>
             </CardHeader>
             <Button onClick={handleImport} disabled={!file || headers.length === 0 || isParsing || isImporting} className="w-full mt-4">
-              {isImporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</> : 'Process & Import Data'}
+              {isImporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {dictionary.import.importingButton}</> : dictionary.import.importButton}
             </Button>
           </div>
           {importResult && (
             <Alert variant={importResult.errorDetails ? "destructive" : "default"}>
-                <AlertTitle>Import Result</AlertTitle>
+                <AlertTitle>{dictionary.import.importResultTitle}</AlertTitle>
                 <AlertDescription>
                    {importResult.message}
                    {importResult.errorDetails && (

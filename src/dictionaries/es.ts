@@ -1,0 +1,100 @@
+
+import { Dictionary } from './en';
+
+export const es: Dictionary = {
+  sidebar: {
+    dashboard: 'Tablero',
+    import: 'Importar',
+    templates: 'Plantillas',
+    settings: 'Configuración',
+    language: 'Idioma',
+    english: 'Inglés',
+    spanish: 'Español',
+  },
+  dashboard: {
+    title: 'Tablero de Marcas',
+    noTrademarks: 'Sus marcas aparecerán aquí una vez que se conecte a una base de datos e importe datos a través de la página de Importación.',
+    expiring30: 'Vence en 30 días',
+    expiring60: 'Vence en 60 días',
+    expiring90: 'Vence en 90 días',
+    clearFilters: 'Limpiar Filtros',
+    searchPlaceholder: 'Buscar marcas...',
+    table: {
+      trademark: 'Marca',
+      owner: 'Titular',
+      class: 'Clase',
+      expiration: 'Vencimiento',
+      contact: 'Contacto',
+      agent: 'Agente',
+      actions: 'Acciones',
+      noResults: 'No hay resultados.',
+      previous: 'Anterior',
+      next: 'Siguiente',
+    },
+     actions: {
+        generateEmail: 'Generar Correo'
+    }
+  },
+  import: {
+    title: 'Importar Marcas',
+    uploadTitle: '1. Subir Archivo Excel',
+    uploadDescription: 'Importe datos desde un archivo .xlsx. La primera fila debe contener los encabezados de las columnas.',
+    fileDrop: 'Arrastre y suelte su archivo aquí o haga clic para buscar',
+    parsingFile: 'Analizando archivo...',
+    mapTitle: '2. Mapear Columnas',
+    mapDescription: 'Haga coincidir las columnas de su archivo con los campos correspondientes en la base de datos.',
+    dbField: 'Campo de la Base de Datos',
+    fileColumn: 'Encabezado de Columna del Archivo',
+    ignoreOption: '-- Ignorar esta columna --',
+    importTitle: '3. Importar',
+    importDescription: 'Una vez que las columnas estén mapeadas, procese el archivo para importar los datos.',
+    importButton: 'Procesar e Importar Datos',
+    importingButton: 'Importando...',
+    importResultTitle: 'Resultado de la Importación'
+  },
+  templates: {
+    title: 'Plantillas de Correo',
+    createButton: 'Crear Plantilla',
+    cardTitle: 'Sus Plantillas',
+    cardDescription: 'Administre sus plantillas de correo para la comunicación con clientes.',
+    table: {
+        name: 'Nombre',
+        subject: 'Asunto',
+        lastUpdated: 'Última Actualización',
+        actions: 'Acciones',
+        noTemplates: 'No se encontraron plantillas.',
+        edit: 'Editar',
+        delete: 'Eliminar'
+    },
+    deleteDialog: {
+        title: '¿Está seguro?',
+        description: 'Esta acción no se puede deshacer. Esto eliminará permanentemente la plantilla.',
+        cancel: 'Cancelar',
+        continue: 'Continuar',
+    }
+  },
+  templateForm: {
+    createTitle: 'Crear Nueva Plantilla',
+    editTitle: 'Editar Plantilla',
+    description: 'Diseñe su plantilla de correo. Use los campos de combinación para personalizar sus correos.',
+    nameLabel: 'Nombre de la Plantilla',
+    namePlaceholder: "ej., 'Aviso de Renovación de Marca'",
+    subjectLabel: 'Asunto del Correo',
+    subjectPlaceholder: 'La Línea de Asunto',
+    bodyLabel: 'Cuerpo del Correo',
+    createButton: 'Crear Plantilla',
+    updateButton: 'Actualizar Plantilla',
+    mergeFieldsTitle: 'Campos de Combinación',
+    mergeFieldsDescription: 'Haga clic para copiar un campo de combinación a su portapapeles.',
+    copied: 'Copiado al portapapeles',
+  },
+  emailModal: {
+    title: 'Borrador de Correo Generado',
+    description: 'Revise y edite el correo generado por IA a continuación.',
+    close: 'Cerrar',
+    copy: 'Copiar HTML',
+    send: 'Enviar Correo',
+    sentToast: 'Correo Enviado (Simulado)',
+    sentToastDesc: 'Se ha enviado un correo a'
+  }
+};

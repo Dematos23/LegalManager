@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -36,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { EmailModal } from '@/components/email-modal';
+import { useLanguage } from '@/context/language-context';
 
 type TrademarkTableProps = {
   trademarks: TrademarkWithDetails[];
@@ -60,6 +62,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
   const [selectedContactEmail, setSelectedContactEmail] = React.useState('');
+  const { dictionary } = useLanguage();
 
   const handleGenerateEmail = (email: string) => {
     setSelectedContactEmail(email);
@@ -71,7 +74,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
       accessorKey: 'trademark',
       header: ({ column }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Trademark
+          {dictionary.dashboard.table.trademark}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -79,7 +82,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     },
     {
       accessorKey: 'owner.name',
-      header: 'Owner',
+      header: dictionary.dashboard.table.owner,
       cell: ({ row }) => {
         const owner = row.original.owner;
         return owner ? owner.name : 'N/A';
@@ -87,20 +90,20 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     },
     {
       accessorKey: 'class',
-      header: 'Class',
+      header: dictionary.dashboard.table.class,
     },
     {
       accessorKey: 'expiration',
       header: ({ column }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-          Expiration
+          {dictionary.dashboard.table.expiration}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
       filterFn: expirationFilterFn,
       cell: ({ row }) => {
         const expirationDate = new Date(row.getValue('expiration'));
-        if (!expirationDate) return 'N/A';
+        if (!expirationDate || isNaN(expirationDate.getTime())) return 'N/A';
         
         const daysUntilExpiration = differenceInDays(expirationDate, new Date());
         const hasExpired = isPast(expirationDate);
@@ -125,7 +128,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     },
     {
         accessorKey: 'owner.contacts',
-        header: 'Contact',
+        header: dictionary.dashboard.table.contact,
         cell: ({ row }) => {
             const contacts = row.original.owner.contacts;
             if (!contacts || contacts.length === 0) return 'N/A';
@@ -142,7 +145,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
     },
     {
         accessorKey: 'owner.contacts[0].agent.name',
-        header: 'Agent',
+        header: dictionary.dashboard.table.agent,
         cell: ({ row }) => {
             const agent = row.original.owner.contacts?.[0]?.agent;
             return agent ? agent.name : 'N/A';
@@ -164,13 +167,13 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuLabel>{dictionary.dashboard.table.actions}</DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={!contact}
                   onClick={() => handleGenerateEmail(contact.email)}
                 >
                   <Mail className="mr-2 h-4 w-4" />
-                  Generate Email
+                  {dictionary.dashboard.actions.generateEmail}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -210,16 +213,16 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
       <EmailModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} contactEmail={selectedContactEmail} />
       <div className="flex items-center justify-between">
         <Input
-          placeholder="Search trademarks..."
+          placeholder={dictionary.dashboard.searchPlaceholder}
           value={(table.getColumn('trademark')?.getFilterValue() as string) ?? ''}
           onChange={(event) => table.getColumn('trademark')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
         <div className="space-x-2">
-          <Button variant="outline" onClick={() => setExpirationFilter(30)}>Expiring in 30 days</Button>
-          <Button variant="outline" onClick={() => setExpirationFilter(60)}>Expiring in 60 days</Button>
-          <Button variant="outline" onClick={() => setExpirationFilter(90)}>Expiring in 90 days</Button>
-          <Button variant="ghost" onClick={() => table.resetColumnFilters()}>Clear Filters</Button>
+          <Button variant="outline" onClick={() => setExpirationFilter(30)}>{dictionary.dashboard.expiring30}</Button>
+          <Button variant="outline" onClick={() => setExpirationFilter(60)}>{dictionary.dashboard.expiring60}</Button>
+          <Button variant="outline" onClick={() => setExpirationFilter(90)}>{dictionary.dashboard.expiring90}</Button>
+          <Button variant="ghost" onClick={() => table.resetColumnFilters()}>{dictionary.dashboard.clearFilters}</Button>
         </div>
       </div>
       <Card>
@@ -251,7 +254,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  {dictionary.dashboard.table.noResults}
                 </TableCell>
               </TableRow>
             )}
@@ -265,7 +268,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          {dictionary.dashboard.table.previous}
         </Button>
         <Button
           variant="outline"
@@ -273,7 +276,7 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          {dictionary.dashboard.table.next}
         </Button>
       </div>
     </div>

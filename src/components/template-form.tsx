@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import {
 } from "@/app/templates/actions";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
+import { useLanguage } from "@/context/language-context";
 
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
@@ -81,6 +83,7 @@ const MERGE_FIELDS = [
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const [mounted, setMounted] = useState(false);
+  const { dictionary } = useLanguage();
 
   const form = useForm<z.infer<typeof TemplateSchema>>({
     resolver: zodResolver(TemplateSchema),
@@ -135,7 +138,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleCopy = (value: string) => {
     navigator.clipboard.writeText(value);
-    toast({ title: "Copied to clipboard", description: value });
+    toast({ title: dictionary.templateForm.copied, description: value });
   };
 
   const quillModules = {
@@ -162,11 +165,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
       <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>
-            {template ? "Edit Template" : "Create New Template"}
+            {template ? dictionary.templateForm.editTitle : dictionary.templateForm.createTitle}
           </CardTitle>
           <CardDescription>
-            Design your email template. Use the merge fields to personalize your
-            emails.
+            {dictionary.templateForm.description}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -177,10 +179,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Template Name</FormLabel>
+                    <FormLabel>{dictionary.templateForm.nameLabel}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., 'Trademark Renewal Notice'"
+                        placeholder={dictionary.templateForm.namePlaceholder}
                         {...field}
                       />
                     </FormControl>
@@ -193,9 +195,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 name="subject"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Subject</FormLabel>
+                    <FormLabel>{dictionary.templateForm.subjectLabel}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your Subject Line" {...field} />
+                      <Input placeholder={dictionary.templateForm.subjectPlaceholder} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -206,7 +208,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 name="body"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Body</FormLabel>
+                    <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                     <FormControl>
                       {mounted ? (
                         <ReactQuill
@@ -224,7 +226,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 )}
               />
               <Button type="submit">
-                {template ? "Update Template" : "Create Template"}
+                {template ? dictionary.templateForm.updateButton : dictionary.templateForm.createButton}
               </Button>
             </form>
           </Form>
@@ -233,9 +235,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
       <div className="lg:col-span-1">
         <Card>
           <CardHeader>
-            <CardTitle>Merge Fields</CardTitle>
+            <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
             <CardDescription>
-              Click to copy a merge field to your clipboard.
+              {dictionary.templateForm.mergeFieldsDescription}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
