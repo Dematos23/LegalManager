@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -28,16 +28,9 @@ import {
   createEmailTemplate,
   updateEmailTemplate,
 } from "@/app/templates/actions";
-import dynamic from "next/dynamic";
-import "react-quill/dist/quill.snow.css";
 import { useLanguage } from "@/context/language-context";
-
-const ReactQuill = dynamic(() => import("react-quill"), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
-  ),
-});
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 
 const TemplateSchema = z.object({
   name: z
@@ -50,6 +43,8 @@ const TemplateSchema = z.object({
     .string()
     .min(10, { message: "Body must be at least 10 characters long." }),
 });
+
+type TemplateFormValues = z.infer<typeof TemplateSchema>;
 
 type TemplateFormProps = {
   template?: EmailTemplate | null;
@@ -80,12 +75,58 @@ const MERGE_FIELDS = [
   },
 ];
 
+// A dedicated component to manage the Quill editor's lifecycle.
+const QuillEditor = ({ field }: { field: ControllerRenderProps<TemplateFormValues, "body"> }) => {
+  const quillInstance = useRef<Quill | null>(null);
+
+  const editorRef = useCallback((node: HTMLDivElement | null) => {
+    if (typeof window === 'undefined' || !node) return;
+
+    if (!quillInstance.current) {
+      quillInstance.current = new Quill(node, {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+            ['link'],
+            ['clean'],
+          ],
+        },
+      });
+
+      const quill = quillInstance.current;
+      quill.root.innerHTML = field.value || '';
+
+      quill.on('text-change', (delta, oldDelta, source) => {
+        if (source === 'user') {
+          let content = quill.root.innerHTML;
+          if (content === '<p><br></p>') {
+            content = '';
+          }
+          field.onChange(content);
+        }
+      });
+    }
+  }, [field]);
+
+  // Handle external value changes (e.g., from form reset)
+  useEffect(() => {
+    if (quillInstance.current && quillInstance.current.root.innerHTML !== field.value) {
+      const delta = quillInstance.current.clipboard.convert(field.value);
+      quillInstance.current.setContents(delta, 'silent');
+    }
+  }, [field.value]);
+
+  return <div ref={editorRef} />;
+}
+
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
-  const [mounted, setMounted] = useState(false);
   const { dictionary } = useLanguage();
 
-  const form = useForm<z.infer<typeof TemplateSchema>>({
+  const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
     defaultValues: {
       name: template?.name || "",
@@ -94,9 +135,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     },
   });
 
-  const [state, setState] = useState<{ errors?: any } | null>(null);
-
-  const onSubmit = async (data: z.infer<typeof TemplateSchema>) => {
+  const onSubmit = async (data: TemplateFormValues) => {
     let result;
     const formData = new FormData();
     formData.append("name", data.name);
@@ -109,24 +148,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
       result = await createEmailTemplate(formData);
     }
 
-    setState(result);
-
     if (result?.errors) {
       const { errors } = result;
-      if ("name" in errors && errors.name && Array.isArray(errors.name))
-        form.setError("name", { type: "manual", message: errors.name[0] });
-      if (
-        "subject" in errors &&
-        errors.subject &&
-        Array.isArray(errors.subject)
-      )
-        form.setError("subject", {
-          type: "manual",
-          message: errors.subject[0],
-        });
-      if ("body" in errors && errors.body && Array.isArray(errors.body))
-        form.setError("body", { type: "manual", message: errors.body[0] });
-      if ("_form" in errors && errors._form && Array.isArray(errors._form)) {
+      if (errors.name) form.setError("name", { type: "manual", message: errors.name[0] });
+      if (errors.subject) form.setError("subject", { type: "manual", message: errors.subject[0] });
+      if (errors.body) form.setError("body", { type: "manual", message: errors.body[0] });
+      if (errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -140,25 +167,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
     navigator.clipboard.writeText(value);
     toast({ title: dictionary.templateForm.copied, description: value });
   };
-
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike", "blockquote"],
-      [
-        { list: "ordered" },
-        { list: "bullet" },
-        { indent: "-1" },
-        { indent: "+1" },
-      ],
-      ["link"],
-      ["clean"],
-    ],
-  };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -210,16 +218,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
                   <FormItem>
                     <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                     <FormControl>
-                      {mounted ? (
-                        <ReactQuill
-                          theme="snow"
-                          value={field.value}
-                          onChange={field.onChange}
-                          modules={quillModules}
-                        />
-                      ) : (
-                        <div className="min-h-[500px] w-full rounded-md border border-input bg-background animate-pulse" />
-                      )}
+                      <div className="min-h-[500px] w-full rounded-md border border-input bg-background">
+                         <QuillEditor field={field} />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
