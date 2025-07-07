@@ -92,13 +92,12 @@ export default function ImportPage() {
         setHeaders(fileHeaders);
         const initialMappings: Record<string, string> = {};
         fileHeaders.forEach(header => {
-            const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const foundField = MAPPABLE_FIELDS.find(field => {
-                const normalizedLabel = field.label.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const normalizedValue = field.value.toLowerCase().replace(/[^a-z0-9]/g, '');
-                return normalizedLabel.includes(normalizedHeader) || normalizedValue.includes(normalizedHeader)
-            });
-            if(foundField) {
+            // Match 'model_field' from Excel to 'model.field' in our app
+            // e.g., "trademark_denomination" in Excel maps to "trademark.denomination"
+            const modelFieldEquivalent = header.replace('_', '.');
+            const foundField = MAPPABLE_FIELDS.find(field => field.value === modelFieldEquivalent);
+            
+            if (foundField) {
                 initialMappings[header] = foundField.value;
             }
         });
