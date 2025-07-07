@@ -14,7 +14,7 @@ const TrademarkSchema = z.object({
     (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
     z.nativeEnum(TrademarkType)
   ).optional().nullable(),
-  certificate: z.string().min(1),
+  certificate: z.coerce.string().min(1),
   expiration: z.coerce.date(),
   products: z.string().optional().nullable(),
 });
