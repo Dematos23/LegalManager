@@ -47,7 +47,7 @@ export function AppSidebar() {
           <div className="bg-primary p-2 rounded-lg">
             <Gavel className="text-primary-foreground" />
           </div>
-          <h2 className="text-lg font-semibold tracking-tighter font-headline text-sidebar-foreground">
+          <h2 className="text-lg font-semibold tracking-tighter text-sidebar-foreground">
             LegalIntel CRM
           </h2>
         </div>

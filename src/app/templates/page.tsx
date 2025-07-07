@@ -44,10 +44,15 @@ export default function TemplatesPage() {
     fetchTemplates();
   }, []);
 
+  const handleDelete = async (id: number) => {
+    await deleteEmailTemplate(id);
+    setTemplates(templates.filter(t => t.id !== id));
+  }
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">
           {dictionary.templates.title}
         </h1>
         <Link href="/templates/new">
@@ -95,44 +100,44 @@ export default function TemplatesPage() {
                     <TableCell>{template.subject}</TableCell>
                     <TableCell>{format(new Date(template.updatedAt), 'PPP')}</TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/templates/edit/${template.id}`}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              {dictionary.templates.table.edit}
-                            </Link>
-                          </DropdownMenuItem>
-                          <AlertDialog>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/templates/edit/${template.id}`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                {dictionary.templates.table.edit}
+                              </Link>
+                            </DropdownMenuItem>
                             <AlertDialogTrigger asChild>
-                               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  {dictionary.templates.table.delete}
-                               </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {dictionary.templates.table.delete}
+                              </DropdownMenuItem>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {dictionary.templates.deleteDialog.description}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
-                                <form action={deleteEmailTemplate.bind(null, template.id)}>
-                                  <AlertDialogAction type="submit">{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
-                                </form>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {dictionary.templates.deleteDialog.description}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
+                            <form action={deleteEmailTemplate.bind(null, template.id)}>
+                               <AlertDialogAction type="submit">{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
+                            </form>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))
