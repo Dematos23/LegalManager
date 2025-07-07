@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/context/language-context';
+import { MobileHeader } from '@/components/mobile-header';
 
 export const metadata: Metadata = {
   title: 'LegalIntel CRM',
@@ -29,6 +30,7 @@ export default function RootLayout({
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
+              <MobileHeader />
               {children}
             </SidebarInset>
           </SidebarProvider>
