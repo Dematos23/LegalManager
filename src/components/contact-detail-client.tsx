@@ -103,7 +103,7 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
                             : daysUntilExpiration <= 30
                             ? 'text-destructive'
                             : daysUntilExpiration <= 90
-                            ? 'text-yellow-600'
+                            ? 'text-warning'
                             : '';
 
                           return (
