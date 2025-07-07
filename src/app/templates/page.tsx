@@ -5,7 +5,7 @@ import { getEmailTemplates, deleteEmailTemplate } from './actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, MoreHorizontal, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Trash2, Edit, Send } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -22,7 +22,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/context/language-context';
 import { useState, useEffect } from 'react';
@@ -112,42 +111,50 @@ export default function TemplatesPage() {
                     >
                         <TableCell className="font-medium">{template.name}</TableCell>
                         <TableCell className="text-right">
-                          <AlertDialog>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
-                                  <span className="sr-only">Open menu</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                  <Link href={`/templates/edit/${template.id}`}>
-                                      <Edit className="mr-2 h-4 w-4" />
-                                      {dictionary.templates.table.edit}
-                                  </Link>
-                                  </DropdownMenuItem>
-                                  <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => {e.preventDefault(); e.stopPropagation();}}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        {dictionary.templates.table.delete}
+                          <div className="flex items-center justify-end gap-2">
+                            <Link href={`/templates/${template.id}/send`} passHref>
+                              <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
+                                  <Send className="mr-2 h-4 w-4" />
+                                  {dictionary.templates.table.send}
+                              </Button>
+                            </Link>
+                            <AlertDialog>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem asChild>
+                                    <Link href={`/templates/edit/${template.id}`}>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        {dictionary.templates.table.edit}
+                                    </Link>
                                     </DropdownMenuItem>
-                                  </AlertDialogTrigger>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                  {dictionary.templates.deleteDialog.description}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(template.id)}>{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <DropdownMenuItem onSelect={(e) => {e.preventDefault(); e.stopPropagation();}}>
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          {dictionary.templates.table.delete}
+                                      </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{dictionary.templates.deleteDialog.title}</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    {dictionary.templates.deleteDialog.description}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{dictionary.templates.deleteDialog.cancel}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(template.id)}>{dictionary.templates.deleteDialog.continue}</AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                     </TableRow>
                     ))

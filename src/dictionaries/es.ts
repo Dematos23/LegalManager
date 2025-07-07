@@ -67,7 +67,8 @@ export const es: Dictionary = {
         actions: 'Acciones',
         noTemplates: 'No se encontraron plantillas.',
         edit: 'Editar',
-        delete: 'Eliminar'
+        delete: 'Eliminar',
+        send: 'Enviar',
     },
     deleteDialog: {
         title: '¿Está seguro?',
@@ -114,5 +115,19 @@ export const es: Dictionary = {
     daysAgo: 'días',
     in: 'en',
     days: 'días',
+  },
+  sendTemplate: {
+    title: 'Enviar Campaña',
+    description: 'Estás usando la plantilla:',
+    filterTitle: 'Filtrar Destinatarios',
+    searchPlaceholder: 'Buscar por marca, titular, contacto o agente...',
+    recipientsTitle: 'Seleccionar Destinatarios',
+    recipientsDescription: 'Seleccione las marcas/contactos a los que se enviará esta campaña de correo.',
+    sendButton: 'Enviar Campaña a',
+    noSelectionTitle: 'No se seleccionaron destinatarios',
+    noSelectionDesc: 'Por favor, seleccione al menos un destinatario para enviar la campaña.',
+    campaignSentTitle: 'Campaña Enviada (Simulada)',
+    campaignSentDesc: 'Su campaña de correo ha sido puesta en cola para ser enviada a',
+    recipients: 'destinatarios',
   }
 };

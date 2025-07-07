@@ -65,7 +65,8 @@ export const en = {
         actions: 'Actions',
         noTemplates: 'No templates found.',
         edit: 'Edit',
-        delete: 'Delete'
+        delete: 'Delete',
+        send: 'Send',
     },
     deleteDialog: {
         title: 'Are you sure?',
@@ -112,6 +113,20 @@ export const en = {
     daysAgo: 'days ago',
     in: 'in',
     days: 'days',
+  },
+  sendTemplate: {
+    title: 'Send Campaign',
+    description: 'You are using the template:',
+    filterTitle: 'Filter Recipients',
+    searchPlaceholder: 'Search by trademark, owner, contact, or agent...',
+    recipientsTitle: 'Select Recipients',
+    recipientsDescription: 'Select the trademarks/contacts to send this email campaign to.',
+    sendButton: 'Send Campaign to',
+    noSelectionTitle: 'No Recipients Selected',
+    noSelectionDesc: 'Please select at least one recipient to send the campaign.',
+    campaignSentTitle: 'Campaign Sent (Simulated)',
+    campaignSentDesc: 'Your email campaign has been queued to be sent to',
+    recipients: 'recipients',
   }
 };
 
