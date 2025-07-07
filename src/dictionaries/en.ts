@@ -97,6 +97,19 @@ export const en = {
     send: 'Send Email',
     sentToast: 'Email Sent (Simulated)',
     sentToastDesc: 'An email has been sent to'
+  },
+  contact: {
+    title: 'Contact Profile',
+    contactDetails: 'Contact Details',
+    ownersTitle: 'Associated Owners',
+    noOwners: 'This contact is not associated with any owners.',
+    trademarksTitle: 'Trademarks',
+    noTrademarks: 'This owner has no associated trademarks.',
+    type: 'Type',
+    expired: 'Expired',
+    daysAgo: 'days ago',
+    in: 'in',
+    days: 'days',
   }
 };
 

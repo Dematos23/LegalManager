@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EmailModal } from '@/components/email-modal';
 import { useLanguage } from '@/context/language-context';
+import Link from 'next/link';
 
 type TrademarkTableProps = {
   trademarks: TrademarkWithDetails[];
@@ -134,8 +135,10 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
             if (!contacts || contacts.length === 0) return 'N/A';
             const primaryContact = contacts[0];
             return (
-            <div>
-                <div>{`${primaryContact.firstName} ${primaryContact.lastName}`}</div>
+            <div className="flex flex-col">
+                <Link href={`/contacts/${primaryContact.id}`} className="font-medium hover:underline text-primary">
+                    {`${primaryContact.firstName} ${primaryContact.lastName}`}
+                </Link>
                 <div className="text-xs text-muted-foreground">{primaryContact.email}</div>
             </div>
             );

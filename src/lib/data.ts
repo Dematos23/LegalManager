@@ -1,3 +1,4 @@
+
 import prisma from './prisma';
 import type { TrademarkWithDetails } from '@/types';
 
@@ -55,4 +56,32 @@ export async function getContactAndTrademarksForEmail(contactEmail: string) {
         console.error('Database Error:', error);
         return { error: 'Failed to fetch data for email generation.' };
     }
+}
+
+
+export async function getContactDetails(id: number) {
+  try {
+    const contact = await prisma.contact.findUnique({
+      where: { id },
+      include: {
+        agent: true,
+        owners: {
+          include: {
+            trademarks: {
+              orderBy: {
+                expiration: 'asc',
+              },
+            },
+          },
+          orderBy: {
+            name: 'asc'
+          }
+        },
+      },
+    });
+    return contact;
+  } catch (error) {
+    console.error('Database Error:', error);
+    return null;
+  }
 }

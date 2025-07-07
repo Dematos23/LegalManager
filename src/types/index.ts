@@ -1,3 +1,4 @@
+
 import type { Trademark, Owner, Contact, Agent } from '@prisma/client';
 
 // Re-export all types from Prisma Client
@@ -11,4 +12,12 @@ export type TrademarkWithDetails = Trademark & {
       agent: Agent;
     })[];
   };
+};
+
+// Define a composite type for the Contact detail view.
+export type ContactWithDetails = Contact & {
+  agent: Agent;
+  owners: (Owner & {
+    trademarks: Trademark[];
+  })[];
 };

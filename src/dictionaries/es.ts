@@ -99,5 +99,18 @@ export const es: Dictionary = {
     send: 'Enviar Correo',
     sentToast: 'Correo Enviado (Simulado)',
     sentToastDesc: 'Se ha enviado un correo a'
+  },
+  contact: {
+    title: 'Perfil de Contacto',
+    contactDetails: 'Detalles de Contacto',
+    ownersTitle: 'Titulares Asociados',
+    noOwners: 'Este contacto no está asociado con ningún titular.',
+    trademarksTitle: 'Marcas',
+    noTrademarks: 'Este titular no tiene marcas asociadas.',
+    type: 'Tipo',
+    expired: 'Vencido hace',
+    daysAgo: 'días',
+    in: 'en',
+    days: 'días',
   }
 };
