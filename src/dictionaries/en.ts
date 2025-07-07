@@ -16,9 +16,9 @@ export const en = {
     expiring60: 'Expiring in 60 days',
     expiring90: 'Expiring in 90 days',
     clearFilters: 'Clear Filters',
-    searchPlaceholder: 'Search trademarks...',
+    searchPlaceholder: 'Search denominations...',
     table: {
-      trademark: 'Trademark',
+      trademark: 'Denomination',
       owner: 'Owner',
       class: 'Class',
       expiration: 'Expiration',

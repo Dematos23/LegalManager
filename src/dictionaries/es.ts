@@ -18,9 +18,9 @@ export const es: Dictionary = {
     expiring60: 'Vence en 60 días',
     expiring90: 'Vence en 90 días',
     clearFilters: 'Limpiar Filtros',
-    searchPlaceholder: 'Buscar marcas...',
+    searchPlaceholder: 'Buscar denominaciones...',
     table: {
-      trademark: 'Marca',
+      trademark: 'Denominación',
       owner: 'Titular',
       class: 'Clase',
       expiration: 'Vencimiento',

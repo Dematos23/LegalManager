@@ -1,3 +1,4 @@
+
 // use server'
 
 /**
@@ -12,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const TrademarkSchema = z.object({
-  trademark: z.string(),
+  denomination: z.string(),
   class: z.string(),
   certificate: z.string(),
   expiration: z.string(),
@@ -65,7 +66,7 @@ const prompt = ai.definePrompt({
 
   Trademarks:
   {{#each trademarks}}
-  - Trademark: {{{trademark}}}, Class: {{{class}}}, Certificate: {{{certificate}}}, Expiration: {{{expiration}}}
+  - Denomination: {{{denomination}}}, Class: {{{class}}}, Certificate: {{{certificate}}}, Expiration: {{{expiration}}}
   {{/each}}
 
   CRM Data: {{{crmData}}}

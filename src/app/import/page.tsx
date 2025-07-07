@@ -40,7 +40,7 @@ const MAPPABLE_FIELD_GROUPS = [
   {
     label: 'Trademark',
     fields: [
-      { value: 'trademark.trademark', label: 'Name' },
+      { value: 'trademark.denomination', label: 'Denomination' },
       { value: 'trademark.class', label: 'Class (1-45)' },
       { value: 'trademark.type', label: 'Type (WORD, FIGURATIVE, MIXED)' },
       { value: 'trademark.certificate', label: 'Certificate' },

@@ -71,14 +71,14 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
 
   const columns: ColumnDef<TrademarkWithDetails>[] = [
     {
-      accessorKey: 'trademark',
+      accessorKey: 'denomination',
       header: ({ column }) => (
         <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
           {dictionary.dashboard.table.trademark}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="font-medium">{row.getValue('trademark')}</div>,
+      cell: ({ row }) => <div className="font-medium">{row.getValue('denomination')}</div>,
     },
     {
       accessorKey: 'owner.name',
@@ -214,8 +214,8 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
       <div className="flex items-center justify-between">
         <Input
           placeholder={dictionary.dashboard.searchPlaceholder}
-          value={(table.getColumn('trademark')?.getFilterValue() as string) ?? ''}
-          onChange={(event) => table.getColumn('trademark')?.setFilterValue(event.target.value)}
+          value={(table.getColumn('denomination')?.getFilterValue() as string) ?? ''}
+          onChange={(event) => table.getColumn('denomination')?.setFilterValue(event.target.value)}
           className="max-w-sm"
         />
         <div className="space-x-2">

@@ -8,7 +8,7 @@ import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 
 // Define schemas for validation
 const TrademarkSchema = z.object({
-  trademark: z.string().min(1),
+  denomination: z.string().min(1),
   class: z.coerce.number().int().min(1).max(45),
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1),
@@ -113,7 +113,7 @@ export async function importDataAction(formData: FormData) {
           
           const expirationValue = getVal('trademark', 'expiration');
           const trademarkData = TrademarkSchema.parse({
-              trademark: getVal('trademark', 'trademark'),
+              denomination: getVal('trademark', 'denomination'),
               class: getVal('trademark', 'class'),
               type: getVal('trademark', 'type')?.toUpperCase(),
               certificate: getVal('trademark', 'certificate'),

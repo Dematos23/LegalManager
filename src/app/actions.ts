@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateTrademarkEmailDraft } from '@/ai/flows/generate-trademark-email-draft';
@@ -24,7 +25,7 @@ export async function generateEmailAction(payload: GenerateEmailPayload) {
         email: contact.email,
     },
     trademarks: trademarks.map(tm => ({
-        trademark: tm.trademark,
+        denomination: tm.denomination,
         class: String(tm.class),
         certificate: tm.certificate,
         expiration: format(tm.expiration, 'yyyy-MM-dd'),
