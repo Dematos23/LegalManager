@@ -48,7 +48,10 @@ export const en = {
     importDescription: 'Once columns are mapped, process the file to import the data.',
     importButton: 'Process & Import Data',
     importingButton: 'Importing...',
-    importResultTitle: 'Import Result'
+    importResultTitle: 'Import Result',
+    copyErrors: 'Copy Errors',
+    errorsCopiedTitle: 'Copied',
+    errorsCopiedDescription: 'Error details have been copied to your clipboard.',
   },
   templates: {
     title: 'Email Templates',

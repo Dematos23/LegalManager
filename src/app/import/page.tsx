@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, Loader2, Copy } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import * as XLSX from 'xlsx';
 import { importDataAction } from './actions';
@@ -262,9 +261,26 @@ export default function ImportPage() {
                 <AlertDescription>
                    {importResult.message}
                    {importResult.errorDetails && (
-                       <pre className="mt-2 w-full overflow-x-auto rounded-md bg-slate-950 p-4 max-h-60">
-                           <code className="text-white">{JSON.stringify(importResult.errorDetails, null, 2)}</code>
-                       </pre>
+                       <div className="space-y-2 mt-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                                navigator.clipboard.writeText(JSON.stringify(importResult.errorDetails, null, 2));
+                                toast({
+                                    title: dictionary.import.errorsCopiedTitle,
+                                    description: dictionary.import.errorsCopiedDescription
+                                });
+                            }}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            {dictionary.import.copyErrors}
+                          </Button>
+                          <pre className="w-full overflow-x-auto rounded-md bg-slate-950 p-4 max-h-60">
+                              <code className="text-white">{JSON.stringify(importResult.errorDetails, null, 2)}</code>
+                          </pre>
+                       </div>
                    )}
                 </AlertDescription>
             </Alert>

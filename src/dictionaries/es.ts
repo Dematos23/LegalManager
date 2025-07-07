@@ -50,7 +50,10 @@ export const es: Dictionary = {
     importDescription: 'Una vez que las columnas estén mapeadas, procese el archivo para importar los datos.',
     importButton: 'Procesar e Importar Datos',
     importingButton: 'Importando...',
-    importResultTitle: 'Resultado de la Importación'
+    importResultTitle: 'Resultado de la Importación',
+    copyErrors: 'Copiar Errores',
+    errorsCopiedTitle: 'Copiado',
+    errorsCopiedDescription: 'Los detalles de los errores han sido copiados a su portapapeles.',
   },
   templates: {
     title: 'Plantillas de Correo',
