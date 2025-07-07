@@ -8,7 +8,6 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarContent,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -17,12 +16,21 @@ import {
   Settings,
   Gavel,
   LayoutTemplate,
+  Languages,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [language, setLanguage] = useState('Spanish');
 
   const isActive = (path: string) => {
     // Exact match for root, partial for others
@@ -80,6 +88,24 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton tooltip={{ children: 'Language', side: 'right', align: 'center' }}>
+                  <Languages />
+                  <span>{language}</span>
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start">
+                <DropdownMenuItem onSelect={() => setLanguage('English')}>
+                  English
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setLanguage('Spanish')}>
+                  Spanish
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={{ children: 'Settings' }}>
               <Settings />
