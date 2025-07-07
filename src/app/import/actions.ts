@@ -6,11 +6,14 @@ import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 
-// Define schemas for validation
+// Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
   denomination: z.string().min(1),
   class: z.coerce.number().int().min(1).max(45),
-  type: z.nativeEnum(TrademarkType),
+  type: z.preprocess(
+    (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
+    z.nativeEnum(TrademarkType)
+  ).optional().nullable(),
   certificate: z.string().min(1),
   expiration: z.coerce.date(),
   products: z.string().optional().nullable(),
@@ -22,8 +25,8 @@ const OwnerSchema = z.object({
 });
 
 const ContactSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
+  firstName: z.string().optional().nullable(),
+  lastName: z.string().optional().nullable(),
   email: z.string().email(),
 });
 
@@ -137,7 +140,7 @@ export async function importDataAction(formData: FormData) {
           const trademarkData = TrademarkSchema.parse({
               denomination: getValue('trademark.denomination'),
               class: getValue('trademark.class'),
-              type: getValue('trademark.type')?.toUpperCase(),
+              type: getValue('trademark.type'),
               certificate: getValue('trademark.certificate'),
               expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
               products: getValue('trademark.products'),
