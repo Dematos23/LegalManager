@@ -3,7 +3,9 @@
 
 import { generateTrademarkEmailDraft } from '@/ai/flows/generate-trademark-email-draft';
 import { getContactAndTrademarksForEmail } from '@/lib/data';
+import prisma from '@/lib/prisma';
 import { format } from 'date-fns';
+import { revalidatePath } from 'next/cache';
 
 interface GenerateEmailPayload {
   contactEmail: string;
@@ -40,4 +42,20 @@ export async function generateEmailAction(payload: GenerateEmailPayload) {
     console.error("AI email generation failed:", error);
     return { error: 'Failed to generate email draft with AI.' };
   }
+}
+
+export async function deleteAllDataAction() {
+    try {
+      await prisma.$transaction([
+        prisma.trademark.deleteMany({}),
+        prisma.contact.deleteMany({}),
+        prisma.owner.deleteMany({}),
+        prisma.agent.deleteMany({}),
+      ]);
+      revalidatePath('/');
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to delete all data:', error);
+      return { success: false, error: 'An unexpected error occurred while deleting data.' };
+    }
 }
