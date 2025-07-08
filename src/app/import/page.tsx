@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ const MAPPABLE_FIELD_GROUPS = [
     fields: [
       { value: 'trademark.denomination', label: 'Denomination' },
       { value: 'trademark.class', label: 'Class (1-45)' },
-      { value: 'trademark.type', label: 'Type (WORD, FIGURATIVE, MIXED)' },
+      { value: 'trademark.type', label: 'Type (NOMINATIVE, FIGURATIVE, MIXED)' },
       { value: 'trademark.certificate', label: 'Certificate' },
       { value: 'trademark.expiration', label: 'Expiration Date (YYYY-MM-DD)' },
       { value: 'trademark.products', label: 'Products' },

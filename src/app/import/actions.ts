@@ -25,8 +25,8 @@ const OwnerSchema = z.object({
 });
 
 const ContactSchema = z.object({
-  firstName: z.string().optional().nullable(),
-  lastName: z.string().optional().nullable(),
+  firstName: z.string().min(1, 'First name is required.'),
+  lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().email(),
 });
 

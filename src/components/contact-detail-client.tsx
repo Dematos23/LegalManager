@@ -17,7 +17,7 @@ type ContactDetailClientProps = {
 
 export function ContactDetailClient({ contact }: ContactDetailClientProps) {
   const { dictionary } = useLanguage();
-  const initials = `${contact.firstName?.[0] ?? ''}${contact.lastName?.[0] ?? ''}`.toUpperCase();
+  const initials = `${contact.firstName[0]}${contact.lastName[0]}`.toUpperCase();
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
