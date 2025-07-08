@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -76,7 +77,7 @@ const MERGE_FIELDS = [
     group: "Trademarks (Loop)",
     fields: [
       { name: "Start Loop", value: "{{#each trademarks}}" },
-      { name: "Trademark Name", value: "{{{trademark}}}" },
+      { name: "Trademark Name", value: "{{{denomination}}}" },
       { name: "Class", value: "{{{class}}}" },
       { name: "Certificate", value: "{{{certificate}}}" },
       { name: "Expiration Date", value: "{{{expiration}}}" },
@@ -232,9 +233,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
       },
       trademarks: [
         {
-          trademark: selectedTrademark.denomination,
-          class: selectedTrademark.class,
-          certificate: selectedTrademark.certificate,
+          ...selectedTrademark,
           expiration: format(
             new Date(selectedTrademark.expiration),
             "yyyy-MM-dd"
