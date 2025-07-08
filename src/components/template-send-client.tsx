@@ -203,6 +203,14 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
             );
         },
     },
+    {
+        id: 'expirationYear',
+        accessorKey: 'expiration',
+        filterFn: yearFilterFn,
+        header: () => null,
+        cell: () => null,
+        enableHiding: true,
+    },
   ];
 
   const table = useReactTable({
@@ -350,5 +358,3 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
     </div>
   );
 }
-
-    

@@ -31,6 +31,13 @@ import {
     FilterFn,
     GlobalFilterFn,
   } from '@tanstack/react-table';
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuItem
+} from '@/components/ui/dropdown-menu';
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -219,7 +226,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
                 <DropdownMenuLabel>{dictionary.dashboard.table.actions}</DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={!contact}
-                  onClick={() => handleGenerateEmail(contact.email)}
+                  onClick={() => contact && handleGenerateEmail(contact.email)}
                 >
                   <Mail className="mr-2 h-4 w-4" />
                   {dictionary.dashboard.actions.generateEmail}
@@ -229,6 +236,14 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
           );
         },
     },
+    {
+        id: 'expirationYear',
+        accessorKey: 'expiration',
+        filterFn: yearFilterFn,
+        header: () => null,
+        cell: () => null,
+        enableHiding: true,
+    }
   ], [dictionary, handleGenerateEmail]);
 
   const table = useReactTable({
@@ -257,7 +272,6 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
                 title: dictionary.dashboard.deleteAll.successTitle,
                 description: dictionary.dashboard.deleteAll.successDescription,
             });
-            // A full page reload might be better here to ensure all state is cleared
             window.location.reload();
         } else {
             toast({
@@ -348,5 +362,3 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     </div>
   );
 }
-
-    

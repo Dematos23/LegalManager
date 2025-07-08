@@ -79,8 +79,8 @@ export function TrademarkFilters({ table, agentAreas, expirationYears }: Tradema
 
           {/* Expiration Year Filter */}
           <Select
-            value={(table.getColumn('expiration')?.getFilterValue() as string) ?? ''}
-            onValueChange={(value) => table.getColumn('expiration')?.setFilterValue(value === 'all' ? null : value)}
+            value={(table.getColumn('expirationYear')?.getFilterValue() as string) ?? ''}
+            onValueChange={(value) => table.getColumn('expirationYear')?.setFilterValue(value === 'all' ? null : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder={dictionary.dashboard.yearFilterLabel} />
@@ -104,5 +104,3 @@ export function TrademarkFilters({ table, agentAreas, expirationYears }: Tradema
     </Card>
   );
 }
-
-    
