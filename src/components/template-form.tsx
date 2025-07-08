@@ -535,41 +535,44 @@ export function TemplateForm({ template }: TemplateFormProps) {
           )}
         </CardContent>
       </Card>
-      {viewMode === "edit" && (
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
-              <CardDescription>
-                {dictionary.templateForm.mergeFieldsDescription}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {MERGE_FIELDS.map((group) => (
-                <div key={group.group}>
-                  <h4 className="font-semibold mb-2 text-sm">{group.group}</h4>
-                  <div className="space-y-2">
-                    {group.fields.map((field) => (
-                      <Button
-                        key={field.name}
-                        variant="outline"
-                        size="sm"
-                        className="w-full justify-between"
-                        onClick={() => handleCopy(field.value)}
-                      >
-                        <span>{field.name}</span>
-                        <span className="font-code text-xs text-muted-foreground">
-                          {field.value}
-                        </span>
-                      </Button>
-                    ))}
-                  </div>
+      <div
+        className={cn(
+          "lg:col-span-1",
+          viewMode === "preview" && "hidden"
+        )}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
+            <CardDescription>
+              {dictionary.templateForm.mergeFieldsDescription}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {MERGE_FIELDS.map((group) => (
+              <div key={group.group}>
+                <h4 className="font-semibold mb-2 text-sm">{group.group}</h4>
+                <div className="space-y-2">
+                  {group.fields.map((field) => (
+                    <Button
+                      key={field.name}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-between"
+                      onClick={() => handleCopy(field.value)}
+                    >
+                      <span>{field.name}</span>
+                      <span className="font-code text-xs text-muted-foreground">
+                        {field.value}
+                      </span>
+                    </Button>
+                  ))}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
