@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -221,49 +221,47 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const templateBody = form.watch("body");
   const templateSubject = form.watch("subject");
 
-  const getRenderedPreview = () => {
-    if (viewMode === "edit" || !selectedContact || !selectedTrademark) {
-      return { subject: "", body: "" };
+  const renderedPreview = useMemo(() => {
+    if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedTrademark) {
+      return { subject: '', body: '' };
     }
 
     const context = {
       contact: {
-        name: `${selectedContact.firstName} ${selectedContact.lastName}`,
+        name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
         email: selectedContact.email,
       },
-      trademarks: [
-        {
-          ...selectedTrademark,
-          expiration: format(
-            new Date(selectedTrademark.expiration),
-            "yyyy-MM-dd"
-          ),
-        },
-      ],
-      crmData: `Contact since ${format(
-        new Date(selectedContact.createdAt),
-        "yyyy-MM-dd"
-      )}. Associated with agent: ${selectedAgent?.name ?? ""}.`,
+      trademarks: [{
+        ...selectedTrademark,
+        class: String(selectedTrademark.class),
+        expiration: format(new Date(selectedTrademark.expiration), 'yyyy-MM-dd'),
+      }],
+      crmData: `Contact since ${format(new Date(selectedContact.createdAt), 'yyyy-MM-dd')}. Associated with agent: ${selectedAgent.name}.`,
     };
 
     try {
-      const bodyTemplate = Handlebars.compile(templateBody || "");
-      const subjectTemplate = Handlebars.compile(templateSubject || "");
+      const subjectTemplate = Handlebars.compile(templateSubject || '');
+      const bodyTemplate = Handlebars.compile(templateBody || '');
       return {
         subject: subjectTemplate(context),
         body: bodyTemplate(context),
       };
     } catch (e) {
       console.error("Template rendering error:", e);
-      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error.';
       return {
-        subject: "Error rendering subject",
+        subject: 'Error rendering subject',
         body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`,
       };
     }
-  };
-
-  const renderedPreview = getRenderedPreview();
+  }, [
+    viewMode,
+    selectedAgent,
+    selectedContact,
+    selectedTrademark,
+    templateSubject,
+    templateBody,
+  ]);
 
   const onSubmit = async (data: TemplateFormValues) => {
     let result;
