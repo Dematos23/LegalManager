@@ -33,6 +33,7 @@ const ContactSchema = z.object({
 const AgentSchema = z.object({
   name: z.string().min(1),
   country: z.nativeEnum(Country),
+  area: z.string().optional().nullable(),
 });
 
 export async function importDataAction(formData: FormData) {
@@ -94,6 +95,7 @@ export async function importDataAction(formData: FormData) {
             const agentData = AgentSchema.parse({
               name: agentName,
               country: getCountryEnumValue(agentCountryForDb),
+              area: getValue('agent.area'),
             });
             agent = await tx.agent.upsert({
               where: { name: agentData.name },
@@ -141,7 +143,7 @@ export async function importDataAction(formData: FormData) {
               denomination: getValue('trademark.denomination'),
               class: getValue('trademark.class'),
               type: getValue('trademark.type'),
-              certificate: getValue('trademark.certificate'),
+              certificate: String(getValue('trademark.certificate')),
               expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
               products: getValue('trademark.products'),
           });

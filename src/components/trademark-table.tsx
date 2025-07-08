@@ -151,7 +151,13 @@ export function TrademarkTable({ trademarks }: TrademarkTableProps) {
         header: dictionary.dashboard.table.agent,
         cell: ({ row }) => {
             const agent = row.original.owner.contacts?.[0]?.agent;
-            return agent ? agent.name : 'N/A';
+            if (!agent) return 'N/A';
+            return (
+                <div className="flex flex-col">
+                    <span>{agent.name}</span>
+                    {agent.area && <span className="text-xs text-muted-foreground">{agent.area}</span>}
+                </div>
+            );
         },
         enableSorting: false,
         enableColumnFilter: false,

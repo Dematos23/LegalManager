@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Briefcase, Building, Globe } from 'lucide-react';
+import { Mail, Briefcase, Building, Globe, Network } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +51,12 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
               <Briefcase className="h-5 w-5 text-muted-foreground" />
               <span className="text-sm">{contact.agent.name}</span>
             </div>
+            {contact.agent.area && (
+              <div className="flex items-center gap-3">
+                <Network className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm">{contact.agent.area}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 

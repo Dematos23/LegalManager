@@ -19,6 +19,7 @@ const MAPPABLE_FIELD_GROUPS = [
     fields: [
       { value: 'agent.name', label: 'Name' },
       { value: 'agent.country', label: 'Country' },
+      { value: 'agent.area', label: 'Area' },
     ]
   },
   {
