@@ -30,6 +30,7 @@ import {
     useReactTable,
     ColumnFiltersState,
     FilterFn,
+    Row,
   } from '@tanstack/react-table';
 import {
     DropdownMenu,
@@ -44,20 +45,21 @@ import Link from 'next/link';
 import { EmailModal } from '@/components/email-modal';
 import { TrademarkFilters } from '@/components/trademark-filters';
 
-const globalFilterFn = (row: any, columnId: string, value: string, addMeta: any) => {
-    const trademark = row.original as TrademarkWithDetails;
-    const search = value.toLowerCase();
+const globalFilterFn: FilterFn<TrademarkWithDetails> = (row: Row<TrademarkWithDetails>, columnId: string, value: string) => {
+    const trademark = row.original;
+    const search = String(value).toLowerCase();
 
     const flatString = [
         trademark.denomination,
         trademark.owner.name,
         trademark.class.toString(),
         trademark.certificate,
-        ...trademark.owner.contacts.flatMap((c: any) => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
+        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
     ].filter(Boolean).join(' ').toLowerCase();
 
     return flatString.includes(search);
 }
+
 const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     const expiration = row.getValue(columnId) as Date;
     if (!value) return true;

@@ -74,11 +74,13 @@ const yearFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
 
 const globalFilterFn: GlobalFilterFn<any> = (row, columnId, value, addMeta) => {
     const trademark = row.original as TrademarkWithDetails;
-    const search = value.toLowerCase();
+    const search = String(value).toLowerCase();
 
     const flatString = [
         trademark.denomination,
         trademark.owner.name,
+        trademark.class.toString(),
+        trademark.certificate,
         ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
     ].filter(Boolean).join(' ').toLowerCase();
     
