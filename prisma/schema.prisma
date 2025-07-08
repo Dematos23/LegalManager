@@ -12,6 +12,7 @@ model Agent {
   id        Int       @id @default(autoincrement())
   name      String    @unique
   country   Country?
+  area      AREA
   contacts  Contact[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -81,6 +82,11 @@ model EmailTemplate {
   body      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum AREA {
+  LCD
+  ACD
 }
 
 enum TrademarkType {
