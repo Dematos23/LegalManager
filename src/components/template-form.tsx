@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -33,8 +32,14 @@ import { useLanguage } from "@/context/language-context";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import { Eye, Code, Loader2 } from "lucide-react";
-import * as Handlebars from 'handlebars';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import * as Handlebars from "handlebars";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
 
@@ -51,7 +56,9 @@ const TemplateSchema = z.object({
 });
 
 type TemplateFormValues = z.infer<typeof TemplateSchema>;
-type AgentWithNestedData = Awaited<ReturnType<typeof getTemplatePreviewData>>[0];
+type AgentWithNestedData = Awaited<
+  ReturnType<typeof getTemplatePreviewData>
+>[0];
 
 type TemplateFormProps = {
   template?: EmailTemplate | null;
@@ -82,62 +89,77 @@ const MERGE_FIELDS = [
   },
 ];
 
-const QuillEditor = ({ field }: { field: ControllerRenderProps<TemplateFormValues, "body"> }) => {
+const QuillEditor = ({
+  field,
+}: {
+  field: ControllerRenderProps<TemplateFormValues, "body">;
+}) => {
   const quillInstance = useRef<Quill | null>(null);
 
-  const editorRef = useCallback((node: HTMLDivElement | null) => {
-    if (typeof window === 'undefined' || !node) return;
+  const editorRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (typeof window === "undefined" || !node) return;
 
-    if (!quillInstance.current) {
-      quillInstance.current = new Quill(node, {
-        theme: 'snow',
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-            ['link'],
-            ['clean'],
-          ],
-        },
-      });
+      if (!quillInstance.current) {
+        quillInstance.current = new Quill(node, {
+          theme: "snow",
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline", "strike", "blockquote"],
+              [
+                { list: "ordered" },
+                { list: "bullet" },
+                { indent: "-1" },
+                { indent: "+1" },
+              ],
+              ["link"],
+              ["clean"],
+            ],
+          },
+        });
 
-      const quill = quillInstance.current;
-      quill.root.innerHTML = field.value || '';
+        const quill = quillInstance.current;
+        quill.root.innerHTML = field.value || "";
 
-      quill.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
-          let content = quill.root.innerHTML;
-          if (content === '<p><br></p>') {
-            content = '';
+        quill.on("text-change", (delta, oldDelta, source) => {
+          if (source === "user") {
+            let content = quill.root.innerHTML;
+            if (content === "<p><br></p>") {
+              content = "";
+            }
+            field.onChange(content);
           }
-          field.onChange(content);
-        }
-      });
-    }
-  }, [field]);
+        });
+      }
+    },
+    [field]
+  );
 
   useEffect(() => {
-    if (quillInstance.current && quillInstance.current.root.innerHTML !== field.value) {
+    if (
+      quillInstance.current &&
+      quillInstance.current.root.innerHTML !== field.value
+    ) {
       const delta = quillInstance.current.clipboard.convert(field.value);
-      quillInstance.current.setContents(delta, 'silent');
+      quillInstance.current.setContents(delta, "silent");
     }
   }, [field.value]);
 
   return <div ref={editorRef} />;
-}
+};
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
-  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [previewData, setPreviewData] = useState<AgentWithNestedData[]>([]);
   const [isLoadingPreviewData, setIsLoadingPreviewData] = useState(true);
-  
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
-  const [selectedContactId, setSelectedContactId] = useState<string>('');
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
-  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>('');
+
+  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
+  const [selectedContactId, setSelectedContactId] = useState<string>("");
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
+  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>("");
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -154,62 +176,91 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const data = await getTemplatePreviewData();
         setPreviewData(data);
       } catch (error) {
-        toast({ title: "Error", description: "Could not load preview data.", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "Could not load preview data.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoadingPreviewData(false);
       }
     }
     fetchData();
   }, [toast]);
-  
-  const selectedAgent = previewData.find(a => a.id === Number(selectedAgentId));
+
+  const selectedAgent = previewData.find(
+    (a) => a.id === Number(selectedAgentId)
+  );
   const availableContacts = selectedAgent?.contacts || [];
-  
-  const selectedContact = availableContacts.find(c => c.id === Number(selectedContactId));
+
+  const selectedContact = availableContacts.find(
+    (c) => c.id === Number(selectedContactId)
+  );
   const availableOwners = selectedContact?.owners || [];
 
-  const selectedOwner = availableOwners.find(o => o.id === Number(selectedOwnerId));
+  const selectedOwner = availableOwners.find(
+    (o) => o.id === Number(selectedOwnerId)
+  );
   const availableTrademarks = selectedOwner?.trademarks || [];
-  
-  const selectedTrademark = availableTrademarks.find(t => t.id === Number(selectedTrademarkId));
 
-  useEffect(() => { setSelectedContactId(''); }, [selectedAgentId]);
-  useEffect(() => { setSelectedOwnerId(''); }, [selectedContactId]);
-  useEffect(() => { setSelectedTrademarkId(''); }, [selectedOwnerId]);
+  const selectedTrademark = availableTrademarks.find(
+    (t) => t.id === Number(selectedTrademarkId)
+  );
 
-  const templateBody = form.watch('body');
-  const templateSubject = form.watch('subject');
+  useEffect(() => {
+    setSelectedContactId("");
+  }, [selectedAgentId]);
+  useEffect(() => {
+    setSelectedOwnerId("");
+  }, [selectedContactId]);
+  useEffect(() => {
+    setSelectedTrademarkId("");
+  }, [selectedOwnerId]);
+
+  const templateBody = form.watch("body");
+  const templateSubject = form.watch("subject");
 
   const getRenderedPreview = () => {
-    if (viewMode === 'edit' || !selectedContact || !selectedTrademark) {
-      return { subject: '', body: '' };
+    if (viewMode === "edit" || !selectedContact || !selectedTrademark) {
+      return { subject: "", body: "" };
     }
-    
+
     const context = {
-        contact: {
-            name: `${selectedContact.firstName} ${selectedContact.lastName}`,
-            email: selectedContact.email,
+      contact: {
+        name: `${selectedContact.firstName} ${selectedContact.lastName}`,
+        email: selectedContact.email,
+      },
+      trademarks: [
+        {
+          trademark: selectedTrademark.denomination,
+          class: selectedTrademark.class,
+          certificate: selectedTrademark.certificate,
+          expiration: format(
+            new Date(selectedTrademark.expiration),
+            "yyyy-MM-dd"
+          ),
         },
-        trademarks: [{
-            trademark: selectedTrademark.denomination,
-            class: selectedTrademark.class,
-            certificate: selectedTrademark.certificate,
-            expiration: format(new Date(selectedTrademark.expiration), 'yyyy-MM-dd')
-        }],
-        crmData: `Contact since ${format(new Date(selectedContact.createdAt), 'yyyy-MM-dd')}. Associated with agent: ${selectedContact.agent.name}.`
+      ],
+      crmData: `Contact since ${format(
+        new Date(selectedContact.createdAt),
+        "yyyy-MM-dd"
+      )}. Associated with agent: ${selectedAgent?.name ?? ""}.`,
     };
-    
+
     try {
-        const bodyTemplate = Handlebars.compile(templateBody || '');
-        const subjectTemplate = Handlebars.compile(templateSubject || '');
-        return {
-          subject: subjectTemplate(context),
-          body: bodyTemplate(context)
-        };
+      const bodyTemplate = Handlebars.compile(templateBody || "");
+      const subjectTemplate = Handlebars.compile(templateSubject || "");
+      return {
+        subject: subjectTemplate(context),
+        body: bodyTemplate(context),
+      };
     } catch (e) {
-        console.error("Template rendering error:", e);
-        const errorMessage = e instanceof Error ? e.message : "Unknown error.";
-        return { subject: 'Error rendering subject', body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>` };
+      console.error("Template rendering error:", e);
+      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
+      return {
+        subject: "Error rendering subject",
+        body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`,
+      };
     }
   };
 
@@ -230,9 +281,15 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if (errors.name) form.setError("name", { type: "manual", message: errors.name[0] });
-      if (errors.subject) form.setError("subject", { type: "manual", message: errors.subject[0] });
-      if (errors.body) form.setError("body", { type: "manual", message: errors.body[0] });
+      if (errors.name)
+        form.setError("name", { type: "manual", message: errors.name[0] });
+      if (errors.subject)
+        form.setError("subject", {
+          type: "manual",
+          message: errors.subject[0],
+        });
+      if (errors.body)
+        form.setError("body", { type: "manual", message: errors.body[0] });
       if (errors._form) {
         toast({
           title: "Error",
@@ -255,7 +312,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
           <div className="flex justify-between items-start">
             <div>
               <CardTitle>
-                {template ? dictionary.templateForm.editTitle : dictionary.templateForm.createTitle}
+                {template
+                  ? dictionary.templateForm.editTitle
+                  : dictionary.templateForm.createTitle}
               </CardTitle>
               <CardDescription>
                 {dictionary.templateForm.description}
@@ -263,20 +322,31 @@ export function TemplateForm({ template }: TemplateFormProps) {
             </div>
             <Button
               variant="outline"
-              onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
+              onClick={() =>
+                setViewMode(viewMode === "edit" ? "preview" : "edit")
+              }
             >
-              {viewMode === 'edit' ? (
-                <><Eye className="mr-2" />{dictionary.templateForm.previewButton}</>
+              {viewMode === "edit" ? (
+                <>
+                  <Eye className="mr-2" />
+                  {dictionary.templateForm.previewButton}
+                </>
               ) : (
-                <><Code className="mr-2" />{dictionary.templateForm.backToEditorButton}</>
+                <>
+                  <Code className="mr-2" />
+                  {dictionary.templateForm.backToEditorButton}
+                </>
               )}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {viewMode === 'edit' ? (
+          {viewMode === "edit" ? (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-8"
+              >
                 <FormField
                   control={form.control}
                   name="name"
@@ -298,9 +368,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
                   name="subject"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{dictionary.templateForm.subjectLabel}</FormLabel>
+                      <FormLabel>
+                        {dictionary.templateForm.subjectLabel}
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder={dictionary.templateForm.subjectPlaceholder} {...field} />
+                        <Input
+                          placeholder={
+                            dictionary.templateForm.subjectPlaceholder
+                          }
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -322,74 +399,134 @@ export function TemplateForm({ template }: TemplateFormProps) {
                   )}
                 />
                 <Button type="submit">
-                  {template ? dictionary.templateForm.updateButton : dictionary.templateForm.createButton}
+                  {template
+                    ? dictionary.templateForm.updateButton
+                    : dictionary.templateForm.createButton}
                 </Button>
               </form>
             </Form>
           ) : (
-             <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">{dictionary.templateForm.previewDataTitle}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {isLoadingPreviewData ? (
-                            <div className="flex items-center space-x-2">
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                <span>Loading preview data...</span>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectAgent} /></SelectTrigger>
-                                    <SelectContent>
-                                        {previewData.map(agent => <SelectItem key={agent.id} value={String(agent.id)}>{agent.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedContactId} onValueChange={setSelectedContactId} disabled={!selectedAgentId}>
-                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectContact} /></SelectTrigger>
-                                    <SelectContent>
-                                        {availableContacts.map(contact => <SelectItem key={contact.id} value={String(contact.id)}>{contact.firstName} {contact.lastName}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId} disabled={!selectedContactId}>
-                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectOwner} /></SelectTrigger>
-                                    <SelectContent>
-                                        {availableOwners.map(owner => <SelectItem key={owner.id} value={String(owner.id)}>{owner.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={selectedTrademarkId} onValueChange={setSelectedTrademarkId} disabled={!selectedOwnerId}>
-                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectTrademark} /></SelectTrigger>
-                                    <SelectContent>
-                                        {availableTrademarks.map(tm => <SelectItem key={tm.id} value={String(tm.id)}>{tm.denomination}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-                <Separator />
-                {selectedTrademarkId ? (
-                     <div className="space-y-4">
-                        <div>
-                            <p className="text-sm text-muted-foreground">{dictionary.templateForm.renderedSubject}</p>
-                            <p className="font-semibold">{renderedPreview.subject}</p>
-                        </div>
-                        <Separator />
-                         <div>
-                            <p className="text-sm text-muted-foreground">{dictionary.templateForm.renderedPreview}</p>
-                             <div 
-                                className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black"
-                                dangerouslySetInnerHTML={{ __html: renderedPreview.body }}
-                            />
-                        </div>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {dictionary.templateForm.previewDataTitle}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoadingPreviewData ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>Loading preview data...</span>
                     </div>
-                ) : (
-                    <div className="flex items-center justify-center min-h-[400px] text-muted-foreground rounded-md border border-dashed">
-                        <p>{dictionary.templateForm.selectTrademark}</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Select
+                        value={selectedAgentId}
+                        onValueChange={setSelectedAgentId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={dictionary.templateForm.selectAgent}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {previewData.map((agent) => (
+                            <SelectItem key={agent.id} value={String(agent.id)}>
+                              {agent.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={selectedContactId}
+                        onValueChange={setSelectedContactId}
+                        disabled={!selectedAgentId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={dictionary.templateForm.selectContact}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableContacts.map((contact) => (
+                            <SelectItem
+                              key={contact.id}
+                              value={String(contact.id)}
+                            >
+                              {contact.firstName} {contact.lastName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={selectedOwnerId}
+                        onValueChange={setSelectedOwnerId}
+                        disabled={!selectedContactId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={dictionary.templateForm.selectOwner}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableOwners.map((owner) => (
+                            <SelectItem key={owner.id} value={String(owner.id)}>
+                              {owner.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={selectedTrademarkId}
+                        onValueChange={setSelectedTrademarkId}
+                        disabled={!selectedOwnerId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              dictionary.templateForm.selectTrademark
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTrademarks.map((tm) => (
+                            <SelectItem key={tm.id} value={String(tm.id)}>
+                              {tm.denomination}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                )}
-             </div>
+                  )}
+                </CardContent>
+              </Card>
+              <Separator />
+              {selectedTrademarkId ? (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {dictionary.templateForm.renderedSubject}
+                    </p>
+                    <p className="font-semibold">{renderedPreview.subject}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {dictionary.templateForm.renderedPreview}
+                    </p>
+                    <div
+                      className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black"
+                      dangerouslySetInnerHTML={{ __html: renderedPreview.body }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center min-h-[400px] text-muted-foreground rounded-md border border-dashed">
+                  <p>{dictionary.templateForm.selectTrademark}</p>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
