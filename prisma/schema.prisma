@@ -9,18 +9,27 @@ generator client {
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
-model Trademark {
-  id           Int           @id @default(autoincrement())
-  denomination String
-  class        Int
-  type         TrademarkType?
-  certificate  String
-  expiration   DateTime
-  products     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  owner        Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId      Int
+model Agent {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  country   Country
+  area      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  contacts  Contact[]
+}
+
+model Contact {
+  id         Int         @id @default(autoincrement())
+  firstName  String
+  lastName   String
+  email      String      @unique
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  agent      Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId    Int
+  owners     Owner[]     @relation("OwnerContacts")
+  sentEmails SentEmail[]
 }
 
 model Owner {
@@ -33,27 +42,18 @@ model Owner {
   contacts   Contact[]   @relation("OwnerContacts")
 }
 
-model Contact {
-  id         Int         @id @default(autoincrement())
-  firstName  String?
-  lastName   String?
-  email      String      @unique
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  agent      Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  agentId    Int
-  owners     Owner[]     @relation("OwnerContacts")
-  sentEmails SentEmail[]
-}
-
-model Agent {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  country   Country
-  area      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  contacts  Contact[]
+model Trademark {
+  id           Int           @id @default(autoincrement())
+  denomination String
+  class        Int
+  type         TrademarkType?
+  certificate  String
+  expiration   DateTime
+  products     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  owner        Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId      Int
 }
 
 model EmailTemplate {
@@ -87,32 +87,23 @@ model SentEmail {
 }
 
 enum TrademarkType {
-  WORD
+  NOMINATIVE
   FIGURATIVE
   MIXED
 }
 
 enum Country {
-  ARGENTINA
-  BOLIVIA
-  BRAZIL
-  CHILE
-  COLOMBIA
-  ECUADOR
-  PARAGUAY
-  PERU
-  URUGUAY
-  VENEZUELA
-  USA
-  SPAIN
   AFGHANISTAN
   ALBANIA
   ALGERIA
   ANDORRA
   ANGOLA
   ANTIGUA_AND_BARBUDA
+  ARGENTINA
+  ARMENIA
   AUSTRALIA
   AUSTRIA
+  AZERBAIJAN
   BAHAMAS
   BAHRAIN
   BANGLADESH
@@ -122,7 +113,11 @@ enum Country {
   BELIZE
   BENIN
   BHUTAN
+  BOLIVIA
+  BONAIRE
+  BOSNIA_AND_HERZEGOVINA
   BOTSWANA
+  BRAZIL
   BRUNEI
   BULGARIA
   BURKINA_FASO
@@ -133,6 +128,9 @@ enum Country {
   CANADA
   CENTRAL_AFRICAN_REPUBLIC
   CHAD
+  CHILE
+  CHINA
+  COLOMBIA
   COMOROS
   CONGO_BRAZZAVILLE
   CONGO_KINSHASA
@@ -140,12 +138,14 @@ enum Country {
   COTE_D_IVOIRE
   CROATIA
   CUBA
+  CURACAO
   CYPRUS
   CZECHIA
   DENMARK
   DJIBOUTI
   DOMINICA
   DOMINICAN_REPUBLIC
+  ECUADOR
   EGYPT
   EL_SALVADOR
   EQUATORIAL_GUINEA
@@ -184,6 +184,7 @@ enum Country {
   KAZAKHSTAN
   KENYA
   KIRIBATI
+  KOSOVO
   KUWAIT
   KYRGYZSTAN
   LAOS
@@ -195,6 +196,7 @@ enum Country {
   LIECHTENSTEIN
   LITHUANIA
   LUXEMBOURG
+  MACAO
   MADAGASCAR
   MALAWI
   MALAYSIA
@@ -204,6 +206,7 @@ enum Country {
   MARSHALL_ISLANDS
   MAURITANIA
   MAURITIUS
+  MAYOTTE
   MEXICO
   MICRONESIA
   MOLDOVA
@@ -217,6 +220,7 @@ enum Country {
   NAURU
   NEPAL
   NETHERLANDS
+  NEW_CALEDONIA
   NEW_ZEALAND
   NICARAGUA
   NIGER
@@ -230,10 +234,13 @@ enum Country {
   PALESTINE
   PANAMA
   PAPUA_NEW_GUINEA
+  PARAGUAY
+  PERU
   PHILIPPINES
   POLAND
   PORTUGAL
   QATAR
+  REUNION
   ROMANIA
   RUSSIA
   RWANDA
@@ -249,6 +256,7 @@ enum Country {
   SEYCHELLES
   SIERRA_LEONE
   SINGAPORE
+  SINT_MAARTEN
   SLOVAKIA
   SLOVENIA
   SOLOMON_ISLANDS
@@ -256,18 +264,21 @@ enum Country {
   SOUTH_AFRICA
   SOUTH_KOREA
   SOUTH_SUDAN
+  SPAIN
   SRI_LANKA
   SUDAN
   SURINAME
   SWEDEN
   SWITZERLAND
   SYRIA
+  SVALBARD_AND_JAN_MAYEN
   TAIWAN
   TAJIKISTAN
   TANZANIA
   THAILAND
   TIMOR_LESTE
   TOGO
+  TOKELAU
   TONGA
   TRINIDAD_AND_TOBAGO
   TUNISIA
@@ -279,11 +290,15 @@ enum Country {
   UNITED_ARAB_EMIRATES
   UNITED_KINGDOM
   UNITED_STATES
+  URUGUAY
   UZBEKISTAN
   VANUATU
   VATICAN_CITY
+  VENEZUELA
   VIETNAM
+  WESTERN_SAHARA
   YEMEN
   ZAMBIA
   ZIMBABWE
 }
+
