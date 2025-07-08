@@ -111,10 +111,10 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
   const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
   const [selectedContactEmail, setSelectedContactEmail] = React.useState('');
 
-  const handleGenerateEmail = (email: string) => {
+  const handleGenerateEmail = React.useCallback((email: string) => {
     setSelectedContactEmail(email);
     setIsEmailModalOpen(true);
-  };
+  }, []);
 
   const columns: ColumnDef<TrademarkWithDetails>[] = React.useMemo(() => [
     {
@@ -167,7 +167,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
           <div className={cn('flex flex-col', colorClass)}>
             <span>{format(expirationDate, 'MMM dd, yyyy')}</span>
             <span className="text-xs">
-              {hasExpired ? `Expired ${-daysUntilExpiration} days ago` : `in ${daysUntilExpiration} days`}
+              {hasExpired ? `${dictionary.contact.expired} ${-daysUntilExpiration} ${dictionary.contact.daysAgo}` : `${dictionary.contact.in} ${daysUntilExpiration} ${dictionary.contact.days}`}
             </span>
           </div>
         );
