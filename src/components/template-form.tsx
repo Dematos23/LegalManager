@@ -43,6 +43,7 @@ import {
 } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const TemplateSchema = z.object({
   name: z
@@ -233,6 +234,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
       },
       trademarks: [{
         ...selectedTrademark,
+        denomination: selectedTrademark.denomination,
         class: String(selectedTrademark.class),
         expiration: format(new Date(selectedTrademark.expiration), 'yyyy-MM-dd'),
       }],
@@ -258,6 +260,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     viewMode,
     selectedAgent,
     selectedContact,
+    selectedOwner,
     selectedTrademark,
     templateSubject,
     templateBody,
@@ -304,7 +307,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <Card className="lg:col-span-2">
+      <Card
+        className={cn(
+          "transition-all duration-300",
+          viewMode === "edit" ? "lg:col-span-2" : "lg:col-span-3"
+        )}
+      >
         <CardHeader>
           <div className="flex justify-between items-start">
             <div>
@@ -527,39 +535,41 @@ export function TemplateForm({ template }: TemplateFormProps) {
           )}
         </CardContent>
       </Card>
-      <div className="lg:col-span-1">
-        <Card>
-          <CardHeader>
-            <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
-            <CardDescription>
-              {dictionary.templateForm.mergeFieldsDescription}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {MERGE_FIELDS.map((group) => (
-              <div key={group.group}>
-                <h4 className="font-semibold mb-2 text-sm">{group.group}</h4>
-                <div className="space-y-2">
-                  {group.fields.map((field) => (
-                    <Button
-                      key={field.name}
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-between"
-                      onClick={() => handleCopy(field.value)}
-                    >
-                      <span>{field.name}</span>
-                      <span className="font-code text-xs text-muted-foreground">
-                        {field.value}
-                      </span>
-                    </Button>
-                  ))}
+      {viewMode === "edit" && (
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
+              <CardDescription>
+                {dictionary.templateForm.mergeFieldsDescription}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {MERGE_FIELDS.map((group) => (
+                <div key={group.group}>
+                  <h4 className="font-semibold mb-2 text-sm">{group.group}</h4>
+                  <div className="space-y-2">
+                    {group.fields.map((field) => (
+                      <Button
+                        key={field.name}
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-between"
+                        onClick={() => handleCopy(field.value)}
+                      >
+                        <span>{field.name}</span>
+                        <span className="font-code text-xs text-muted-foreground">
+                          {field.value}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
