@@ -27,10 +27,16 @@ import type { EmailTemplate } from "@prisma/client";
 import {
   createEmailTemplate,
   updateEmailTemplate,
+  getTemplatePreviewData,
 } from "@/app/templates/actions";
 import { useLanguage } from "@/context/language-context";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
+import { Eye, Code, Loader2 } from "lucide-react";
+import * as Handlebars from 'handlebars';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Separator } from "./ui/separator";
+import { format } from "date-fns";
 
 const TemplateSchema = z.object({
   name: z
@@ -45,6 +51,7 @@ const TemplateSchema = z.object({
 });
 
 type TemplateFormValues = z.infer<typeof TemplateSchema>;
+type AgentWithNestedData = Awaited<ReturnType<typeof getTemplatePreviewData>>[0];
 
 type TemplateFormProps = {
   template?: EmailTemplate | null;
@@ -75,7 +82,6 @@ const MERGE_FIELDS = [
   },
 ];
 
-// A dedicated component to manage the Quill editor's lifecycle.
 const QuillEditor = ({ field }: { field: ControllerRenderProps<TemplateFormValues, "body"> }) => {
   const quillInstance = useRef<Quill | null>(null);
 
@@ -111,7 +117,6 @@ const QuillEditor = ({ field }: { field: ControllerRenderProps<TemplateFormValue
     }
   }, [field]);
 
-  // Handle external value changes (e.g., from form reset)
   useEffect(() => {
     if (quillInstance.current && quillInstance.current.root.innerHTML !== field.value) {
       const delta = quillInstance.current.clipboard.convert(field.value);
@@ -125,6 +130,14 @@ const QuillEditor = ({ field }: { field: ControllerRenderProps<TemplateFormValue
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+  const [previewData, setPreviewData] = useState<AgentWithNestedData[]>([]);
+  const [isLoadingPreviewData, setIsLoadingPreviewData] = useState(true);
+  
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
+  const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>('');
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -134,6 +147,73 @@ export function TemplateForm({ template }: TemplateFormProps) {
       body: template?.body || "",
     },
   });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const data = await getTemplatePreviewData();
+        setPreviewData(data);
+      } catch (error) {
+        toast({ title: "Error", description: "Could not load preview data.", variant: "destructive" });
+      } finally {
+        setIsLoadingPreviewData(false);
+      }
+    }
+    fetchData();
+  }, [toast]);
+  
+  const selectedAgent = previewData.find(a => a.id === Number(selectedAgentId));
+  const availableContacts = selectedAgent?.contacts || [];
+  
+  const selectedContact = availableContacts.find(c => c.id === Number(selectedContactId));
+  const availableOwners = selectedContact?.owners || [];
+
+  const selectedOwner = availableOwners.find(o => o.id === Number(selectedOwnerId));
+  const availableTrademarks = selectedOwner?.trademarks || [];
+  
+  const selectedTrademark = availableTrademarks.find(t => t.id === Number(selectedTrademarkId));
+
+  useEffect(() => { setSelectedContactId(''); }, [selectedAgentId]);
+  useEffect(() => { setSelectedOwnerId(''); }, [selectedContactId]);
+  useEffect(() => { setSelectedTrademarkId(''); }, [selectedOwnerId]);
+
+  const templateBody = form.watch('body');
+  const templateSubject = form.watch('subject');
+
+  const getRenderedPreview = () => {
+    if (viewMode === 'edit' || !selectedContact || !selectedTrademark) {
+      return { subject: '', body: '' };
+    }
+    
+    const context = {
+        contact: {
+            name: `${selectedContact.firstName} ${selectedContact.lastName}`,
+            email: selectedContact.email,
+        },
+        trademarks: [{
+            trademark: selectedTrademark.denomination,
+            class: selectedTrademark.class,
+            certificate: selectedTrademark.certificate,
+            expiration: format(new Date(selectedTrademark.expiration), 'yyyy-MM-dd')
+        }],
+        crmData: `Contact since ${format(new Date(selectedContact.createdAt), 'yyyy-MM-dd')}. Associated with agent: ${selectedContact.agent.name}.`
+    };
+    
+    try {
+        const bodyTemplate = Handlebars.compile(templateBody || '');
+        const subjectTemplate = Handlebars.compile(templateSubject || '');
+        return {
+          subject: subjectTemplate(context),
+          body: bodyTemplate(context)
+        };
+    } catch (e) {
+        console.error("Template rendering error:", e);
+        const errorMessage = e instanceof Error ? e.message : "Unknown error.";
+        return { subject: 'Error rendering subject', body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>` };
+    }
+  };
+
+  const renderedPreview = getRenderedPreview();
 
   const onSubmit = async (data: TemplateFormValues) => {
     let result;
@@ -172,65 +252,145 @@ export function TemplateForm({ template }: TemplateFormProps) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle>
-            {template ? dictionary.templateForm.editTitle : dictionary.templateForm.createTitle}
-          </CardTitle>
-          <CardDescription>
-            {dictionary.templateForm.description}
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>
+                {template ? dictionary.templateForm.editTitle : dictionary.templateForm.createTitle}
+              </CardTitle>
+              <CardDescription>
+                {dictionary.templateForm.description}
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
+            >
+              {viewMode === 'edit' ? (
+                <><Eye className="mr-2" />{dictionary.templateForm.previewButton}</>
+              ) : (
+                <><Code className="mr-2" />{dictionary.templateForm.backToEditorButton}</>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{dictionary.templateForm.nameLabel}</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder={dictionary.templateForm.namePlaceholder}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+          {viewMode === 'edit' ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{dictionary.templateForm.nameLabel}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={dictionary.templateForm.namePlaceholder}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{dictionary.templateForm.subjectLabel}</FormLabel>
+                      <FormControl>
+                        <Input placeholder={dictionary.templateForm.subjectPlaceholder} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="body"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
+                      <FormControl>
+                        <div className="min-h-[500px] w-full rounded-md border border-input bg-background">
+                          <QuillEditor field={field} />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit">
+                  {template ? dictionary.templateForm.updateButton : dictionary.templateForm.createButton}
+                </Button>
+              </form>
+            </Form>
+          ) : (
+             <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">{dictionary.templateForm.previewDataTitle}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {isLoadingPreviewData ? (
+                            <div className="flex items-center space-x-2">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span>Loading preview data...</span>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectAgent} /></SelectTrigger>
+                                    <SelectContent>
+                                        {previewData.map(agent => <SelectItem key={agent.id} value={String(agent.id)}>{agent.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={selectedContactId} onValueChange={setSelectedContactId} disabled={!selectedAgentId}>
+                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectContact} /></SelectTrigger>
+                                    <SelectContent>
+                                        {availableContacts.map(contact => <SelectItem key={contact.id} value={String(contact.id)}>{contact.firstName} {contact.lastName}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId} disabled={!selectedContactId}>
+                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectOwner} /></SelectTrigger>
+                                    <SelectContent>
+                                        {availableOwners.map(owner => <SelectItem key={owner.id} value={String(owner.id)}>{owner.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={selectedTrademarkId} onValueChange={setSelectedTrademarkId} disabled={!selectedOwnerId}>
+                                    <SelectTrigger><SelectValue placeholder={dictionary.templateForm.selectTrademark} /></SelectTrigger>
+                                    <SelectContent>
+                                        {availableTrademarks.map(tm => <SelectItem key={tm.id} value={String(tm.id)}>{tm.denomination}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Separator />
+                {selectedTrademarkId ? (
+                     <div className="space-y-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground">{dictionary.templateForm.renderedSubject}</p>
+                            <p className="font-semibold">{renderedPreview.subject}</p>
+                        </div>
+                        <Separator />
+                         <div>
+                            <p className="text-sm text-muted-foreground">{dictionary.templateForm.renderedPreview}</p>
+                             <div 
+                                className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black"
+                                dangerouslySetInnerHTML={{ __html: renderedPreview.body }}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center min-h-[400px] text-muted-foreground rounded-md border border-dashed">
+                        <p>{dictionary.templateForm.selectTrademark}</p>
+                    </div>
                 )}
-              />
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{dictionary.templateForm.subjectLabel}</FormLabel>
-                    <FormControl>
-                      <Input placeholder={dictionary.templateForm.subjectPlaceholder} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="body"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
-                    <FormControl>
-                      <div className="min-h-[500px] w-full rounded-md border border-input bg-background">
-                         <QuillEditor field={field} />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit">
-                {template ? dictionary.templateForm.updateButton : dictionary.templateForm.createButton}
-              </Button>
-            </form>
-          </Form>
+             </div>
+          )}
         </CardContent>
       </Card>
       <div className="lg:col-span-1">

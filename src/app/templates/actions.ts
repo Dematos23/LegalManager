@@ -104,3 +104,26 @@ export async function deleteEmailTemplate(id: number) {
         return { success: false, error: 'Failed to delete template.' }
     }
 }
+
+
+export async function getTemplatePreviewData() {
+  const agents = await prisma.agent.findMany({
+    orderBy: { name: 'asc' },
+    include: {
+      contacts: {
+        orderBy: { firstName: 'asc' },
+        include: {
+          owners: {
+            orderBy: { name: 'asc' },
+            include: {
+              trademarks: {
+                orderBy: { denomination: 'asc' },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  return agents;
+}
