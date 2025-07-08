@@ -1,5 +1,5 @@
 
-import type { Trademark, Owner, Contact, Agent } from '@prisma/client';
+import type { Trademark, Owner, Contact, Agent, EmailTemplate, Campaign, SentEmail } from '@prisma/client';
 
 // Re-export all types from Prisma Client
 export * from '@prisma/client';
@@ -20,4 +20,19 @@ export type ContactWithDetails = Contact & {
   owners: (Owner & {
     trademarks: Trademark[];
   })[];
+};
+
+// New types for campaign tracking
+export type CampaignWithDetails = Campaign & {
+  emailTemplate: EmailTemplate;
+  _count: {
+    sentEmails: number;
+  };
+};
+
+export type CampaignDetails = Campaign & {
+    emailTemplate: EmailTemplate;
+    sentEmails: (SentEmail & {
+        contact: Contact
+    })[];
 };

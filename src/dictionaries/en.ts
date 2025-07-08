@@ -4,6 +4,7 @@ export const en = {
     dashboard: 'Dashboard',
     import: 'Import',
     templates: 'Templates',
+    tracking: 'Tracking',
     settings: 'Settings',
     language: 'Language',
     english: 'English',
@@ -152,12 +153,37 @@ export const en = {
     sendButton: 'Send Campaign to',
     noSelectionTitle: 'No Recipients Selected',
     noSelectionDesc: 'Please select at least one recipient to send the campaign.',
-    campaignSentTitle: 'Campaign Sent (Simulated)',
+    campaignSentTitle: 'Campaign Sent',
     campaignSentDesc: 'Your email campaign has been queued to be sent to',
+    campaignErrorTitle: 'Campaign Failed',
     recipients: 'recipients',
+  },
+  tracking: {
+    title: 'Campaign Tracking',
+    description: 'View the status and history of your email campaigns.',
+    noCampaigns: 'No campaigns have been sent yet.',
+    table: {
+      campaignName: 'Campaign Name',
+      template: 'Template',
+      recipients: 'Recipients',
+      sentAt: 'Sent At',
+      actions: 'Actions',
+      view: 'View',
+    },
+    details: {
+      title: 'Campaign Details',
+      back: 'Back to Campaigns',
+      template: 'Template',
+      sentAt: 'Sent At',
+      sentEmailsTitle: 'Sent Emails',
+      table: {
+        contact: 'Contact',
+        email: 'Email',
+        status: 'Status',
+        sentAt: 'Sent At',
+      }
+    }
   }
 };
 
 export type Dictionary = typeof en;
-
-    

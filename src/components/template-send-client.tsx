@@ -26,15 +26,16 @@ import {
   GlobalFilterFn
 } from '@tanstack/react-table';
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
-import type { TrademarkWithDetails, EmailTemplate } from '@/types';
+import type { TrademarkWithDetails, EmailTemplate, Contact, Trademark } from '@/types';
 import { cn } from '@/lib/utils';
-import { ArrowUpDown, Send } from 'lucide-react';
+import { ArrowUpDown, Send, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/context/language-context';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { TrademarkFilters } from './trademark-filters';
+import { sendCampaignAction } from '@/app/campaigns/actions';
 
 const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     const expiration = row.getValue(columnId) as Date;
@@ -100,6 +101,7 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = React.useState('');
+  const [isSending, startSendingTransition] = React.useTransition();
   
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -261,14 +263,39 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
         return;
     }
 
-    const recipientCount = selectedRows.length;
-    // Here you would typically trigger a backend process
-    // For now, we'll just simulate it with a toast.
-    toast({
-        title: dictionary.sendTemplate.campaignSentTitle,
-        description: `${dictionary.sendTemplate.campaignSentDesc} ${recipientCount} ${dictionary.sendTemplate.recipients}.`,
+    const trademarksByContact = new Map<number, number[]>();
+    selectedRows.forEach(row => {
+        const trademark = row.original;
+        const contact = trademark.owner.contacts?.[0];
+        if (contact) {
+            if (!trademarksByContact.has(contact.id)) {
+                trademarksByContact.set(contact.id, []);
+            }
+            trademarksByContact.get(contact.id)!.push(trademark.id);
+        }
     });
-    table.resetRowSelection(true); // reset selection after sending
+
+    const contactsData = Array.from(trademarksByContact.entries()).map(([contactId, trademarkIds]) => ({
+        contactId,
+        trademarkIds,
+    }));
+    
+    startSendingTransition(async () => {
+        const result = await sendCampaignAction({ templateId: template.id, contactsData });
+        if (result.error) {
+            toast({
+                title: dictionary.sendTemplate.campaignErrorTitle,
+                description: result.error,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: dictionary.sendTemplate.campaignSentTitle,
+                description: result.success,
+            });
+            table.resetRowSelection(true);
+        }
+    });
   }
 
   return (
@@ -292,8 +319,8 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
                         {dictionary.sendTemplate.recipientsDescription}
                     </CardDescription>
                 </div>
-                <Button onClick={handleSendCampaign} disabled={table.getFilteredSelectedRowModel().rows.length === 0} className="w-full md:w-auto">
-                    <Send className="mr-2" />
+                <Button onClick={handleSendCampaign} disabled={isSending || table.getFilteredSelectedRowModel().rows.length === 0} className="w-full md:w-auto">
+                    {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2" />}
                     {dictionary.sendTemplate.sendButton} ({table.getFilteredSelectedRowModel().rows.length})
                 </Button>
             </CardHeader>

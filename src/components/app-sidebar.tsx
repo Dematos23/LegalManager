@@ -18,6 +18,7 @@ import {
   Gavel,
   LayoutTemplate,
   Languages,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -84,6 +85,17 @@ export function AppSidebar() {
               >
                 <LayoutTemplate />
                 <span>{dictionary.sidebar.templates}</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <Link href="/tracking" passHref>
+              <SidebarMenuButton
+                isActive={isActive('/tracking')}
+                tooltip={{ children: dictionary.sidebar.tracking }}
+              >
+                <History />
+                <span>{dictionary.sidebar.tracking}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

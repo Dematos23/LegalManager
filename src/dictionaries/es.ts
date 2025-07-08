@@ -6,6 +6,7 @@ export const es: Dictionary = {
     dashboard: 'Tablero',
     import: 'Importar',
     templates: 'Plantillas',
+    tracking: 'Seguimiento',
     settings: 'Configuración',
     language: 'Idioma',
     english: 'Inglés',
@@ -154,10 +155,35 @@ export const es: Dictionary = {
     sendButton: 'Enviar Campaña a',
     noSelectionTitle: 'No se seleccionaron destinatarios',
     noSelectionDesc: 'Por favor, seleccione al menos un destinatario para enviar la campaña.',
-    campaignSentTitle: 'Campaña Enviada (Simulada)',
+    campaignSentTitle: 'Campaña Enviada',
     campaignSentDesc: 'Su campaña de correo ha sido puesta en cola para ser enviada a',
+    campaignErrorTitle: 'Falló la Campaña',
     recipients: 'destinatarios',
+  },
+  tracking: {
+    title: 'Seguimiento de Campañas',
+    description: 'Vea el estado y el historial de sus campañas de correo electrónico.',
+    noCampaigns: 'Aún no se han enviado campañas.',
+    table: {
+      campaignName: 'Nombre de Campaña',
+      template: 'Plantilla',
+      recipients: 'Destinatarios',
+      sentAt: 'Enviado el',
+      actions: 'Acciones',
+      view: 'Ver',
+    },
+    details: {
+      title: 'Detalles de la Campaña',
+      back: 'Volver a Campañas',
+      template: 'Plantilla',
+      sentAt: 'Enviado el',
+      sentEmailsTitle: 'Correos Enviados',
+      table: {
+        contact: 'Contacto',
+        email: 'Correo electrónico',
+        status: 'Estado',
+        sentAt: 'Enviado el',
+      }
+    }
   }
 };
-
-    
