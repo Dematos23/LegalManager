@@ -12,11 +12,20 @@ export const en = {
   dashboard: {
     title: 'Trademark Dashboard',
     noTrademarks: 'Your trademarks will appear here once you connect to a database and import data via the Import page.',
-    expiring30: 'Expiring in 30 days',
-    expiring60: 'Expiring in 60 days',
-    expiring90: 'Expiring in 90 days',
+    filtersTitle: 'Filters',
+    expiringIn: 'Expiring in...',
+    expiring30: '30 days',
+    expiring60: '60 days',
+    expiring90: '90 days',
+    expiring180: '180 days',
+    expiringOver180: 'Over 180 days',
+    allExpirations: 'All Expirations',
+    areaFilterLabel: 'Area',
+    allAreas: 'All Areas',
+    yearFilterLabel: 'Expiration Year',
+    allYears: 'All Years',
     clearFilters: 'Clear Filters',
-    searchPlaceholder: 'Search denominations...',
+    searchPlaceholder: 'Search by trademark, owner, contact, agent...',
     table: {
       trademark: 'Denomination',
       owner: 'Owner',
@@ -141,3 +150,5 @@ export const en = {
 };
 
 export type Dictionary = typeof en;
+
+    

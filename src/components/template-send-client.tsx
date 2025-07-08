@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   ColumnDef,
   flexRender,
@@ -24,8 +23,9 @@ import {
   ColumnFiltersState,
   FilterFn,
   RowSelectionState,
+  GlobalFilterFn
 } from '@tanstack/react-table';
-import { format, differenceInDays, isPast, addDays } from 'date-fns';
+import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
 import type { TrademarkWithDetails, EmailTemplate } from '@/types';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown, Send } from 'lucide-react';
@@ -34,36 +34,61 @@ import { useLanguage } from '@/context/language-context';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-
-type TemplateSendClientProps = {
-  template: EmailTemplate;
-  trademarks: TrademarkWithDetails[];
-};
+import { TrademarkFilters } from './trademark-filters';
 
 const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     const expiration = row.getValue(columnId) as Date;
     if (!value) return true;
 
-    const [start, end] = value;
-    if (!start || !end) return true;
-
+    const now = new Date();
     const expirationDate = new Date(expiration);
+    
+    switch(value) {
+        case '30':
+            return expirationDate >= now && expirationDate <= addDays(now, 30);
+        case '60':
+            return expirationDate > addDays(now, 30) && expirationDate <= addDays(now, 60);
+        case '90':
+            return expirationDate > addDays(now, 60) && expirationDate <= addDays(now, 90);
+        case '180':
+            return expirationDate > addDays(now, 90) && expirationDate <= addDays(now, 180);
+        case 'over_180':
+            return expirationDate > addDays(now, 180);
+        default:
+            return true;
+    }
+};
 
-    return expirationDate >= start && expirationDate <= end;
+const areaFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
+    if (!value) return true;
+    const agent = row.original.owner.contacts?.[0]?.agent;
+    return agent?.area === value;
+};
+
+const yearFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
+    if (!value) return true;
+    const expirationDate = new Date(row.original.expiration);
+    return getYear(expirationDate).toString() === value;
 };
 
 
-const globalFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
+const globalFilterFn: GlobalFilterFn<any> = (row, columnId, value, addMeta) => {
     const trademark = row.original as TrademarkWithDetails;
     const search = value.toLowerCase();
 
     const flatString = [
         trademark.denomination,
         trademark.owner.name,
-        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name])
+        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
     ].filter(Boolean).join(' ').toLowerCase();
     
     return flatString.includes(search);
+};
+
+
+type TemplateSendClientProps = {
+  template: EmailTemplate;
+  trademarks: TrademarkWithDetails[];
 };
 
 export function TemplateSendClient({ template, trademarks }: TemplateSendClientProps) {
@@ -164,8 +189,19 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
     },
     {
         accessorKey: 'owner.contacts[0].agent.name',
+        id: 'agent',
         header: dictionary.dashboard.table.agent,
-        cell: ({ row }) => row.original.owner.contacts?.[0]?.agent?.name ?? 'N/A',
+        filterFn: areaFilterFn,
+        cell: ({ row }) => {
+            const agent = row.original.owner.contacts?.[0]?.agent;
+            if (!agent) return 'N/A';
+            return (
+                <div className="flex flex-col">
+                    <span>{agent.name}</span>
+                    {agent.area && <span className="text-xs text-muted-foreground">{agent.area}</span>}
+                </div>
+            );
+        },
     },
   ];
 
@@ -189,19 +225,20 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
     },
   });
 
-  const setExpirationFilter = (days: number | null) => {
-    const expirationCol = table.getColumn('expiration');
-    if (!expirationCol) return;
-
-    if (days === null) {
-      expirationCol.setFilterValue(undefined);
-    } else {
-        const now = new Date();
-        const futureDate = addDays(now, days);
-        // Using a function here is important to avoid issues with stale state
-        expirationCol.setFilterValue(() => [now, futureDate]);
-    }
-  };
+   const { agentAreas, expirationYears } = React.useMemo(() => {
+    const areas = new Set<string>();
+    const years = new Set<number>();
+    trademarks.forEach(tm => {
+        if (tm.owner.contacts[0]?.agent?.area) {
+            areas.add(tm.owner.contacts[0].agent.area);
+        }
+        years.add(getYear(new Date(tm.expiration)));
+    });
+    return { 
+        agentAreas: Array.from(areas).sort(), 
+        expirationYears: Array.from(years).sort((a, b) => b - a) 
+    };
+  }, [trademarks]);
 
   const handleSendCampaign = () => {
     const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -235,27 +272,7 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
             </CardHeader>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>{dictionary.sendTemplate.filterTitle}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                    <Input
-                    placeholder={dictionary.sendTemplate.searchPlaceholder}
-                    value={globalFilter ?? ''}
-                    onChange={(event) => setGlobalFilter(String(event.target.value))}
-                    className="w-full md:max-w-sm"
-                    />
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button variant="outline" onClick={() => setExpirationFilter(30)}>{dictionary.dashboard.expiring30}</Button>
-                    <Button variant="outline" onClick={() => setExpirationFilter(60)}>{dictionary.dashboard.expiring60}</Button>
-                    <Button variant="outline" onClick={() => setExpirationFilter(90)}>{dictionary.dashboard.expiring90}</Button>
-                    <Button variant="ghost" onClick={() => { table.resetColumnFilters(); setGlobalFilter('') }}>{dictionary.dashboard.clearFilters}</Button>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
+        <TrademarkFilters table={table} agentAreas={agentAreas} expirationYears={expirationYears} />
 
         <Card>
             <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -333,3 +350,5 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
     </div>
   );
 }
+
+    

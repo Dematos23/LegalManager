@@ -14,11 +14,20 @@ export const es: Dictionary = {
   dashboard: {
     title: 'Tablero de Marcas',
     noTrademarks: 'Sus marcas aparecerán aquí una vez que se conecte a una base de datos e importe datos a través de la página de Importación.',
-    expiring30: 'Vence en 30 días',
-    expiring60: 'Vence en 60 días',
-    expiring90: 'Vence en 90 días',
+    filtersTitle: 'Filtros',
+    expiringIn: 'Vencimiento',
+    expiring30: '30 días',
+    expiring60: '60 días',
+    expiring90: '90 días',
+    expiring180: '180 días',
+    expiringOver180: 'Más de 180 días',
+    allExpirations: 'Todos los vencimientos',
+    areaFilterLabel: 'Área',
+    allAreas: 'Todas las Áreas',
+    yearFilterLabel: 'Año de Vencimiento',
+    allYears: 'Todos los Años',
     clearFilters: 'Limpiar Filtros',
-    searchPlaceholder: 'Buscar denominaciones...',
+    searchPlaceholder: 'Buscar por marca, titular, contacto, agente...',
     table: {
       trademark: 'Denominación',
       owner: 'Titular',
@@ -141,3 +150,5 @@ export const es: Dictionary = {
     recipients: 'destinatarios',
   }
 };
+
+    
