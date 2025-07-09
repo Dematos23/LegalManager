@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import * as React from "react";
 import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -111,10 +111,10 @@ const QuillEditor = React.forwardRef<
   QuillEditorHandle,
   { field: ControllerRenderProps<TemplateFormValues, "body"> }
 >(({ field }, ref) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const quillRef = useRef<Quill | null>(null);
+  const editorRef = React.useRef<HTMLDivElement>(null);
+  const quillRef = React.useRef<Quill | null>(null);
 
-  useImperativeHandle(ref, () => ({
+  React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillRef.current;
       if (quill) {
@@ -128,58 +128,46 @@ const QuillEditor = React.forwardRef<
   }));
 
   // Effect for initialization and cleanup
-  useEffect(() => {
-    if (editorRef.current) {
-      // Prevent re-initialization
-      if (!quillRef.current) {
-        const quill = new Quill(editorRef.current, {
-          theme: "snow",
-          modules: {
-            toolbar: [
-              [{ header: [1, 2, 3, false] }],
-              ["bold", "italic", "underline", "strike", "blockquote"],
-              [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-              ["link"],
-              ["clean"],
-            ],
-          },
-        });
-        quillRef.current = quill;
+  React.useEffect(() => {
+    if (editorRef.current && !quillRef.current) {
+      const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ["bold", "italic", "underline", "strike", "blockquote"],
+            [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+            ["link"],
+            ["clean"],
+          ],
+        },
+      });
+      quillRef.current = quill;
 
-        // Set initial content from form state
-        const initialValue = field.value || '';
-        const delta = quill.clipboard.convert(initialValue);
-        quill.setContents(delta, 'silent');
-
-        // Setup listener to update form state on user input
-        quill.on("text-change", (delta, oldDelta, source) => {
-          if (source === 'user') {
-            const content = quill.root.innerHTML;
-            if (content === '<p><br></p>') {
-              field.onChange('');
-            } else {
-              field.onChange(content);
-            }
+      quill.on("text-change", (delta, oldDelta, source) => {
+        if (source === 'user') {
+          const content = quill.root.innerHTML;
+          if (content === '<p><br></p>') {
+            field.onChange('');
+          } else {
+            field.onChange(content);
           }
-        });
-      }
+        }
+      });
     }
 
-    // Cleanup when component unmounts
     return () => {
       if (quillRef.current) {
-        // Quill doesn't have a formal destroy method, so we nullify the ref
-        // and ensure the DOM is clean to prevent memory leaks and ghost toolbars.
         quillRef.current = null;
       }
       if (editorRef.current) {
         editorRef.current.innerHTML = "";
       }
     };
-  }, []); // Empty array ensures this runs only on mount and unmount
+  }, []); // Empty dependency array
 
   // Effect to sync form value to editor if it changes externally
-  useEffect(() => {
+  React.useEffect(() => {
     const quill = quillRef.current;
     if (quill) {
       const editorHtml = quill.root.innerHTML;
@@ -188,7 +176,6 @@ const QuillEditor = React.forwardRef<
       const isEditorEmpty = editorHtml === '<p><br></p>';
       const isFormEmpty = formValue === '';
 
-      // Avoid unnecessary updates if both are considered empty or are identical
       if ((isEditorEmpty && isFormEmpty) || editorHtml === formValue) {
         return;
       }
@@ -202,7 +189,7 @@ const QuillEditor = React.forwardRef<
     }
   }, [field.value]);
 
-  return <div ref={editorRef} className="min-h-[500px]" />;
+  return <div ref={editorRef} />;
 });
 QuillEditor.displayName = "QuillEditor";
 
@@ -210,15 +197,15 @@ QuillEditor.displayName = "QuillEditor";
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
-  const quillEditorRef = useRef<QuillEditorHandle>(null);
-  const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
-  const [previewData, setPreviewData] = useState<AgentWithNestedData[]>([]);
-  const [isLoadingPreviewData, setIsLoadingPreviewData] = useState(true);
+  const quillEditorRef = React.useRef<QuillEditorHandle>(null);
+  const [viewMode, setViewMode] = React.useState<"edit" | "preview">("edit");
+  const [previewData, setPreviewData] = React.useState<AgentWithNestedData[]>([]);
+  const [isLoadingPreviewData, setIsLoadingPreviewData] = React.useState(true);
 
-  const [selectedAgentId, setSelectedAgentId] = useState<string>("");
-  const [selectedContactId, setSelectedContactId] = useState<string>("");
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
-  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>("all");
+  const [selectedAgentId, setSelectedAgentId] = React.useState<string>("");
+  const [selectedContactId, setSelectedContactId] = React.useState<string>("");
+  const [selectedOwnerId, setSelectedOwnerId] = React.useState<string>("");
+  const [selectedTrademarkId, setSelectedTrademarkId] = React.useState<string>("all");
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -229,7 +216,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     },
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     async function fetchData() {
       try {
         const data = await getTemplatePreviewData();
@@ -262,20 +249,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
   );
   const availableTrademarks = selectedOwner?.trademarks || [];
 
-  useEffect(() => {
+  React.useEffect(() => {
     setSelectedContactId("");
   }, [selectedAgentId]);
-  useEffect(() => {
+  React.useEffect(() => {
     setSelectedOwnerId("");
   }, [selectedContactId]);
-  useEffect(() => {
+  React.useEffect(() => {
     setSelectedTrademarkId("all");
   }, [selectedOwnerId]);
 
   const templateBody = form.watch("body");
   const templateSubject = form.watch("subject");
 
-  const renderedPreview = useMemo(() => {
+  const renderedPreview = React.useMemo(() => {
     if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedOwner) {
       return { subject: '', body: '' };
     }
@@ -391,7 +378,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      // &nbsp; is used for a non-breaking space to ensure the cursor appears after the tag
       const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
       quillEditorRef.current.insert(htmlToInsert);
     }
