@@ -1,14 +1,7 @@
 
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -114,69 +107,69 @@ type QuillEditorHandle = {
   insert: (html: string) => void;
 };
 
-const QuillEditor = forwardRef<QuillEditorHandle, { value: string; onChange: (value: string) => void }>(
-  ({ value, onChange }, ref) => {
-    const editorRef = useRef<HTMLDivElement>(null);
-    const quillRef = useRef<Quill | null>(null);
+const QuillEditor = React.forwardRef<
+  QuillEditorHandle,
+  { value: string; onChange: (value: string) => void }
+>(({ value, onChange }, ref) => {
+  const quillInstanceRef = React.useRef<Quill | null>(null);
+  const editorContainerRef = React.useRef<HTMLDivElement>(null);
 
-    useImperativeHandle(ref, () => ({
-      insert: (html: string) => {
-        if (quillRef.current) {
-          const range = quillRef.current.getSelection(true);
-          quillRef.current.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
-          quillRef.current.focus();
-        }
+  React.useImperativeHandle(ref, () => ({
+    insert: (html: string) => {
+      const quill = quillInstanceRef.current;
+      if (quill) {
+        const range = quill.getSelection(true);
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+        quill.focus();
+      }
+    },
+  }));
+
+  React.useEffect(() => {
+    if (!editorContainerRef.current) {
+      return;
+    }
+
+    const quill = new Quill(editorContainerRef.current, {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+          [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+          ['link'],
+          ['clean'],
+        ],
       },
-    }));
+    });
+    quillInstanceRef.current = quill;
 
-    useEffect(() => {
-      if (editorRef.current) {
-        // Initialize editor
-        quillRef.current = new Quill(editorRef.current, {
-          theme: 'snow',
-          modules: {
-            toolbar: [
-              [{ header: [1, 2, 3, false] }],
-              ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-              [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-              ['link'],
-              ['clean'],
-            ],
-          },
-        });
+    if (value) {
+      const delta = quill.clipboard.convert(value);
+      quill.setContents(delta, 'silent');
+    }
 
-        const quill = quillRef.current;
-        quill.on('text-change', (delta, oldDelta, source) => {
-          if (source === 'user') {
-            const content = quill.root.innerHTML;
-            onChange(content === '<p><br></p>' ? '' : content);
-          }
-        });
-
-        // Cleanup function
-        return () => {
-          if (quillRef.current) {
-            quillRef.current.off('text-change');
-          }
-          if (editorRef.current) {
-             editorRef.current.innerHTML = "";
-          }
-          quillRef.current = null;
-        };
+    quill.on('text-change', (delta, oldDelta, source) => {
+      if (source === 'user') {
+        const currentContent = quill.root.innerHTML;
+        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
       }
-    }, []);
+    });
 
-    useEffect(() => {
-      if (quillRef.current && quillRef.current.root.innerHTML !== value) {
-        const delta = quillRef.current.clipboard.convert(value || "");
-        quillRef.current.setContents(delta, 'silent');
+    return () => {
+      if (quillInstanceRef.current) {
+        quillInstanceRef.current.off('text-change');
       }
-    }, [value, quillRef]);
+      quillInstanceRef.current = null;
+      if (editorContainerRef.current) {
+        editorContainerRef.current.innerHTML = '';
+      }
+    };
+  }, []);
 
-    return <div ref={editorRef} />;
-  }
-);
-QuillEditor.displayName = "QuillEditor";
+  return <div ref={editorContainerRef} />;
+});
+QuillEditor.displayName = 'QuillEditor';
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
@@ -202,6 +195,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
       body: template?.body || "",
     },
   });
+
+  React.useEffect(() => {
+    if (template) {
+        form.reset({
+            name: template.name,
+            subject: template.subject,
+            body: template.body,
+        });
+    }
+  }, [template, form]);
 
   React.useEffect(() => {
     async function fetchData() {
@@ -265,8 +268,17 @@ export function TemplateForm({ template }: TemplateFormProps) {
             (tm) => tm.id === Number(selectedTrademarkId)
           )
         : availableTrademarks;
+    
+    const trademarksContextData = trademarksForPreview.map((tm) => ({
+      denomination: tm.denomination,
+      class: String(tm.class),
+      certificate: tm.certificate,
+      expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
+      products: tm.products,
+      type: tm.type,
+    }));
 
-    const baseContext = {
+    let finalContext: any = {
       agent: {
         id: selectedAgent.id,
         name: selectedAgent.name,
@@ -294,23 +306,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
         }`.trim(),
         email: selectedContact.email,
       },
+      trademarks: trademarksContextData
     };
 
-    const trademarksContextData = trademarksForPreview.map((tm) => ({
-      denomination: tm.denomination,
-      class: String(tm.class),
-      certificate: tm.certificate,
-      expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
-      products: tm.products,
-      type: tm.type,
-    }));
-
-    let finalContext: any = {
-      ...baseContext,
-      trademarks: trademarksContextData,
-    };
-
-    // If only one trademark is selected for preview, also make its properties available at the top level
     if (trademarksContextData.length === 1) {
       finalContext = {
         ...finalContext,
@@ -368,19 +366,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if (errors.name) {
+       if ('name' in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if (errors.subject) {
+      if ('subject' in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if (errors.body) {
+      if ('body' in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if (errors._form) {
+      if ('_form' in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -488,11 +486,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                          <QuillEditor
-                            ref={quillEditorRef}
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
+                            <QuillEditor
+                                ref={quillEditorRef}
+                                value={field.value}
+                                onChange={field.onChange}
+                            />
                         </div>
                       </FormControl>
                       <FormMessage />
