@@ -159,3 +159,8 @@
 .ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg {
   @apply mt-1;
 }
+
+/* Custom style for merge tags in Quill editor */
+.merge-tag {
+  @apply bg-primary/10 text-primary font-medium rounded-sm px-1 py-0.5 mx-0.5 font-code;
+}

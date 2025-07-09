@@ -68,6 +68,14 @@ type TemplateFormProps = {
 
 const MERGE_FIELDS = [
   {
+    group: "Agent",
+    fields: [
+      { name: "Agent Name", value: "{{agent.name}}" },
+      { name: "Agent Country", value: "{{agent.country}}" },
+      { name: "Agent Area", value: "{{agent.area}}" },
+    ],
+  },
+  {
     group: "Contact",
     fields: [
       { name: "Contact Name", value: "{{contact.name}}" },
@@ -75,35 +83,39 @@ const MERGE_FIELDS = [
     ],
   },
   {
-    group: "Trademarks (Loop)",
+    group: "Owner",
     fields: [
-      { name: "Start Loop", value: "{{#each trademarks}}" },
-      { name: "Trademark Name", value: "{{{denomination}}}" },
-      { name: "Class", value: "{{{class}}}" },
-      { name: "Certificate", value: "{{{certificate}}}" },
-      { name: "Expiration Date", value: "{{{expiration}}}" },
-      { name: "End Loop", value: "{{/each}}" },
+      { name: "Owner Name", value: "{{owner.name}}" },
+      { name: "Owner Country", value: "{{owner.country}}" },
     ],
   },
   {
-    group: "Other",
-    fields: [{ name: "CRM Data", value: "{{crmData}}" }],
+    group: "Trademarks (Loop)",
+    fields: [
+      { name: "Start Loop", value: "{{#each trademarks}}" },
+      { name: "Denomination", value: "{{{denomination}}}" },
+      { name: "Class", value: "{{{class}}}" },
+      { name: "Certificate", value: "{{{certificate}}}" },
+      { name: "Expiration Date", value: "{{{expiration}}}" },
+      { name: "Products", value: "{{{products}}}" },
+      { name: "End Loop", value: "{{/each}}" },
+    ],
   },
 ];
 
 const QuillEditor = ({
   field,
+  quillRef,
 }: {
   field: ControllerRenderProps<TemplateFormValues, "body">;
+  quillRef: React.MutableRefObject<Quill | null>;
 }) => {
-  const quillInstance = useRef<Quill | null>(null);
-
   const editorRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (typeof window === "undefined" || !node) return;
 
-      if (!quillInstance.current) {
-        quillInstance.current = new Quill(node, {
+      if (!quillRef.current) {
+        quillRef.current = new Quill(node, {
           theme: "snow",
           modules: {
             toolbar: [
@@ -121,7 +133,7 @@ const QuillEditor = ({
           },
         });
 
-        const quill = quillInstance.current;
+        const quill = quillRef.current;
         quill.root.innerHTML = field.value || "";
 
         quill.on("text-change", (delta, oldDelta, source) => {
@@ -135,18 +147,19 @@ const QuillEditor = ({
         });
       }
     },
-    [field]
+    [field, quillRef]
   );
 
   useEffect(() => {
     if (
-      quillInstance.current &&
-      quillInstance.current.root.innerHTML !== field.value
+      quillRef.current &&
+      quillRef.current.root.innerHTML !== field.value
     ) {
-      const delta = quillInstance.current.clipboard.convert(field.value);
-      quillInstance.current.setContents(delta, "silent");
+      const quill = quillRef.current;
+      const delta = quill.clipboard.convert(field.value as any);
+      quill.setContents(delta, "silent");
     }
-  }, [field.value]);
+  }, [field.value, quillRef]);
 
   return <div ref={editorRef} />;
 };
@@ -154,6 +167,7 @@ const QuillEditor = ({
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
+  const quillInstance = useRef<Quill | null>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [previewData, setPreviewData] = useState<AgentWithNestedData[]>([]);
   const [isLoadingPreviewData, setIsLoadingPreviewData] = useState(true);
@@ -223,21 +237,28 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const templateSubject = form.watch("subject");
 
   const renderedPreview = useMemo(() => {
-    if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedTrademark) {
+    if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedTrademark || !selectedOwner) {
       return { subject: '', body: '' };
     }
 
     const context = {
+      agent: {
+        ...selectedAgent,
+        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+      },
+      owner: {
+        ...selectedOwner,
+        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+      },
       contact: {
         name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
         email: selectedContact.email,
       },
-      trademarks: [{
-        ...selectedTrademark,
-        denomination: selectedTrademark.denomination,
-        class: String(selectedTrademark.class),
-        expiration: format(new Date(selectedTrademark.expiration), 'yyyy-MM-dd'),
-      }],
+      trademarks: [selectedTrademark].map(tm => ({
+        ...tm,
+        class: String(tm.class),
+        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+      })),
       crmData: `Contact since ${format(new Date(selectedContact.createdAt), 'yyyy-MM-dd')}. Associated with agent: ${selectedAgent.name}.`,
     };
 
@@ -300,10 +321,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
   };
 
-  const handleCopy = (value: string) => {
-    navigator.clipboard.writeText(value);
-    toast({ title: dictionary.templateForm.copied, description: value });
-  };
+  const handleInsertMergeField = (value: string) => {
+    if (quillInstance.current) {
+        const quill = quillInstance.current;
+        const range = quill.getSelection(true);
+        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
+        quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
+        
+        // Move cursor after the inserted element. A small timeout might be needed.
+        setTimeout(() => {
+            quill.setSelection(range.index + 1, 0, 'silent');
+            quill.insertText(quill.getSelection(true).index, ' ', 'user'); // add a space
+        }, 0);
+    }
+};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -396,7 +427,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="min-h-[500px] w-full rounded-md border border-input bg-background">
-                          <QuillEditor field={field} />
+                          <QuillEditor field={field} quillRef={quillInstance} />
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -559,7 +590,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       variant="outline"
                       size="sm"
                       className="w-full justify-between"
-                      onClick={() => handleCopy(field.value)}
+                      onClick={() => handleInsertMergeField(field.value)}
                     >
                       <span>{field.name}</span>
                       <span className="font-code text-xs text-muted-foreground">

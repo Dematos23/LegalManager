@@ -45,17 +45,26 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             });
             const trademarks = await prisma.trademark.findMany({
                 where: { id: { in: item.trademarkIds } },
+                include: { owner: true }
             });
 
             if (!contact) continue;
 
+            const owner = trademarks.length > 0 ? trademarks[0].owner : null;
+
             const handlebarsContext = {
+                agent: contact.agent,
+                owner: owner ? {
+                    ...owner,
+                    country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+                } : null,
                 contact: {
                     name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
                     email: contact.email,
                 },
                 trademarks: trademarks.map(tm => ({
                     ...tm,
+                    owner: undefined, // remove nested owner to avoid confusion
                     class: String(tm.class),
                     expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
                 })),
@@ -89,6 +98,8 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                     resendId: data.id,
                     campaignId: campaign.id,
                     contactId: contact.id,
+                    deliveredAt: null,
+                    openedAt: null,
                 },
             });
         }
