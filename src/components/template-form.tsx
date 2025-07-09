@@ -111,56 +111,58 @@ const QuillEditor = ({
   quillRef: React.MutableRefObject<Quill | null>;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onChangeRef = useRef(field.onChange);
+  onChangeRef.current = field.onChange;
 
+  // Initialize Quill and set up listener ONCE
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (containerRef.current && !quillRef.current) {
+      const editorContainer = document.createElement("div");
+      containerRef.current.appendChild(editorContainer);
+      
+      const quill = new Quill(editorContainer, {
+        theme: "snow",
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, false] }],
+            ["bold", "italic", "underline", "strike", "blockquote"],
+            [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+            ["link"],
+            ["clean"],
+          ],
+        },
+      });
+      quillRef.current = quill;
 
-    const editorContainer = document.createElement("div");
-    containerRef.current.innerHTML = "";
-    containerRef.current.appendChild(editorContainer);
-
-    const quill = new Quill(editorContainer, {
-      theme: "snow",
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, 3, false] }],
-          ["bold", "italic", "underline", "strike", "blockquote"],
-          [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-          ["link"],
-          ["clean"],
-        ],
-      },
-    });
-
-    quillRef.current = quill;
-
-    if (field.value) {
-      const delta = quill.clipboard.convert(field.value as any);
-      quill.setContents(delta, "silent");
+      quill.on('text-change', (delta, oldDelta, source) => {
+        if (source === 'user') {
+          const content = quill.root.innerHTML;
+          onChangeRef.current(content === '<p><br></p>' ? '' : content);
+        }
+      });
     }
 
-    const handleChange = (delta: any, oldDelta: any, source: string) => {
-      if (source === "user") {
-        let content = quill.root.innerHTML;
-        if (content === "<p><br></p>") {
-          content = "";
-        }
-        field.onChange(content);
-      }
-    };
-
-    quill.on("text-change", handleChange);
-
+    // Cleanup on unmount
     return () => {
-      quill.off("text-change", handleChange);
-      quillRef.current = null;
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
+      if (quillRef.current) {
+        quillRef.current = null;
+        if(containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
       }
-    };
-  }, [field, quillRef]);
+    }
+  }, [quillRef]);
 
-  return <div ref={containerRef} />;
+  // Sync external value changes TO Quill
+  useEffect(() => {
+    const quill = quillRef.current;
+    if (quill && field.value !== quill.root.innerHTML) {
+        const delta = quill.clipboard.convert(field.value as any);
+        quill.setContents(delta, 'silent');
+    }
+  }, [field.value, quillRef]);
+
+  return <div ref={containerRef} className="min-h-[500px]" />;
 };
 
 
@@ -453,7 +455,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                     <FormItem>
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
-                        <div className="min-h-[500px] w-full rounded-md border border-input bg-background">
+                        <div className="w-full rounded-md border border-input bg-background">
                           <QuillEditor field={field} quillRef={quillInstance} />
                         </div>
                       </FormControl>
