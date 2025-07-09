@@ -127,64 +127,70 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
                       <div className="text-sm text-muted-foreground">{email.contact.email}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                <div className={cn("flex items-center gap-1.5", email.sentAt ? 'text-gray-500' : 'text-gray-300')}>
-                                    <Mail className="h-5 w-5"/>
-                                </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                <p className="font-semibold">{dictionary.tracking.details.table.sent}</p>
-                                {email.sentAt ? (
-                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.sentAt))}</p>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
-                                )}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                      <div className="flex items-start space-x-4">
+                          <div className="flex flex-col items-center gap-1 text-center w-28">
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <div className={cn("flex items-center justify-center p-2 rounded-full", email.sentAt ? 'bg-gray-100 text-gray-600' : 'bg-gray-50 text-gray-300')}>
+                                              <Mail className="h-6 w-6"/>
+                                          </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                          <p className="font-semibold">{dictionary.tracking.details.table.sent}</p>
+                                      </TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                               {email.sentAt ? (
+                                  <p className="text-xs text-muted-foreground">{formatDate(new Date(email.sentAt))}</p>
+                              ) : (
+                                  <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                              )}
+                          </div>
 
-                        {email.sentAt && <ArrowRight className="h-4 w-4 text-gray-300" />}
+                          {email.sentAt && <ArrowRight className="h-5 w-5 text-gray-300 mt-3" />}
 
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                <div className={cn("flex items-center gap-1.5", email.deliveredAt ? 'text-green-600' : 'text-gray-300')}>
-                                    <CheckCircle2 className="h-5 w-5"/>
-                                </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                <p className="font-semibold">{dictionary.tracking.details.table.delivered}</p>
-                                {email.deliveredAt ? (
-                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.deliveredAt))}</p>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
-                                )}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                          <div className="flex flex-col items-center gap-1 text-center w-28">
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <div className={cn("flex items-center justify-center p-2 rounded-full", email.deliveredAt ? 'bg-green-100 text-green-600' : 'bg-gray-50 text-gray-300')}>
+                                              <CheckCircle2 className="h-6 w-6"/>
+                                          </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                          <p className="font-semibold">{dictionary.tracking.details.table.delivered}</p>
+                                      </TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                              {email.deliveredAt ? (
+                                  <p className="text-xs text-muted-foreground">{formatDate(new Date(email.deliveredAt))}</p>
+                              ) : (
+                                  <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                              )}
+                          </div>
 
-                        {email.deliveredAt && <ArrowRight className="h-4 w-4 text-gray-300" />}
+                          {email.deliveredAt && <ArrowRight className="h-5 w-5 text-gray-300 mt-3" />}
 
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                <div className={cn("flex items-center gap-1.5", email.openedAt ? 'text-blue-600' : 'text-gray-300')}>
-                                    <MailOpen className="h-5 w-5"/>
-                                </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                <p className="font-semibold">{dictionary.tracking.details.table.opened}</p>
-                                {email.openedAt ? (
-                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.openedAt))}</p>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
-                                )}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                          <div className="flex flex-col items-center gap-1 text-center w-28">
+                              <TooltipProvider>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <div className={cn("flex items-center justify-center p-2 rounded-full", email.openedAt ? 'bg-blue-100 text-blue-600' : 'bg-gray-50 text-gray-300')}>
+                                              <MailOpen className="h-6 w-6"/>
+                                          </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                          <p className="font-semibold">{dictionary.tracking.details.table.opened}</p>
+                                      </TooltipContent>
+                                  </Tooltip>
+                              </TooltipProvider>
+                              {email.openedAt ? (
+                                  <p className="text-xs text-muted-foreground">{formatDate(new Date(email.openedAt))}</p>
+                              ) : (
+                                  <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                              )}
+                          </div>
                       </div>
                     </TableCell>
                   </TableRow>
