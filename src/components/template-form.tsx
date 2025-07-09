@@ -237,35 +237,35 @@ export function TemplateForm({ template }: TemplateFormProps) {
       return { subject: '', body: '' };
     }
     
-    const trademarksForPreview = selectedTrademarkId
+    const trademarksForPreview = (selectedTrademarkId && selectedTrademarkId !== 'all')
       ? availableTrademarks.filter(tm => tm.id === Number(selectedTrademarkId))
       : availableTrademarks;
 
     const context = {
-      agent: {
-        id: selectedAgent.id,
-        name: selectedAgent.name,
-        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-        area: selectedAgent.area,
-      },
-      owner: {
-        id: selectedOwner.id,
-        name: selectedOwner.name,
-        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-      },
-      contact: {
-        name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
-        email: selectedContact.email,
-      },
-      trademarks: trademarksForPreview.map(tm => ({
-          denomination: tm.denomination,
-          class: String(tm.class),
-          certificate: tm.certificate,
-          expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
-          products: tm.products,
-          type: tm.type
-      })),
-    };
+        agent: {
+          id: selectedAgent.id,
+          name: selectedAgent.name,
+          country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+          area: selectedAgent.area,
+        },
+        owner: {
+          id: selectedOwner.id,
+          name: selectedOwner.name,
+          country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        },
+        contact: {
+          name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
+          email: selectedContact.email,
+        },
+        trademarks: trademarksForPreview.map(tm => ({
+            denomination: tm.denomination,
+            class: String(tm.class),
+            certificate: tm.certificate,
+            expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+            products: tm.products,
+            type: tm.type
+        })),
+      };
 
     try {
       const cleanSubject = (templateSubject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
@@ -335,13 +335,18 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
         
-        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
+        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
         
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
         quill.focus();
-        const newIndex = range.index + value.length + 1;
+        // The length calculation needs to be precise for cursor positioning
+        const newIndex = range.index + 1; // Position cursor right after the inserted content
         quill.setSelection(newIndex, 0, 'silent');
+        
+        // Let's refine cursor position after insertion
+        const finalLength = range.index + quill.clipboard.convert(htmlToInsert).length();
+        quill.setSelection(finalLength, 0, 'silent');
     }
   };
 
@@ -532,7 +537,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                           <SelectValue placeholder={dictionary.templateForm.selectTrademark} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">{dictionary.templateForm.allTrademarks}</SelectItem>
+                            <SelectItem value="all">{dictionary.templateForm.allTrademarks}</SelectItem>
                             {availableTrademarks.map((trademark) => (
                             <SelectItem key={trademark.id} value={String(trademark.id)}>
                                 {trademark.denomination}
