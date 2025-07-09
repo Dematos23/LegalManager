@@ -67,12 +67,17 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                     owner: undefined, // remove nested owner to avoid confusion
                     class: String(tm.class),
                     expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+                    denomination: tm.denomination,
+                    certificate: tm.certificate,
+                    products: tm.products
                 })),
-                 crmData: `Contact since ${format(contact.createdAt, 'yyyy-MM-dd')}. Associated with agent: ${contact.agent.name}.`
             };
 
-            const subjectTemplate = Handlebars.compile(template.subject || '');
-            const bodyTemplate = Handlebars.compile(template.body || '');
+            const cleanSubject = (template.subject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+            const cleanBody = (template.body || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+
+            const subjectTemplate = Handlebars.compile(cleanSubject);
+            const bodyTemplate = Handlebars.compile(cleanBody);
             const emailSubject = subjectTemplate(handlebarsContext);
             const emailBody = bodyTemplate(handlebarsContext);
             

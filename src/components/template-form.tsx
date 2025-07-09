@@ -259,12 +259,14 @@ export function TemplateForm({ template }: TemplateFormProps) {
         class: String(tm.class),
         expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
       })),
-      crmData: `Contact since ${format(new Date(selectedContact.createdAt), 'yyyy-MM-dd')}. Associated with agent: ${selectedAgent.name}.`,
     };
 
     try {
-      const subjectTemplate = Handlebars.compile(templateSubject || '');
-      const bodyTemplate = Handlebars.compile(templateBody || '');
+      const cleanSubject = (templateSubject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+      const cleanBody = (templateBody || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+
+      const subjectTemplate = Handlebars.compile(cleanSubject);
+      const bodyTemplate = Handlebars.compile(cleanBody);
       return {
         subject: subjectTemplate(context),
         body: bodyTemplate(context),
