@@ -110,17 +110,17 @@ const QuillEditor = ({
   field: ControllerRenderProps<TemplateFormValues, "body">;
   quillRef: React.MutableRefObject<Quill | null>;
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(field.onChange);
-  onChangeRef.current = field.onChange;
 
-  // Initialize Quill and set up listener ONCE
   useEffect(() => {
-    if (containerRef.current && !quillRef.current) {
-      const editorContainer = document.createElement("div");
-      containerRef.current.appendChild(editorContainer);
-      
-      const quill = new Quill(editorContainer, {
+    onChangeRef.current = field.onChange;
+  });
+
+  // Effect for initialization and cleanup
+  useEffect(() => {
+    if (editorRef.current && !quillRef.current) {
+      const quill = new Quill(editorRef.current, {
         theme: "snow",
         modules: {
           toolbar: [
@@ -137,32 +137,37 @@ const QuillEditor = ({
       quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') {
           const content = quill.root.innerHTML;
-          onChangeRef.current(content === '<p><br></p>' ? '' : content);
+          if (content === '<p><br></p>') {
+            onChangeRef.current('');
+          } else {
+            onChangeRef.current(content);
+          }
         }
       });
     }
 
-    // Cleanup on unmount
     return () => {
       if (quillRef.current) {
         quillRef.current = null;
-        if(containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
       }
-    }
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+      }
+    };
   }, [quillRef]);
 
-  // Sync external value changes TO Quill
+  // Effect to sync form value to editor
   useEffect(() => {
     const quill = quillRef.current;
     if (quill && field.value !== quill.root.innerHTML) {
-        const delta = quill.clipboard.convert(field.value as any);
+      if (!(field.value === '' && quill.root.innerHTML === '<p><br></p>')) {
+        const delta = quill.clipboard.convert(field.value || '');
         quill.setContents(delta, 'silent');
+      }
     }
   }, [field.value, quillRef]);
 
-  return <div ref={containerRef} className="min-h-[500px]" />;
+  return <div ref={editorRef} className="min-h-[500px]" />;
 };
 
 
@@ -463,10 +468,14 @@ export function TemplateForm({ template }: TemplateFormProps) {
                     </FormItem>
                   )}
                 />
-                <Button type="submit">
-                  {template
-                    ? dictionary.templateForm.updateButton
-                    : dictionary.templateForm.createButton}
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : template ? (
+                    dictionary.templateForm.updateButton
+                  ) : (
+                    dictionary.templateForm.createButton
+                  )}
                 </Button>
               </form>
             </Form>
