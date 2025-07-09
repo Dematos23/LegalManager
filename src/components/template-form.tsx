@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -119,57 +118,122 @@ const QuillEditor = React.forwardRef<
       const quill = quillInstanceRef.current;
       if (quill) {
         const range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
         quill.focus();
       }
     },
   }));
 
   React.useEffect(() => {
-    if (!editorContainerRef.current) {
-      return;
-    }
+    if (!editorContainerRef.current || quillInstanceRef.current) return;
+
+    const toolbarOptions = [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline", "strike", "blockquote"],
+      [
+        { list: "ordered" },
+        { list: "bullet" },
+        { indent: "-1" },
+        { indent: "+1" },
+      ],
+      ["link"],
+      ["clean"],
+    ];
 
     const quill = new Quill(editorContainerRef.current, {
-      theme: 'snow',
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-          [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-          ['link'],
-          ['clean'],
-        ],
-      },
-    });
+  theme: "snow",
+  modules: {
+    toolbar: {
+      container: "#custom-quill-toolbar",
+    },
+    clipboard: true,
+    history: true,
+  },
+  formats: [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "strike",
+    "blockquote",
+    "list",
+    "bullet",
+    "indent",
+    "link",
+    "clean",
+  ],
+});
+
+
     quillInstanceRef.current = quill;
 
     if (value) {
-      const delta = quill.clipboard.convert(value);
-      quill.setContents(delta, 'silent');
+      const delta = quill.clipboard.convert({ html: value });
+      quill.setContents(delta, "silent");
     }
 
-    quill.on('text-change', (delta, oldDelta, source) => {
-      if (source === 'user') {
+    quill.on("text-change", (delta, oldDelta, source) => {
+      if (source === "user") {
         const currentContent = quill.root.innerHTML;
-        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+        onChange(currentContent === "<p><br></p>" ? "" : currentContent);
       }
     });
 
     return () => {
-      if (quillInstanceRef.current) {
-        quillInstanceRef.current.off('text-change');
-      }
+      quill.off("text-change");
       quillInstanceRef.current = null;
-      if (editorContainerRef.current) {
-        editorContainerRef.current.innerHTML = '';
-      }
     };
   }, []);
 
-  return <div ref={editorContainerRef} />;
+  React.useEffect(() => {
+    const quill = quillInstanceRef.current;
+    if (!quill) return;
+
+    const editorContent = quill.root.innerHTML;
+    const newDelta = quill.clipboard.convert({ html: value || "" });
+
+    const currentDelta = quill.clipboard.convert({ html: editorContent });
+
+    if (JSON.stringify(newDelta) !== JSON.stringify(currentDelta)) {
+      quill.setContents(newDelta, "silent");
+    }
+  }, [value]);
+
+  // return <div ref={editorContainerRef} />;
+  return (
+    <>
+      <div id="custom-quill-toolbar">
+        <span className="ql-formats">
+          <select className="ql-header">
+            <option value="1" />
+            <option value="2" />
+            <option value="3" />
+            <option value="" />
+          </select>
+        </span>
+        <span className="ql-formats">
+          <button className="ql-bold" />
+          <button className="ql-italic" />
+          <button className="ql-underline" />
+          <button className="ql-strike" />
+          <button className="ql-blockquote" />
+        </span>
+        <span className="ql-formats">
+          <button className="ql-list" value="ordered" />
+          <button className="ql-list" value="bullet" />
+          <button className="ql-indent" value="-1" />
+          <button className="ql-indent" value="+1" />
+        </span>
+        <span className="ql-formats">
+          <button className="ql-link" />
+          <button className="ql-clean" />
+        </span>
+      </div>
+      <div ref={editorContainerRef} />
+    </>
+  );
 });
-QuillEditor.displayName = 'QuillEditor';
+QuillEditor.displayName = "QuillEditor";
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
@@ -198,11 +262,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   React.useEffect(() => {
     if (template) {
-        form.reset({
-            name: template.name,
-            subject: template.subject,
-            body: template.body,
-        });
+      form.reset({
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+      });
     }
   }, [template, form]);
 
@@ -268,7 +332,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
             (tm) => tm.id === Number(selectedTrademarkId)
           )
         : availableTrademarks;
-    
+
     const trademarksContextData = trademarksForPreview.map((tm) => ({
       denomination: tm.denomination,
       class: String(tm.class),
@@ -306,7 +370,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
         }`.trim(),
         email: selectedContact.email,
       },
-      trademarks: trademarksContextData
+      trademarks: trademarksContextData,
     };
 
     if (trademarksContextData.length === 1) {
@@ -366,19 +430,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-       if ('name' in errors && errors.name) {
+      if ("name" in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if ('subject' in errors && errors.subject) {
+      if ("subject" in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if ('body' in errors && errors.body) {
+      if ("body" in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if ('_form' in errors && errors._form) {
+      if ("_form" in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -478,6 +542,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="body"
@@ -486,17 +551,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                            <QuillEditor
-                                ref={quillEditorRef}
-                                value={field.value}
-                                onChange={field.onChange}
-                            />
+                          {/* EMAIL EDITOR */}
+
+                          <QuillEditor
+                            ref={quillEditorRef}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <Button type="submit" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
