@@ -103,78 +103,114 @@ const MERGE_FIELDS = [
   },
 ];
 
-const QuillEditor = ({
-  field,
-  quillRef,
-}: {
-  field: ControllerRenderProps<TemplateFormValues, "body">;
-  quillRef: React.MutableRefObject<Quill | null>;
-}) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const onChangeRef = useRef(field.onChange);
+type QuillEditorHandle = {
+  insert: (html: string) => void;
+};
 
-  useEffect(() => {
-    onChangeRef.current = field.onChange;
-  });
+const QuillEditor = React.forwardRef<
+  QuillEditorHandle,
+  { field: ControllerRenderProps<TemplateFormValues, "body"> }
+>(({ field }, ref) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const quillRef = useRef<Quill | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    insert: (html: string) => {
+      const quill = quillRef.current;
+      if (quill) {
+        const range = quill.getSelection(true);
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+        quill.focus();
+        const newIndex = range.index + quill.clipboard.convert(html).length();
+        quill.setSelection(newIndex, 0, 'silent');
+      }
+    }
+  }));
 
   // Effect for initialization and cleanup
   useEffect(() => {
-    if (editorRef.current && !quillRef.current) {
-      const quill = new Quill(editorRef.current, {
-        theme: "snow",
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, 3, false] }],
-            ["bold", "italic", "underline", "strike", "blockquote"],
-            [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-            ["link"],
-            ["clean"],
-          ],
-        },
-      });
-      quillRef.current = quill;
+    if (editorRef.current) {
+      // Prevent re-initialization
+      if (!quillRef.current) {
+        const quill = new Quill(editorRef.current, {
+          theme: "snow",
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ["bold", "italic", "underline", "strike", "blockquote"],
+              [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+              ["link"],
+              ["clean"],
+            ],
+          },
+        });
+        quillRef.current = quill;
 
-      quill.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
-          const content = quill.root.innerHTML;
-          if (content === '<p><br></p>') {
-            onChangeRef.current('');
-          } else {
-            onChangeRef.current(content);
+        // Set initial content from form state
+        const initialValue = field.value || '';
+        const delta = quill.clipboard.convert(initialValue);
+        quill.setContents(delta, 'silent');
+
+        // Setup listener to update form state on user input
+        quill.on("text-change", (delta, oldDelta, source) => {
+          if (source === 'user') {
+            const content = quill.root.innerHTML;
+            if (content === '<p><br></p>') {
+              field.onChange('');
+            } else {
+              field.onChange(content);
+            }
           }
-        }
-      });
+        });
+      }
     }
 
+    // Cleanup when component unmounts
     return () => {
       if (quillRef.current) {
+        // Quill doesn't have a formal destroy method, so we nullify the ref
+        // and ensure the DOM is clean to prevent memory leaks and ghost toolbars.
         quillRef.current = null;
       }
       if (editorRef.current) {
-        editorRef.current.innerHTML = '';
+        editorRef.current.innerHTML = "";
       }
     };
-  }, [quillRef]);
+  }, []); // Empty array ensures this runs only on mount and unmount
 
-  // Effect to sync form value to editor
+  // Effect to sync form value to editor if it changes externally
   useEffect(() => {
     const quill = quillRef.current;
-    if (quill && field.value !== quill.root.innerHTML) {
-      if (!(field.value === '' && quill.root.innerHTML === '<p><br></p>')) {
-        const delta = quill.clipboard.convert(field.value || '');
-        quill.setContents(delta, 'silent');
+    if (quill) {
+      const editorHtml = quill.root.innerHTML;
+      const formValue = field.value || '';
+      
+      const isEditorEmpty = editorHtml === '<p><br></p>';
+      const isFormEmpty = formValue === '';
+
+      // Avoid unnecessary updates if both are considered empty or are identical
+      if ((isEditorEmpty && isFormEmpty) || editorHtml === formValue) {
+        return;
+      }
+      
+      const selection = quill.getSelection();
+      const delta = quill.clipboard.convert(formValue);
+      quill.setContents(delta, 'silent');
+      if (selection) {
+          quill.setSelection(selection);
       }
     }
-  }, [field.value, quillRef]);
+  }, [field.value]);
 
   return <div ref={editorRef} className="min-h-[500px]" />;
-};
+});
+QuillEditor.displayName = "QuillEditor";
 
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
-  const quillInstance = useRef<Quill | null>(null);
+  const quillEditorRef = useRef<QuillEditorHandle>(null);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [previewData, setPreviewData] = useState<AgentWithNestedData[]>([]);
   const [isLoadingPreviewData, setIsLoadingPreviewData] = useState(true);
@@ -354,18 +390,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
   };
 
   const handleInsertMergeField = (value: string) => {
-    if (quillInstance.current) {
-        const quill = quillInstance.current;
-        const range = quill.getSelection(true);
-        
-        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
-        
-        quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
-        
-        quill.focus();
-        
-        const newIndex = range.index + quill.clipboard.convert(htmlToInsert).length()
-        quill.setSelection(newIndex, 0, 'silent');
+    if (quillEditorRef.current) {
+      // &nbsp; is used for a non-breaking space to ensure the cursor appears after the tag
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
+      quillEditorRef.current.insert(htmlToInsert);
     }
   };
 
@@ -461,7 +489,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                          <QuillEditor field={field} quillRef={quillInstance} />
+                          <QuillEditor ref={quillEditorRef} field={field} />
                         </div>
                       </FormControl>
                       <FormMessage />
