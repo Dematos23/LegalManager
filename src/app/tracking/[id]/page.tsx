@@ -10,7 +10,8 @@ type CampaignDetailPageProps = {
 }
 
 export default async function CampaignDetailPage({ params }: CampaignDetailPageProps) {
-    const id = parseInt(params.id, 10);
+    const campaignId = await params;
+    const id = parseInt(campaignId.id, 10);
     if (isNaN(id)) {
         notFound();
     }
