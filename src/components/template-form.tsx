@@ -175,7 +175,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [selectedContactId, setSelectedContactId] = useState<string>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
-  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>("");
+  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>("all");
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -226,7 +226,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     setSelectedOwnerId("");
   }, [selectedContactId]);
   useEffect(() => {
-    setSelectedTrademarkId("");
+    setSelectedTrademarkId("all");
   }, [selectedOwnerId]);
 
   const templateBody = form.watch("body");
@@ -241,31 +241,52 @@ export function TemplateForm({ template }: TemplateFormProps) {
       ? availableTrademarks.filter(tm => tm.id === Number(selectedTrademarkId))
       : availableTrademarks;
 
-    const context = {
-        agent: {
-          id: selectedAgent.id,
-          name: selectedAgent.name,
-          country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-          area: selectedAgent.area,
-        },
-        owner: {
-          id: selectedOwner.id,
-          name: selectedOwner.name,
-          country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-        },
-        contact: {
-          name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
-          email: selectedContact.email,
-        },
-        trademarks: trademarksForPreview.map(tm => ({
-            denomination: tm.denomination,
-            class: String(tm.class),
-            certificate: tm.certificate,
-            expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
-            products: tm.products,
-            type: tm.type
-        })),
-      };
+    const baseContext = {
+      agent: {
+        id: selectedAgent.id,
+        name: selectedAgent.name,
+        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        area: selectedAgent.area,
+      },
+      owner: {
+        id: selectedOwner.id,
+        name: selectedOwner.name,
+        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+      },
+      contact: {
+        name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
+        email: selectedContact.email,
+      },
+    };
+    
+    const trademarksContextData = trademarksForPreview.map(tm => ({
+        denomination: tm.denomination,
+        class: String(tm.class),
+        certificate: tm.certificate,
+        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+        products: tm.products,
+        type: tm.type
+    }));
+
+    let finalContext;
+
+    if (trademarksContextData.length === 1) {
+        // If only one trademark is selected, provide its data at the top level
+        // for direct access (e.g., {{denomination}}), and also provide the `trademarks`
+        // array for any templates that use loops.
+        finalContext = {
+            ...baseContext,
+            ...trademarksContextData[0],
+            trademarks: trademarksContextData,
+        };
+    } else {
+        // If multiple trademarks (or none) are selected, only provide the `trademarks`
+        // array for use inside an {{#each}} loop.
+        finalContext = {
+            ...baseContext,
+            trademarks: trademarksContextData,
+        };
+    }
 
     try {
       const cleanSubject = (templateSubject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
@@ -274,8 +295,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
       const subjectTemplate = Handlebars.compile(cleanSubject);
       const bodyTemplate = Handlebars.compile(cleanBody);
       return {
-        subject: subjectTemplate(context),
-        body: bodyTemplate(context),
+        subject: subjectTemplate(finalContext),
+        body: bodyTemplate(finalContext),
       };
     } catch (e) {
       console.error("Template rendering error:", e);
@@ -290,10 +311,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
     selectedAgent,
     selectedContact,
     selectedOwner,
-    availableTrademarks,
     selectedTrademarkId,
     templateSubject,
     templateBody,
+    availableTrademarks,
   ]);
 
   const onSubmit = async (data: TemplateFormValues) => {
