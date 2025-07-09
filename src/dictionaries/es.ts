@@ -168,16 +168,24 @@ export const es: Dictionary = {
       template: 'Plantilla',
       sentAt: 'Enviado el',
       sentEmailsTitle: 'Correos Enviados',
+      sentEmailsDescription: 'Una lista de todos los correos enviados en esta campaña. Haga clic en sincronizar para obtener los últimos estados.',
       syncButton: 'Sincronizar Estados',
       syncErrorTitle: 'Sincronización Fallida',
       syncSuccessTitle: 'Sincronización Completa',
+      searchPlaceholder: 'Buscar por nombre o correo del contacto...',
       table: {
         contact: 'Contacto',
-        deliveryStatus: 'Estado de Entrega',
+        emailTracking: 'Seguimiento de Correo',
+        status: 'Estado',
         sent: 'Enviado',
         delivered: 'Entregado',
         opened: 'Abierto',
         pending: 'Pendiente',
+      },
+      statuses: {
+        sent: 'Enviado',
+        delivered: 'Entregado',
+        opened: 'Abierto',
       }
     }
   }

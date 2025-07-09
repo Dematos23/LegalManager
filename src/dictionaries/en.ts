@@ -166,16 +166,24 @@ export const en = {
       template: 'Template',
       sentAt: 'Sent At',
       sentEmailsTitle: 'Sent Emails',
+      sentEmailsDescription: 'A list of all emails sent in this campaign. Click sync to fetch the latest statuses.',
       syncButton: 'Sync Statuses',
       syncErrorTitle: 'Sync Failed',
       syncSuccessTitle: 'Sync Complete',
+      searchPlaceholder: 'Search by contact name or email...',
       table: {
         contact: 'Contact',
-        deliveryStatus: 'Delivery Status',
+        emailTracking: 'Email Tracking',
+        status: 'Status',
         sent: 'Sent',
         delivered: 'Delivered',
         opened: 'Opened',
         pending: 'Pending',
+      },
+      statuses: {
+        sent: 'Sent',
+        delivered: 'Delivered',
+        opened: 'Opened',
       }
     }
   }
