@@ -1,7 +1,7 @@
 
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback } from "react";
 import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -107,91 +107,76 @@ type QuillEditorHandle = {
   insert: (html: string) => void;
 };
 
-const QuillEditor = React.forwardRef<
+const QuillEditor = forwardRef<
   QuillEditorHandle,
-  { field: ControllerRenderProps<TemplateFormValues, "body"> }
->(({ field }, ref) => {
-  const editorRef = React.useRef<HTMLDivElement>(null);
-  const quillRef = React.useRef<Quill | null>(null);
+  { value: string; onChange: (value: string) => void }
+>(({ value, onChange }, ref) => {
+  const [quill, setQuill] = useState<Quill | null>(null);
 
-  React.useImperativeHandle(ref, () => ({
+  // This effect handles text-change events to update the form state
+  useEffect(() => {
+    if (!quill) return;
+
+    const handleChange = (delta: any, oldDelta: any, source: string) => {
+      if (source === 'user') {
+        const content = quill.root.innerHTML;
+        onChange(content === '<p><br></p>' ? '' : content);
+      }
+    };
+
+    quill.on('text-change', handleChange);
+    return () => {
+      quill.off('text-change', handleChange);
+    };
+  }, [quill, onChange]);
+
+  // This effect syncs external value changes to the editor
+  useEffect(() => {
+     if (quill && value !== quill.root.innerHTML && !(value === '' && quill.root.innerHTML === '<p><br></p>')) {
+      const delta = quill.clipboard.convert(value);
+      quill.setContents(delta, 'silent');
+    }
+  }, [quill, value]);
+
+  // Expose an insert method via the ref
+  useImperativeHandle(ref, () => ({
     insert: (html: string) => {
-      const quill = quillRef.current;
       if (quill) {
         const range = quill.getSelection(true);
         quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
         quill.focus();
-        const newIndex = range.index + quill.clipboard.convert(html).length();
-        quill.setSelection(newIndex, 0, 'silent');
       }
-    }
+    },
   }));
+  
+  // The callback ref is the key to proper initialization and cleanup
+  const editorRef = useCallback((wrapper: HTMLDivElement | null) => {
+    if (wrapper === null) return;
+    
+    // Clear previous instances to prevent duplicates
+    wrapper.innerHTML = '';
+    const editorContainer = document.createElement('div');
+    wrapper.append(editorContainer);
 
-  // Effect for initialization and cleanup
-  React.useEffect(() => {
-    if (editorRef.current && !quillRef.current) {
-      const quill = new Quill(editorRef.current, {
-        theme: "snow",
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, 3, false] }],
-            ["bold", "italic", "underline", "strike", "blockquote"],
-            [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
-            ["link"],
-            ["clean"],
-          ],
-        },
-      });
-      quillRef.current = quill;
-
-      quill.on("text-change", (delta, oldDelta, source) => {
-        if (source === 'user') {
-          const content = quill.root.innerHTML;
-          if (content === '<p><br></p>') {
-            field.onChange('');
-          } else {
-            field.onChange(content);
-          }
-        }
-      });
-    }
-
-    return () => {
-      if (quillRef.current) {
-        quillRef.current = null;
-      }
-      if (editorRef.current) {
-        editorRef.current.innerHTML = "";
-      }
-    };
-  }, []); // Empty dependency array
-
-  // Effect to sync form value to editor if it changes externally
-  React.useEffect(() => {
-    const quill = quillRef.current;
-    if (quill) {
-      const editorHtml = quill.root.innerHTML;
-      const formValue = field.value || '';
-      
-      const isEditorEmpty = editorHtml === '<p><br></p>';
-      const isFormEmpty = formValue === '';
-
-      if ((isEditorEmpty && isFormEmpty) || editorHtml === formValue) {
-        return;
-      }
-      
-      const selection = quill.getSelection();
-      const delta = quill.clipboard.convert(formValue);
-      quill.setContents(delta, 'silent');
-      if (selection) {
-          quill.setSelection(selection);
-      }
-    }
-  }, [field.value]);
+    const q = new Quill(editorContainer, {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+          [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+          ['link'],
+          ['clean'],
+        ],
+      },
+    });
+    
+    setQuill(q);
+  }, []);
 
   return <div ref={editorRef} />;
 });
-QuillEditor.displayName = "QuillEditor";
+QuillEditor.displayName = 'QuillEditor';
 
 
 export function TemplateForm({ template }: TemplateFormProps) {
@@ -357,16 +342,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if (errors.name)
+      if ('name' in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
-      if (errors.subject)
+      }
+      if ('subject' in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
-      if (errors.body)
+      }
+      if ('body' in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
-      if (errors._form) {
+      }
+      if ('_form' in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -475,7 +463,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                          <QuillEditor ref={quillEditorRef} field={field} />
+                           <QuillEditor
+                            ref={quillEditorRef}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         </div>
                       </FormControl>
                       <FormMessage />
