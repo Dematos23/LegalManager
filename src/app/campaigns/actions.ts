@@ -63,7 +63,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             const emailBody = bodyTemplate(handlebarsContext);
             
             const { data, error } = await resend.emails.send({
-                from: 'LegalIntel CRM <onboarding@resend.dev>',
+                from: 'LegalIntel CRM <notifications@updates.artecasa.com.pe>',
                 to: [contact.email],
                 subject: emailSubject,
                 html: emailBody,
