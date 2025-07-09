@@ -93,11 +93,11 @@ const MERGE_FIELDS = [
     group: "Trademarks (Loop)",
     fields: [
       { name: "Start Loop", value: "{{#each trademarks}}" },
-      { name: "Denomination", value: "{{{denomination}}}" },
-      { name: "Class", value: "{{{class}}}" },
-      { name: "Certificate", value: "{{{certificate}}}" },
-      { name: "Expiration Date", value: "{{{expiration}}}" },
-      { name: "Products", value: "{{{products}}}" },
+      { name: "Denomination", value: "{{denomination}}" },
+      { name: "Class", value: "{{class}}" },
+      { name: "Certificate", value: "{{certificate}}" },
+      { name: "Expiration Date", value: "{{expiration}}" },
+      { name: "Products", value: "{{products}}" },
       { name: "End Loop", value: "{{/each}}" },
     ],
   },
@@ -328,15 +328,23 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
         const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
-        quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
-        // Move cursor after the inserted element. A small timeout might be needed.
-        setTimeout(() => {
-            quill.setSelection(range.index + 1, 0, 'silent');
-            quill.insertText(quill.getSelection(true).index, ' ', 'user'); // add a space
-        }, 0);
+        // Paste the non-editable span
+        quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
+
+        // Quill treats the pasted HTML as a single "embed" blot. So its length is 1.
+        // We move the cursor after it.
+        const newSelectionIndex = range.index + 1;
+        quill.setSelection(newSelectionIndex, 0, 'silent');
+        
+        // Insert a space after the tag so the user can continue typing.
+        quill.insertText(newSelectionIndex, ' ', 'user');
+        
+        // Finally, move the cursor after the inserted space.
+        quill.setSelection(newSelectionIndex + 1, 0, 'silent');
     }
-};
+  };
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
