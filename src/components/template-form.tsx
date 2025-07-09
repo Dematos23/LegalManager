@@ -327,21 +327,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
     if (quillInstance.current) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
-        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
         
-        // Paste the non-editable span
+        // Create the HTML for the tag and add a space at the end.
+        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
+        
+        // Paste the HTML in one go.
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
-
-        // Quill treats the pasted HTML as a single "embed" blot. So its length is 1.
-        // We move the cursor after it.
-        const newSelectionIndex = range.index + 1;
-        quill.setSelection(newSelectionIndex, 0, 'silent');
         
-        // Insert a space after the tag so the user can continue typing.
-        quill.insertText(newSelectionIndex, ' ', 'user');
-        
-        // Finally, move the cursor after the inserted space.
-        quill.setSelection(newSelectionIndex + 1, 0, 'silent');
+        // Move the cursor after the inserted content.
+        // The span is an atomic blot (length 1), and the space is a character (length 1).
+        quill.setSelection(range.index + 2, 'silent');
     }
   };
 
