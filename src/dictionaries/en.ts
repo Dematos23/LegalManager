@@ -42,16 +42,6 @@ export const en = {
     actions: {
         generateEmail: 'Generate Email'
     },
-    deleteAll: {
-        button: 'Delete All Data',
-        confirmTitle: 'Are you absolutely sure?',
-        confirmDescription: 'This action cannot be undone. This will permanently delete all agents, contacts, owners, and trademarks from the database.',
-        cancel: 'Cancel',
-        continue: 'Continue',
-        successTitle: 'Data Deleted',
-        successDescription: 'All data has been successfully deleted.',
-        errorTitle: 'Deletion Failed',
-    }
   },
   import: {
     title: 'Import Trademarks',

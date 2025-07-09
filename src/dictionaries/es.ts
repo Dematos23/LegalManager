@@ -44,16 +44,6 @@ export const es: Dictionary = {
      actions: {
         generateEmail: 'Generar Correo'
     },
-    deleteAll: {
-        button: 'Eliminar Todos los Datos',
-        confirmTitle: '¿Está absolutamente seguro?',
-        confirmDescription: 'Esta acción no se puede deshacer. Esto eliminará permanentemente todos los agentes, contactos, titulares y marcas de la base de datos.',
-        cancel: 'Cancelar',
-        continue: 'Continuar',
-        successTitle: 'Datos Eliminados',
-        successDescription: 'Todos los datos han sido eliminados exitosamente.',
-        errorTitle: 'Falló la Eliminación',
-    }
   },
   import: {
     title: 'Importar Marcas',

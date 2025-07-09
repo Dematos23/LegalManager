@@ -43,35 +43,3 @@ export async function generateEmailAction(payload: GenerateEmailPayload) {
     return { error: 'Failed to generate email draft with AI.' };
   }
 }
-
-export async function deleteAllDataAction() {
-    try {
-      // Prisma's `deleteMany` does not cascade. To delete records with many-to-many
-      // relations, we first need to disconnect them to clear the implicit join table.
-      await prisma.owner.updateMany({
-        data: {
-          contacts: {
-            set: [],
-          },
-        },
-      });
-
-      // Now, delete from all tables in an order that respects the remaining
-      // one-to-many foreign key constraints (children with FKs first, then parents).
-      await prisma.$transaction([
-        prisma.sentEmail.deleteMany({}),
-        prisma.trademark.deleteMany({}),
-        prisma.contact.deleteMany({}),
-        prisma.campaign.deleteMany({}),
-        prisma.owner.deleteMany({}),
-        prisma.agent.deleteMany({}),
-      ]);
-      
-      revalidatePath('/');
-      revalidatePath('/tracking');
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to delete all data:', error);
-      return { success: false, error: 'An unexpected error occurred while deleting data.' };
-    }
-}

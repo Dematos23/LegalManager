@@ -6,20 +6,8 @@ import { TrademarkTable } from "@/components/trademark-table";
 import { useLanguage } from "@/context/language-context";
 import type { TrademarkWithDetails } from "@/types";
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Trash2, Loader2, Mail, MoreHorizontal, ArrowUpDown } from 'lucide-react';
+import { Mail, MoreHorizontal, ArrowUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { deleteAllDataAction } from '@/app/actions';
 import {
     ColumnDef,
     getCoreRowModel,
@@ -102,7 +90,6 @@ type DashboardClientProps = {
 
 export function DashboardClient({ trademarks }: DashboardClientProps) {
   const { dictionary } = useLanguage();
-  const [isDeleting, startDeleteTransition] = React.useTransition();
   const { toast } = useToast();
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'expiration', desc: false },
@@ -265,25 +252,6 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     },
   });
 
-  const handleDeleteAllData = async () => {
-    startDeleteTransition(async () => {
-        const result = await deleteAllDataAction();
-        if (result.success) {
-            toast({
-                title: dictionary.dashboard.deleteAll.successTitle,
-                description: dictionary.dashboard.deleteAll.successDescription,
-            });
-            window.location.reload();
-        } else {
-            toast({
-                title: dictionary.dashboard.deleteAll.errorTitle,
-                description: result.error,
-                variant: "destructive",
-            });
-        }
-    });
-  }
-
   const { agentAreas, expirationYears } = React.useMemo(() => {
     const areas = new Set<string>();
     const years = new Set<number>();
@@ -306,31 +274,6 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         <h1 className="text-3xl font-bold tracking-tight text-primary">
           {dictionary.dashboard.title}
         </h1>
-        {trademarks.length > 0 && (
-          <AlertDialog>
-              <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {dictionary.dashboard.deleteAll.button}
-                  </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                  <AlertDialogHeader>
-                      <AlertDialogTitle>{dictionary.dashboard.deleteAll.confirmTitle}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          {dictionary.dashboard.deleteAll.confirmDescription}
-                      </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                      <AlertDialogCancel>{dictionary.dashboard.deleteAll.cancel}</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteAllData} disabled={isDeleting}>
-                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {dictionary.dashboard.deleteAll.continue}
-                      </AlertDialogAction>
-                  </AlertDialogFooter>
-              </AlertDialogContent>
-          </AlertDialog>
-        )}
       </div>
        {trademarks.length === 0 ? (
          <p className="text-muted-foreground">
