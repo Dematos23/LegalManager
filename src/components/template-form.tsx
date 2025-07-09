@@ -175,6 +175,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
   const [selectedContactId, setSelectedContactId] = useState<string>("");
   const [selectedOwnerId, setSelectedOwnerId] = useState<string>("");
+  const [selectedTrademarkId, setSelectedTrademarkId] = useState<string>("");
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -224,6 +225,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
   useEffect(() => {
     setSelectedOwnerId("");
   }, [selectedContactId]);
+  useEffect(() => {
+    setSelectedTrademarkId("");
+  }, [selectedOwnerId]);
 
   const templateBody = form.watch("body");
   const templateSubject = form.watch("subject");
@@ -232,6 +236,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
     if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedOwner) {
       return { subject: '', body: '' };
     }
+    
+    const trademarksForPreview = selectedTrademarkId
+      ? availableTrademarks.filter(tm => tm.id === Number(selectedTrademarkId))
+      : availableTrademarks;
 
     const context = {
       agent: {
@@ -239,21 +247,17 @@ export function TemplateForm({ template }: TemplateFormProps) {
         name: selectedAgent.name,
         country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
         area: selectedAgent.area,
-        createdAt: selectedAgent.createdAt,
-        updatedAt: selectedAgent.updatedAt,
       },
       owner: {
         id: selectedOwner.id,
         name: selectedOwner.name,
         country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-        createdAt: selectedOwner.createdAt,
-        updatedAt: selectedOwner.updatedAt
       },
       contact: {
         name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
         email: selectedContact.email,
       },
-      trademarks: availableTrademarks.map(tm => ({
+      trademarks: trademarksForPreview.map(tm => ({
           denomination: tm.denomination,
           class: String(tm.class),
           certificate: tm.certificate,
@@ -287,6 +291,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     selectedContact,
     selectedOwner,
     availableTrademarks,
+    selectedTrademarkId,
     templateSubject,
     templateBody,
   ]);
@@ -335,9 +340,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
         quill.focus();
-        // The length calculation needs to account for the span wrapper, but quill handles the cursor
-        // positioning well after `dangerouslyPasteHTML`. We just move it after the inserted content.
-        const newIndex = quill.getSelection(true).index;
+        const newIndex = range.index + value.length + 1;
         quill.setSelection(newIndex, 0, 'silent');
     }
   };
@@ -463,7 +466,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <span>Loading preview data...</span>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Select
                         value={selectedAgentId}
                         onValueChange={setSelectedAgentId}
@@ -518,6 +521,23 @@ export function TemplateForm({ template }: TemplateFormProps) {
                               {owner.name}
                             </SelectItem>
                           ))}
+                        </SelectContent>
+                      </Select>
+                       <Select
+                        value={selectedTrademarkId}
+                        onValueChange={setSelectedTrademarkId}
+                        disabled={!selectedOwnerId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={dictionary.templateForm.selectTrademark} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">{dictionary.templateForm.allTrademarks}</SelectItem>
+                            {availableTrademarks.map((trademark) => (
+                            <SelectItem key={trademark.id} value={String(trademark.id)}>
+                                {trademark.denomination}
+                            </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
