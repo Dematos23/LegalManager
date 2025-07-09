@@ -110,16 +110,16 @@ const QuillEditor = ({
   field: ControllerRenderProps<TemplateFormValues, "body">;
   quillRef: React.MutableRefObject<Quill | null>;
 }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !editorRef.current) {
-      return;
-    }
+    if (!containerRef.current) return;
 
-    const editorNode = editorRef.current;
-    
-    const quill = new Quill(editorNode, {
+    const editorContainer = document.createElement("div");
+    containerRef.current.innerHTML = "";
+    containerRef.current.appendChild(editorContainer);
+
+    const quill = new Quill(editorContainer, {
       theme: "snow",
       modules: {
         toolbar: [
@@ -131,6 +131,7 @@ const QuillEditor = ({
         ],
       },
     });
+
     quillRef.current = quill;
 
     if (field.value) {
@@ -153,13 +154,13 @@ const QuillEditor = ({
     return () => {
       quill.off("text-change", handleChange);
       quillRef.current = null;
-      if (editorNode) {
-        editorNode.innerHTML = "";
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
       }
     };
-  }, []); // Empty dependency array ensures this runs only once on mount and cleans up on unmount
+  }, [field, quillRef]);
 
-  return <div ref={editorRef} />;
+  return <div ref={containerRef} />;
 };
 
 
@@ -350,7 +351,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
         
-        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
+        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
         
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
@@ -482,7 +483,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <span>Loading preview data...</span>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                       <Select
                         value={selectedAgentId}
                         onValueChange={setSelectedAgentId}
