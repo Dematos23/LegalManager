@@ -235,12 +235,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     const context = {
       agent: {
-        ...selectedAgent,
-        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+        id: selectedAgent.id,
+        name: selectedAgent.name,
+        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        area: selectedAgent.area,
+        createdAt: selectedAgent.createdAt,
+        updatedAt: selectedAgent.updatedAt,
       },
       owner: {
-        ...selectedOwner,
-        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+        id: selectedOwner.id,
+        name: selectedOwner.name,
+        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        createdAt: selectedOwner.createdAt,
+        updatedAt: selectedOwner.updatedAt
       },
       contact: {
         name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
@@ -323,12 +330,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
         
-        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
+        const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
         
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
         quill.focus();
-        const newIndex = range.index + quill.clipboard.convert(htmlToInsert).length();
+        const newIndex = range.index + value.length + 1;
         quill.setSelection(newIndex, 0, 'silent');
     }
   };
