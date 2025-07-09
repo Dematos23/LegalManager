@@ -22,10 +22,12 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { ArrowLeft, Mail, MailOpen, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Mail, MailOpen, CheckCircle2, XCircle, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import React from 'react';
+import React, { useTransition } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { syncCampaignStatusAction } from '@/app/campaigns/actions';
 
 
 type CampaignDetailClientProps = {
@@ -34,10 +36,30 @@ type CampaignDetailClientProps = {
 
 export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
   const { language, dictionary } = useLanguage();
+  const [isSyncing, startSyncTransition] = useTransition();
+  const { toast } = useToast();
 
   const formatDate = (date: Date) => {
     return format(date, 'MMM dd, yyyy, h:mm a', {
       locale: language === 'es' ? es : undefined,
+    });
+  };
+
+  const handleSync = () => {
+    startSyncTransition(async () => {
+        const result = await syncCampaignStatusAction(campaign.id);
+        if (result.error) {
+            toast({
+                title: dictionary.tracking.details.syncErrorTitle,
+                description: result.error,
+                variant: 'destructive',
+            });
+        } else {
+            toast({
+                title: dictionary.tracking.details.syncSuccessTitle,
+                description: result.success || '',
+            });
+        }
     });
   };
 
@@ -47,12 +69,18 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
         <h1 className="text-3xl font-bold tracking-tight text-primary">
           {campaign.name}
         </h1>
-        <Button asChild variant="outline">
-            <Link href="/tracking">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {dictionary.tracking.details.back}
-            </Link>
-        </Button>
+        <div className="flex gap-2">
+            <Button onClick={handleSync} disabled={isSyncing} variant="outline">
+                {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                {dictionary.tracking.details.syncButton}
+            </Button>
+            <Button asChild variant="outline">
+                <Link href="/tracking">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    {dictionary.tracking.details.back}
+                </Link>
+            </Button>
+        </div>
       </div>
 
       <Card>
@@ -75,7 +103,7 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
         <CardHeader>
           <CardTitle>{dictionary.tracking.details.sentEmailsTitle}</CardTitle>
           <CardDescription>
-            A list of all emails sent in this campaign. Statuses are updated via Resend webhooks.
+            A list of all emails sent in this campaign. Click sync to fetch the latest statuses.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,14 +111,11 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>{dictionary.tracking.details.table.contact}</TableHead>
-                <TableHead>{dictionary.tracking.details.table.status}</TableHead>
+                <TableHead>{dictionary.tracking.details.table.deliveryStatus}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {campaign.sentEmails.map((email) => {
-                const sentAtFormatted = formatDate(new Date(email.sentAt));
-                const status = email.status.toLowerCase();
-                
                 return (
                   <TableRow key={email.id}>
                     <TableCell>
@@ -104,57 +129,62 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1.5 text-gray-500"><Mail className="h-5 w-5"/></div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="font-semibold">{dictionary.tracking.details.table.sent}</p>
-                              <p className="text-xs text-muted-foreground">{sentAtFormatted}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        {(status === 'delivered' || status === 'opened' || status === 'bounced') && <ArrowRight className="h-4 w-4 text-gray-300" />}
-                        
-                        {status === 'bounced' && (
-                          <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-red-600"><XCircle className="h-5 w-5"/></div></TooltipTrigger>
-                              <TooltipContent>
-                                <p className="font-semibold">{dictionary.tracking.details.table.bounced}</p>
-                                <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.deliveryFailed}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        
-                        {(status === 'delivered' || status === 'opened') && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-green-600"><CheckCircle2 className="h-5 w-5"/></div></TooltipTrigger>
-                              <TooltipContent>
-                                <p className="font-semibold">{dictionary.tracking.details.table.delivered}</p>
-                                <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.statusUpdated}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-
-                        {status === 'opened' && (
-                          <>
-                            <ArrowRight className="h-4 w-4 text-gray-300" />
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-blue-600"><MailOpen className="h-5 w-5"/></div></TooltipTrigger>
+                                <TooltipTrigger asChild>
+                                <div className={cn("flex items-center gap-1.5", email.sentAt ? 'text-gray-500' : 'text-gray-300')}>
+                                    <Mail className="h-5 w-5"/>
+                                </div>
+                                </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className="font-semibold">{dictionary.tracking.details.table.opened}</p>
-                                  <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.statusUpdated}</p>
+                                <p className="font-semibold">{dictionary.tracking.details.table.sent}</p>
+                                {email.sentAt ? (
+                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.sentAt))}</p>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                                )}
                                 </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </>
-                        )}
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {email.sentAt && <ArrowRight className="h-4 w-4 text-gray-300" />}
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <div className={cn("flex items-center gap-1.5", email.deliveredAt ? 'text-green-600' : 'text-gray-300')}>
+                                    <CheckCircle2 className="h-5 w-5"/>
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                <p className="font-semibold">{dictionary.tracking.details.table.delivered}</p>
+                                {email.deliveredAt ? (
+                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.deliveredAt))}</p>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                                )}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+
+                        {email.deliveredAt && <ArrowRight className="h-4 w-4 text-gray-300" />}
+
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                <div className={cn("flex items-center gap-1.5", email.openedAt ? 'text-blue-600' : 'text-gray-300')}>
+                                    <MailOpen className="h-5 w-5"/>
+                                </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                <p className="font-semibold">{dictionary.tracking.details.table.opened}</p>
+                                {email.openedAt ? (
+                                    <p className="text-xs text-muted-foreground">{formatDate(new Date(email.openedAt))}</p>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.pending}</p>
+                                )}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -167,4 +197,3 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
     </div>
   );
 }
-

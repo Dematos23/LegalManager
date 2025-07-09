@@ -82,7 +82,6 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             await prisma.sentEmail.create({
                 data: {
                     resendId: data.id,
-                    status: 'sent',
                     campaignId: campaign.id,
                     contactId: contact.id,
                 },
@@ -126,4 +125,54 @@ export async function getCampaignDetails(campaignId: number) {
             },
         },
     });
+}
+
+export async function syncCampaignStatusAction(campaignId: number) {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    try {
+        const campaign = await prisma.campaign.findUnique({
+            where: { id: campaignId },
+            include: { sentEmails: true },
+        });
+
+        if (!campaign) {
+            return { error: 'Campaign not found.' };
+        }
+        
+        for (const email of campaign.sentEmails) {
+            try {
+                const { data, error } = await resend.emails.get(email.resendId);
+                if (error || !data) {
+                    console.warn(`Could not sync status for email ${email.resendId}:`, error);
+                    continue;
+                }
+                
+                const updates: { deliveredAt?: Date, openedAt?: Date } = {};
+                
+                if (data.last_event === 'delivered' && !email.deliveredAt) {
+                    updates.deliveredAt = new Date();
+                } else if (data.last_event === 'opened' && !email.openedAt) {
+                    // If it was opened, it must have been delivered.
+                    if (!email.deliveredAt) {
+                        updates.deliveredAt = new Date();
+                    }
+                    updates.openedAt = new Date();
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    await prisma.sentEmail.update({
+                        where: { id: email.id },
+                        data: updates,
+                    });
+                }
+            } catch (syncError) {
+                 console.warn(`Error syncing status for email ${email.resendId}:`, syncError);
+            }
+        }
+        revalidatePath(`/tracking/${campaignId}`);
+        return { success: 'Campaign statuses synced.' };
+    } catch (error) {
+        console.error('Failed to sync campaign statuses:', error);
+        return { error: 'An unexpected error occurred while syncing.' };
+    }
 }

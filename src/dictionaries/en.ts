@@ -166,15 +166,16 @@ export const en = {
       template: 'Template',
       sentAt: 'Sent At',
       sentEmailsTitle: 'Sent Emails',
+      syncButton: 'Sync Statuses',
+      syncErrorTitle: 'Sync Failed',
+      syncSuccessTitle: 'Sync Complete',
       table: {
         contact: 'Contact',
-        status: 'Email Status',
+        deliveryStatus: 'Delivery Status',
         sent: 'Sent',
         delivered: 'Delivered',
         opened: 'Opened',
-        bounced: 'Bounced',
-        statusUpdated: 'Status updated',
-        deliveryFailed: 'Delivery failed',
+        pending: 'Pending',
       }
     }
   }

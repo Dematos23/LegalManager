@@ -168,15 +168,16 @@ export const es: Dictionary = {
       template: 'Plantilla',
       sentAt: 'Enviado el',
       sentEmailsTitle: 'Correos Enviados',
+      syncButton: 'Sincronizar Estados',
+      syncErrorTitle: 'Sincronización Fallida',
+      syncSuccessTitle: 'Sincronización Completa',
       table: {
         contact: 'Contacto',
-        status: 'Estado del Correo',
+        deliveryStatus: 'Estado de Entrega',
         sent: 'Enviado',
         delivered: 'Entregado',
         opened: 'Abierto',
-        bounced: 'Rebotado',
-        statusUpdated: 'Estado actualizado',
-        deliveryFailed: 'Falló la entrega',
+        pending: 'Pendiente',
       }
     }
   }

@@ -76,14 +76,15 @@ model Campaign {
 }
 
 model SentEmail {
-  id         Int      @id @default(autoincrement())
-  resendId   String   @unique
-  status     String
-  sentAt     DateTime @default(now())
-  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  campaignId Int
-  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId  Int
+  id          Int       @id @default(autoincrement())
+  resendId    String    @unique
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId  Int
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId   Int
 }
 
 enum TrademarkType {
@@ -301,4 +302,3 @@ enum Country {
   ZAMBIA
   ZIMBABWE
 }
-
