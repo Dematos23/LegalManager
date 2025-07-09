@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { CampaignDetails } from '@/types';
+import type { CampaignDetails, SentEmail, Contact } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import {
   Card,
@@ -22,9 +22,11 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { Badge } from './ui/badge';
+import { ArrowLeft, Mail, MailOpen, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import React from 'react';
+
 
 type CampaignDetailClientProps = {
   campaign: CampaignDetails;
@@ -38,21 +40,6 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
       locale: language === 'es' ? es : undefined,
     });
   };
-
-  const getStatusBadge = (status: string) => {
-      switch (status.toLowerCase()) {
-          case 'sent':
-              return 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300';
-          case 'delivered':
-              return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
-          case 'bounced':
-              return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-          case 'opened':
-              return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
-          default:
-              return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-      }
-  }
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -96,28 +83,83 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>{dictionary.tracking.details.table.contact}</TableHead>
-                <TableHead>{dictionary.tracking.details.table.email}</TableHead>
                 <TableHead>{dictionary.tracking.details.table.status}</TableHead>
-                <TableHead>{dictionary.tracking.details.table.sentAt}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {campaign.sentEmails.map((email) => (
-                <TableRow key={email.id}>
-                  <TableCell className="font-medium">
-                      <Link href={`/contacts/${email.contact.id}`} className="hover:underline text-primary">
-                        {`${email.contact.firstName || ''} ${email.contact.lastName || ''}`.trim()}
-                      </Link>
-                  </TableCell>
-                  <TableCell>{email.contact.email}</TableCell>
-                  <TableCell>
-                      <Badge className={cn("border-transparent capitalize", getStatusBadge(email.status))}>
-                          {email.status}
-                      </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(new Date(email.sentAt))}</TableCell>
-                </TableRow>
-              ))}
+              {campaign.sentEmails.map((email) => {
+                const sentAtFormatted = formatDate(new Date(email.sentAt));
+                const status = email.status.toLowerCase();
+                
+                return (
+                  <TableRow key={email.id}>
+                    <TableCell>
+                      <div className="font-medium">
+                        <Link href={`/contacts/${email.contact.id}`} className="hover:underline text-primary">
+                          {`${email.contact.firstName || ''} ${email.contact.lastName || ''}`.trim()}
+                        </Link>
+                      </div>
+                      <div className="text-sm text-muted-foreground">{email.contact.email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center gap-1.5 text-gray-500"><Mail className="h-5 w-5"/></div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-semibold">{dictionary.tracking.details.table.sent}</p>
+                              <p className="text-xs text-muted-foreground">{sentAtFormatted}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        {(status === 'delivered' || status === 'opened' || status === 'bounced') && <ArrowRight className="h-4 w-4 text-gray-300" />}
+                        
+                        {status === 'bounced' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-red-600"><XCircle className="h-5 w-5"/></div></TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">{dictionary.tracking.details.table.bounced}</p>
+                                <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.deliveryFailed}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        
+                        {(status === 'delivered' || status === 'opened') && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-green-600"><CheckCircle2 className="h-5 w-5"/></div></TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">{dictionary.tracking.details.table.delivered}</p>
+                                <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.statusUpdated}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
+                        {status === 'opened' && (
+                          <>
+                            <ArrowRight className="h-4 w-4 text-gray-300" />
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild><div className="flex items-center gap-1.5 text-blue-600"><MailOpen className="h-5 w-5"/></div></TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="font-semibold">{dictionary.tracking.details.table.opened}</p>
+                                  <p className="text-xs text-muted-foreground">{dictionary.tracking.details.table.statusUpdated}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -125,3 +167,4 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
     </div>
   );
 }
+

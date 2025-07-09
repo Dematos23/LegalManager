@@ -170,9 +170,13 @@ export const es: Dictionary = {
       sentEmailsTitle: 'Correos Enviados',
       table: {
         contact: 'Contacto',
-        email: 'Correo electrónico',
-        status: 'Estado',
-        sentAt: 'Enviado el',
+        status: 'Estado del Correo',
+        sent: 'Enviado',
+        delivered: 'Entregado',
+        opened: 'Abierto',
+        bounced: 'Rebotado',
+        statusUpdated: 'Estado actualizado',
+        deliveryFailed: 'Falló la entrega',
       }
     }
   }

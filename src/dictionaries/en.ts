@@ -168,9 +168,13 @@ export const en = {
       sentEmailsTitle: 'Sent Emails',
       table: {
         contact: 'Contact',
-        email: 'Email',
-        status: 'Status',
-        sentAt: 'Sent At',
+        status: 'Email Status',
+        sent: 'Sent',
+        delivered: 'Delivered',
+        opened: 'Opened',
+        bounced: 'Bounced',
+        statusUpdated: 'Status updated',
+        deliveryFailed: 'Delivery failed',
       }
     }
   }
