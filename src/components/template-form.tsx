@@ -255,9 +255,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
         email: selectedContact.email,
       },
       trademarks: [selectedTrademark].map(tm => ({
-        ...tm,
-        class: String(tm.class),
-        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+          denomination: tm.denomination,
+          class: String(tm.class),
+          certificate: tm.certificate,
+          expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+          products: tm.products,
+          type: tm.type
       })),
     };
 
@@ -328,15 +331,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
         const quill = quillInstance.current;
         const range = quill.getSelection(true);
         
-        // Create the HTML for the tag and add a space at the end.
         const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
         
-        // Paste the HTML in one go.
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
-        // Move the cursor after the inserted content.
-        // The span is an atomic blot (length 1), and the space is a character (length 1).
-        quill.setSelection(range.index + 2, 'silent');
+        quill.setSelection(range.index + value.length + 1, 'silent');
     }
   };
 

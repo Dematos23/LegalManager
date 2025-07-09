@@ -63,13 +63,12 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                     email: contact.email,
                 },
                 trademarks: trademarks.map(tm => ({
-                    ...tm,
-                    owner: undefined, // remove nested owner to avoid confusion
-                    class: String(tm.class),
-                    expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
                     denomination: tm.denomination,
+                    class: String(tm.class),
                     certificate: tm.certificate,
-                    products: tm.products
+                    expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+                    products: tm.products,
+                    type: tm.type
                 })),
             };
 
