@@ -335,7 +335,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
         quill.focus();
-        const newIndex = range.index + value.length + 1;
+        // The length calculation needs to account for the span wrapper, but quill handles the cursor
+        // positioning well after `dangerouslyPasteHTML`. We just move it after the inserted content.
+        const newIndex = quill.getSelection(true).index;
         quill.setSelection(newIndex, 0, 'silent');
     }
   };
