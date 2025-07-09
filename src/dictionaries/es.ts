@@ -109,7 +109,7 @@ export const es: Dictionary = {
     selectAgent: 'Seleccione un Agente...',
     selectContact: 'Seleccione un Contacto...',
     selectOwner: 'Seleccione un Titular...',
-    selectTrademark: 'Seleccione una Marca para previsualizar...',
+    selectDataForPreview: 'Seleccione un titular para ver una vista previa.',
     renderedSubject: 'Asunto Renderizado',
     renderedPreview: 'Vista Previa Renderizada',
   },

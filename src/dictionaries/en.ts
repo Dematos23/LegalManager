@@ -107,7 +107,7 @@ export const en = {
     selectAgent: 'Select an Agent...',
     selectContact: 'Select a Contact...',
     selectOwner: 'Select an Owner...',
-    selectTrademark: 'Select a Trademark to preview...',
+    selectDataForPreview: 'Select an owner to see a preview.',
     renderedSubject: 'Rendered Subject',
     renderedPreview: 'Rendered Preview',
   },
