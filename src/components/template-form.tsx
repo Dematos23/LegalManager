@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -110,59 +110,58 @@ const QuillEditor = ({
   field: ControllerRenderProps<TemplateFormValues, "body">;
   quillRef: React.MutableRefObject<Quill | null>;
 }) => {
-  const editorRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (typeof window === "undefined" || !node) return;
-
-      if (!quillRef.current) {
-        quillRef.current = new Quill(node, {
-          theme: "snow",
-          modules: {
-            toolbar: [
-              [{ header: [1, 2, 3, false] }],
-              ["bold", "italic", "underline", "strike", "blockquote"],
-              [
-                { list: "ordered" },
-                { list: "bullet" },
-                { indent: "-1" },
-                { indent: "+1" },
-              ],
-              ["link"],
-              ["clean"],
-            ],
-          },
-        });
-
-        const quill = quillRef.current;
-        quill.root.innerHTML = field.value || "";
-
-        quill.on("text-change", (delta, oldDelta, source) => {
-          if (source === "user") {
-            let content = quill.root.innerHTML;
-            if (content === "<p><br></p>") {
-              content = "";
-            }
-            field.onChange(content);
-          }
-        });
-      }
-    },
-    [field, quillRef]
-  );
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (
-      quillRef.current &&
-      quillRef.current.root.innerHTML !== field.value
-    ) {
-      const quill = quillRef.current;
+    if (typeof window === 'undefined' || !editorRef.current) {
+      return;
+    }
+
+    const editorNode = editorRef.current;
+    
+    const quill = new Quill(editorNode, {
+      theme: "snow",
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, false] }],
+          ["bold", "italic", "underline", "strike", "blockquote"],
+          [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+          ["link"],
+          ["clean"],
+        ],
+      },
+    });
+    quillRef.current = quill;
+
+    if (field.value) {
       const delta = quill.clipboard.convert(field.value as any);
       quill.setContents(delta, "silent");
     }
-  }, [field.value, quillRef]);
+
+    const handleChange = (delta: any, oldDelta: any, source: string) => {
+      if (source === "user") {
+        let content = quill.root.innerHTML;
+        if (content === "<p><br></p>") {
+          content = "";
+        }
+        field.onChange(content);
+      }
+    };
+
+    quill.on("text-change", handleChange);
+
+    return () => {
+      quill.off("text-change", handleChange);
+      quillRef.current = null;
+      if (editorNode) {
+        editorNode.innerHTML = "";
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount and cleans up on unmount
 
   return <div ref={editorRef} />;
 };
+
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
@@ -271,17 +270,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
     let finalContext;
 
     if (trademarksContextData.length === 1) {
-        // If only one trademark is selected, provide its data at the top level
-        // for direct access (e.g., {{denomination}}), and also provide the `trademarks`
-        // array for any templates that use loops.
         finalContext = {
             ...baseContext,
             ...trademarksContextData[0],
             trademarks: trademarksContextData,
         };
     } else {
-        // If multiple trademarks (or none) are selected, only provide the `trademarks`
-        // array for use inside an {{#each}} loop.
         finalContext = {
             ...baseContext,
             trademarks: trademarksContextData,
@@ -361,13 +355,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
         quill.clipboard.dangerouslyPasteHTML(range.index, htmlToInsert, 'user');
         
         quill.focus();
-        // The length calculation needs to be precise for cursor positioning
-        const newIndex = range.index + 1; // Position cursor right after the inserted content
-        quill.setSelection(newIndex, 0, 'silent');
         
-        // Let's refine cursor position after insertion
-        const finalLength = range.index + quill.clipboard.convert(htmlToInsert).length();
-        quill.setSelection(finalLength, 0, 'silent');
+        const newIndex = range.index + quill.clipboard.convert(htmlToInsert).length()
+        quill.setSelection(newIndex, 0, 'silent');
     }
   };
 
