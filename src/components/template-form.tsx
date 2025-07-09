@@ -1,14 +1,15 @@
+
 "use client";
 
 import React, {
   useState,
   useEffect,
   useMemo,
-  useImperativeHandle,
+  useRef,
   forwardRef,
-  useCallback,
+  useImperativeHandle,
 } from "react";
-import { useForm, ControllerRenderProps } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -113,84 +114,68 @@ type QuillEditorHandle = {
   insert: (html: string) => void;
 };
 
-const QuillEditor = forwardRef<
-  QuillEditorHandle,
-  { value: string; onChange: (value: string) => void }
->(({ value, onChange }, ref) => {
-  const [quill, setQuill] = useState<Quill | null>(null);
+const QuillEditor = forwardRef<QuillEditorHandle, { value: string; onChange: (value: string) => void }>(
+  ({ value, onChange }, ref) => {
+    const editorRef = useRef<HTMLDivElement>(null);
+    const quillRef = useRef<Quill | null>(null);
 
-  // This effect handles text-change events to update the form state
-  useEffect(() => {
-    if (!quill) return;
-
-    const handleChange = (delta: any, oldDelta: any, source: string) => {
-      if (source === "user") {
-        const content = quill.root.innerHTML;
-        onChange(content === "<p><br></p>" ? "" : content);
-      }
-    };
-
-    quill.on("text-change", handleChange);
-    return () => {
-      quill.off("text-change", handleChange);
-    };
-  }, [quill, onChange]);
-
-  // This effect syncs external value changes to the editor
-  useEffect(() => {
-    if (
-      quill &&
-      value !== quill.root.innerHTML &&
-      !(value === "" && quill.root.innerHTML === "<p><br></p>")
-    ) {
-      const delta = quill.clipboard.convert(value);
-      quill.setContents(delta, "silent");
-    }
-  }, [quill, value]);
-
-  // Expose an insert method via the ref
-  useImperativeHandle(ref, () => ({
-    insert: (html: string) => {
-      if (quill) {
-        const range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
-        quill.focus();
-      }
-    },
-  }));
-
-  // The callback ref is the key to proper initialization and cleanup
-  const editorRef = useCallback((wrapper: HTMLDivElement | null) => {
-    if (wrapper === null) return;
-
-    // Clear previous instances to prevent duplicates
-    wrapper.innerHTML = "";
-    const editorContainer = document.createElement("div");
-    wrapper.append(editorContainer);
-
-    const q = new Quill(editorContainer, {
-      theme: "snow",
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, 3, false] }],
-          ["bold", "italic", "underline", "strike", "blockquote"],
-          [
-            { list: "ordered" },
-            { list: "bullet" },
-            { indent: "-1" },
-            { indent: "+1" },
-          ],
-          ["link"],
-          ["clean"],
-        ],
+    useImperativeHandle(ref, () => ({
+      insert: (html: string) => {
+        if (quillRef.current) {
+          const range = quillRef.current.getSelection(true);
+          quillRef.current.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+          quillRef.current.focus();
+        }
       },
-    });
+    }));
 
-    setQuill(q);
-  }, []);
+    useEffect(() => {
+      if (editorRef.current) {
+        // Initialize editor
+        quillRef.current = new Quill(editorRef.current, {
+          theme: 'snow',
+          modules: {
+            toolbar: [
+              [{ header: [1, 2, 3, false] }],
+              ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+              [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+              ['link'],
+              ['clean'],
+            ],
+          },
+        });
 
-  return <div ref={editorRef} />;
-});
+        const quill = quillRef.current;
+        quill.on('text-change', (delta, oldDelta, source) => {
+          if (source === 'user') {
+            const content = quill.root.innerHTML;
+            onChange(content === '<p><br></p>' ? '' : content);
+          }
+        });
+
+        // Cleanup function
+        return () => {
+          if (quillRef.current) {
+            quillRef.current.off('text-change');
+          }
+          if (editorRef.current) {
+             editorRef.current.innerHTML = "";
+          }
+          quillRef.current = null;
+        };
+      }
+    }, []);
+
+    useEffect(() => {
+      if (quillRef.current && quillRef.current.root.innerHTML !== value) {
+        const delta = quillRef.current.clipboard.convert(value || "");
+        quillRef.current.setContents(delta, 'silent');
+      }
+    }, [value, quillRef]);
+
+    return <div ref={editorRef} />;
+  }
+);
 QuillEditor.displayName = "QuillEditor";
 
 export function TemplateForm({ template }: TemplateFormProps) {
@@ -275,7 +260,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
 
     const trademarksForPreview =
-      selectedTrademarkId && selectedTrademarkId !== "all"
+      selectedTrademarkId !== "all"
         ? availableTrademarks.filter(
             (tm) => tm.id === Number(selectedTrademarkId)
           )
@@ -320,18 +305,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
       type: tm.type,
     }));
 
-    let finalContext;
+    let finalContext: any = {
+      ...baseContext,
+      trademarks: trademarksContextData,
+    };
 
+    // If only one trademark is selected for preview, also make its properties available at the top level
     if (trademarksContextData.length === 1) {
       finalContext = {
-        ...baseContext,
+        ...finalContext,
         ...trademarksContextData[0],
-        trademarks: trademarksContextData,
-      };
-    } else {
-      finalContext = {
-        ...baseContext,
-        trademarks: trademarksContextData,
       };
     }
 
@@ -385,19 +368,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if ("name" in errors && errors.name) {
+      if (errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if ("subject" in errors && errors.subject) {
+      if (errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if ("body" in errors && errors.body) {
+      if (errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if ("_form" in errors && errors._form) {
+      if (errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
