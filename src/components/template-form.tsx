@@ -1,7 +1,13 @@
-
 "use client";
 
-import React, { useState, useEffect, useMemo, useImperativeHandle, forwardRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+} from "react";
 import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -118,23 +124,27 @@ const QuillEditor = forwardRef<
     if (!quill) return;
 
     const handleChange = (delta: any, oldDelta: any, source: string) => {
-      if (source === 'user') {
+      if (source === "user") {
         const content = quill.root.innerHTML;
-        onChange(content === '<p><br></p>' ? '' : content);
+        onChange(content === "<p><br></p>" ? "" : content);
       }
     };
 
-    quill.on('text-change', handleChange);
+    quill.on("text-change", handleChange);
     return () => {
-      quill.off('text-change', handleChange);
+      quill.off("text-change", handleChange);
     };
   }, [quill, onChange]);
 
   // This effect syncs external value changes to the editor
   useEffect(() => {
-     if (quill && value !== quill.root.innerHTML && !(value === '' && quill.root.innerHTML === '<p><br></p>')) {
+    if (
+      quill &&
+      value !== quill.root.innerHTML &&
+      !(value === "" && quill.root.innerHTML === "<p><br></p>")
+    ) {
       const delta = quill.clipboard.convert(value);
-      quill.setContents(delta, 'silent');
+      quill.setContents(delta, "silent");
     }
   }, [quill, value]);
 
@@ -143,54 +153,61 @@ const QuillEditor = forwardRef<
     insert: (html: string) => {
       if (quill) {
         const range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
         quill.focus();
       }
     },
   }));
-  
+
   // The callback ref is the key to proper initialization and cleanup
   const editorRef = useCallback((wrapper: HTMLDivElement | null) => {
     if (wrapper === null) return;
-    
+
     // Clear previous instances to prevent duplicates
-    wrapper.innerHTML = '';
-    const editorContainer = document.createElement('div');
+    wrapper.innerHTML = "";
+    const editorContainer = document.createElement("div");
     wrapper.append(editorContainer);
 
     const q = new Quill(editorContainer, {
-      theme: 'snow',
+      theme: "snow",
       modules: {
         toolbar: [
           [{ header: [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-          [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-          ['link'],
-          ['clean'],
+          ["bold", "italic", "underline", "strike", "blockquote"],
+          [
+            { list: "ordered" },
+            { list: "bullet" },
+            { indent: "-1" },
+            { indent: "+1" },
+          ],
+          ["link"],
+          ["clean"],
         ],
       },
     });
-    
+
     setQuill(q);
   }, []);
 
   return <div ref={editorRef} />;
 });
-QuillEditor.displayName = 'QuillEditor';
-
+QuillEditor.displayName = "QuillEditor";
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
   const quillEditorRef = React.useRef<QuillEditorHandle>(null);
   const [viewMode, setViewMode] = React.useState<"edit" | "preview">("edit");
-  const [previewData, setPreviewData] = React.useState<AgentWithNestedData[]>([]);
+  const [previewData, setPreviewData] = React.useState<AgentWithNestedData[]>(
+    []
+  );
   const [isLoadingPreviewData, setIsLoadingPreviewData] = React.useState(true);
 
   const [selectedAgentId, setSelectedAgentId] = React.useState<string>("");
   const [selectedContactId, setSelectedContactId] = React.useState<string>("");
   const [selectedOwnerId, setSelectedOwnerId] = React.useState<string>("");
-  const [selectedTrademarkId, setSelectedTrademarkId] = React.useState<string>("all");
+  const [selectedTrademarkId, setSelectedTrademarkId] =
+    React.useState<string>("all");
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
@@ -248,59 +265,85 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const templateSubject = form.watch("subject");
 
   const renderedPreview = React.useMemo(() => {
-    if (viewMode === 'edit' || !selectedAgent || !selectedContact || !selectedOwner) {
-      return { subject: '', body: '' };
+    if (
+      viewMode === "edit" ||
+      !selectedAgent ||
+      !selectedContact ||
+      !selectedOwner
+    ) {
+      return { subject: "", body: "" };
     }
-    
-    const trademarksForPreview = (selectedTrademarkId && selectedTrademarkId !== 'all')
-      ? availableTrademarks.filter(tm => tm.id === Number(selectedTrademarkId))
-      : availableTrademarks;
+
+    const trademarksForPreview =
+      selectedTrademarkId && selectedTrademarkId !== "all"
+        ? availableTrademarks.filter(
+            (tm) => tm.id === Number(selectedTrademarkId)
+          )
+        : availableTrademarks;
 
     const baseContext = {
       agent: {
         id: selectedAgent.id,
         name: selectedAgent.name,
-        country: selectedAgent.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        country: selectedAgent.country
+          .replace(/_/g, " ")
+          .replace(
+            /\w\S*/g,
+            (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+          ),
         area: selectedAgent.area,
       },
       owner: {
         id: selectedOwner.id,
         name: selectedOwner.name,
-        country: selectedOwner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        country: selectedOwner.country
+          .replace(/_/g, " ")
+          .replace(
+            /\w\S*/g,
+            (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+          ),
       },
       contact: {
-        name: `${selectedContact.firstName || ''} ${selectedContact.lastName || ''}`.trim(),
+        name: `${selectedContact.firstName || ""} ${
+          selectedContact.lastName || ""
+        }`.trim(),
         email: selectedContact.email,
       },
     };
-    
-    const trademarksContextData = trademarksForPreview.map(tm => ({
-        denomination: tm.denomination,
-        class: String(tm.class),
-        certificate: tm.certificate,
-        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
-        products: tm.products,
-        type: tm.type
+
+    const trademarksContextData = trademarksForPreview.map((tm) => ({
+      denomination: tm.denomination,
+      class: String(tm.class),
+      certificate: tm.certificate,
+      expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
+      products: tm.products,
+      type: tm.type,
     }));
 
     let finalContext;
 
     if (trademarksContextData.length === 1) {
-        finalContext = {
-            ...baseContext,
-            ...trademarksContextData[0],
-            trademarks: trademarksContextData,
-        };
+      finalContext = {
+        ...baseContext,
+        ...trademarksContextData[0],
+        trademarks: trademarksContextData,
+      };
     } else {
-        finalContext = {
-            ...baseContext,
-            trademarks: trademarksContextData,
-        };
+      finalContext = {
+        ...baseContext,
+        trademarks: trademarksContextData,
+      };
     }
 
     try {
-      const cleanSubject = (templateSubject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
-      const cleanBody = (templateBody || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+      const cleanSubject = (templateSubject || "").replace(
+        /<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g,
+        "$1"
+      );
+      const cleanBody = (templateBody || "").replace(
+        /<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g,
+        "$1"
+      );
 
       const subjectTemplate = Handlebars.compile(cleanSubject);
       const bodyTemplate = Handlebars.compile(cleanBody);
@@ -310,9 +353,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
       };
     } catch (e) {
       console.error("Template rendering error:", e);
-      const errorMessage = e instanceof Error ? e.message : 'Unknown error.';
+      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
       return {
-        subject: 'Error rendering subject',
+        subject: "Error rendering subject",
         body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`,
       };
     }
@@ -342,19 +385,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if ('name' in errors && errors.name) {
+      if ("name" in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if ('subject' in errors && errors.subject) {
+      if ("subject" in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if ('body' in errors && errors.body) {
+      if ("body" in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if ('_form' in errors && errors._form) {
+      if ("_form" in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -370,7 +413,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
-
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -463,7 +505,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                           <QuillEditor
+                          <QuillEditor
                             ref={quillEditorRef}
                             value={field.value}
                             onChange={field.onChange}
@@ -557,21 +599,30 @@ export function TemplateForm({ template }: TemplateFormProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                       <Select
+                      <Select
                         value={selectedTrademarkId}
                         onValueChange={setSelectedTrademarkId}
                         disabled={!selectedOwnerId}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={dictionary.templateForm.selectTrademark} />
+                          <SelectValue
+                            placeholder={
+                              dictionary.templateForm.selectTrademark
+                            }
+                          />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">{dictionary.templateForm.allTrademarks}</SelectItem>
-                            {availableTrademarks.map((trademark) => (
-                            <SelectItem key={trademark.id} value={String(trademark.id)}>
-                                {trademark.denomination}
+                          <SelectItem value="all">
+                            {dictionary.templateForm.allTrademarks}
+                          </SelectItem>
+                          {availableTrademarks.map((trademark) => (
+                            <SelectItem
+                              key={trademark.id}
+                              value={String(trademark.id)}
+                            >
+                              {trademark.denomination}
                             </SelectItem>
-                            ))}
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -607,12 +658,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
           )}
         </CardContent>
       </Card>
-      <div
-        className={cn(
-          "lg:col-span-1",
-          viewMode === "preview" && "hidden"
-        )}
-      >
+      <div className={cn("lg:col-span-1", viewMode === "preview" && "hidden")}>
         <Card>
           <CardHeader>
             <CardTitle>{dictionary.templateForm.mergeFieldsTitle}</CardTitle>
@@ -634,9 +680,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       onClick={() => handleInsertMergeField(field.value)}
                     >
                       <span>{field.name}</span>
-                      <span className="font-code text-xs text-muted-foreground">
-                        {field.value}
-                      </span>
                     </Button>
                   ))}
                 </div>
