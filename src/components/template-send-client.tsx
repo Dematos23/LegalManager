@@ -36,6 +36,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { TrademarkFilters } from './trademark-filters';
 import { sendCampaignAction } from '@/app/campaigns/actions';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     const expiration = row.getValue(columnId) as Date;
@@ -102,6 +104,7 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [isSending, startSendingTransition] = React.useTransition();
+  const [campaignName, setCampaignName] = React.useState('');
   
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -253,6 +256,14 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
   }, [trademarks]);
 
   const handleSendCampaign = () => {
+    if (campaignName.trim().length < 10) {
+        toast({
+            title: dictionary.sendTemplate.campaignErrorTitle,
+            description: dictionary.sendTemplate.campaignNameTooShort,
+            variant: "destructive",
+        });
+        return;
+    }
     const selectedRows = table.getFilteredSelectedRowModel().rows;
     if (selectedRows.length === 0) {
         toast({
@@ -281,7 +292,11 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
     }));
     
     startSendingTransition(async () => {
-        const result = await sendCampaignAction({ templateId: template.id, contactsData });
+        const result = await sendCampaignAction({ 
+            templateId: template.id, 
+            campaignName,
+            contactsData 
+        });
         if (result.error) {
             toast({
                 title: dictionary.sendTemplate.campaignErrorTitle,
@@ -294,6 +309,7 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
                 description: result.success,
             });
             table.resetRowSelection(true);
+            setCampaignName('');
         }
     });
   }
@@ -307,6 +323,18 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
                     {dictionary.sendTemplate.description} <strong>{template.name}</strong>
                 </CardDescription>
             </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="campaignName">{dictionary.sendTemplate.campaignNameLabel}</Label>
+                    <Input 
+                        id="campaignName"
+                        value={campaignName}
+                        onChange={(e) => setCampaignName(e.target.value)}
+                        placeholder={dictionary.sendTemplate.campaignNamePlaceholder}
+                        disabled={isSending}
+                    />
+                </div>
+            </CardContent>
         </Card>
 
         <TrademarkFilters table={table} agentAreas={agentAreas} expirationYears={expirationYears} />
@@ -319,7 +347,11 @@ export function TemplateSendClient({ template, trademarks }: TemplateSendClientP
                         {dictionary.sendTemplate.recipientsDescription}
                     </CardDescription>
                 </div>
-                <Button onClick={handleSendCampaign} disabled={isSending || table.getFilteredSelectedRowModel().rows.length === 0} className="w-full md:w-auto">
+                <Button 
+                    onClick={handleSendCampaign} 
+                    disabled={isSending || table.getFilteredSelectedRowModel().rows.length === 0 || campaignName.trim().length < 10} 
+                    className="w-full md:w-auto"
+                >
                     {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2" />}
                     {dictionary.sendTemplate.sendButton} ({table.getFilteredSelectedRowModel().rows.length})
                 </Button>

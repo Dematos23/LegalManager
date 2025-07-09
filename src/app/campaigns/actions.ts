@@ -10,6 +10,7 @@ import type { Contact, Trademark } from '@/types';
 
 interface SendCampaignPayload {
     templateId: number;
+    campaignName: string;
     contactsData: {
         contactId: number;
         trademarkIds: number[];
@@ -17,10 +18,14 @@ interface SendCampaignPayload {
 }
 
 export async function sendCampaignAction(payload: SendCampaignPayload) {
-    const { templateId, contactsData } = payload;
+    const { templateId, campaignName, contactsData } = payload;
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
+        if (!campaignName || campaignName.trim().length < 10) {
+            return { error: 'Campaign name must be at least 10 characters long.' };
+        }
+
         const template = await prisma.emailTemplate.findUnique({ where: { id: templateId } });
         if (!template) {
             return { error: 'Email template not found.' };
@@ -28,7 +33,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
 
         const campaign = await prisma.campaign.create({
             data: {
-                name: `${template.name} - ${format(new Date(), 'yyyy-MM-dd HH:mm')}`,
+                name: campaignName,
                 emailTemplateId: template.id,
             },
         });

@@ -136,6 +136,9 @@ export const en = {
   sendTemplate: {
     title: 'Send Campaign',
     description: 'You are using the template:',
+    campaignNameLabel: 'Campaign Name',
+    campaignNamePlaceholder: 'Enter a descriptive name for your campaign...',
+    campaignNameTooShort: 'Campaign name must be at least 10 characters long.',
     filterTitle: 'Filter Recipients',
     searchPlaceholder: 'Search by trademark, owner, contact, or agent...',
     recipientsTitle: 'Select Recipients',
@@ -144,7 +147,6 @@ export const en = {
     noSelectionTitle: 'No Recipients Selected',
     noSelectionDesc: 'Please select at least one recipient to send the campaign.',
     campaignSentTitle: 'Campaign Sent',
-    campaignSentDesc: 'Your email campaign has been queued to be sent to',
     campaignErrorTitle: 'Campaign Failed',
     recipients: 'recipients',
   },

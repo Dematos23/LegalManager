@@ -138,6 +138,9 @@ export const es: Dictionary = {
   sendTemplate: {
     title: 'Enviar Campaña',
     description: 'Estás usando la plantilla:',
+    campaignNameLabel: 'Nombre de la Campaña',
+    campaignNamePlaceholder: 'Ingrese un nombre descriptivo para su campaña...',
+    campaignNameTooShort: 'El nombre de la campaña debe tener al menos 10 caracteres.',
     filterTitle: 'Filtrar Destinatarios',
     searchPlaceholder: 'Buscar por marca, titular, contacto o agente...',
     recipientsTitle: 'Seleccionar Destinatarios',
