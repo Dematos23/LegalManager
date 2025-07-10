@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -110,112 +111,100 @@ const QuillEditor = React.forwardRef<
   QuillEditorHandle,
   { value: string; onChange: (value: string) => void }
 >(({ value, onChange }, ref) => {
+  const editorRef = React.useRef<HTMLDivElement>(null);
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
   const quillInstanceRef = React.useRef<Quill | null>(null);
-  const editorContainerRef = React.useRef<HTMLDivElement>(null);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
-        const range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
         quill.focus();
+        let range = quill.getSelection();
+        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
+        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
+        quill.setSelection(index + html.length, 0);
       }
     },
   }));
 
   React.useEffect(() => {
-    if (!editorContainerRef.current || quillInstanceRef.current) return;
+    if (quillInstanceRef.current) return; // Initialize only once
 
-    const quill = new Quill(editorContainerRef.current, {
-      theme: "snow",
-      modules: {
-        toolbar: {
-          container: "#custom-quill-toolbar",
+    if (editorRef.current && toolbarRef.current) {
+        const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: toolbarRef.current,
+          clipboard: true,
+          history: true,
         },
-        clipboard: { matchVisual: true },
-      },
-      formats: [
-        "font",
-        "size",
-        "bold",
-        "italic",
-        "underline",
-        "blockquote",
-        "list",
-        "indent",
-        "link",
-        "image",
-        "align",
-      ],
-    });
+      });
 
-    quillInstanceRef.current = quill;
+      quillInstanceRef.current = quill;
 
-    if (value) {
-      const delta = quill.clipboard.convert({ html: value });
-      quill.setContents(delta, "silent");
+      if (value) {
+        const delta = quill.clipboard.convert({ html: value });
+        quill.setContents(delta, "silent");
+      }
+
+      quill.on("text-change", (delta, oldDelta, source) => {
+        if (source === "user") {
+          const currentContent = quill.root.innerHTML;
+          onChange(currentContent === "<p><br></p>" ? "" : currentContent);
+        }
+      });
     }
 
-    quill.on("text-change", (delta, oldDelta, source) => {
-      if (source === "user") {
-        const currentContent = quill.root.innerHTML;
-        onChange(currentContent === "<p><br></p>" ? "" : currentContent);
-      }
-    });
-
     return () => {
-      quill.off("text-change");
-      quillInstanceRef.current = null;
+      if (quillInstanceRef.current) {
+        quillInstanceRef.current.off("text-change");
+      }
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (!quill) return;
-
-    const editorContent = quill.root.innerHTML;
-    const newDelta = quill.clipboard.convert({ html: value || "" });
-
-    const currentDelta = quill.clipboard.convert({ html: editorContent });
-
-    if (JSON.stringify(newDelta) !== JSON.stringify(currentDelta)) {
-      quill.setContents(newDelta, "silent");
+    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
+      const delta = quill.clipboard.convert({ html: value || "" });
+      quill.setContents(delta, "silent");
     }
   }, [value]);
 
-  // return <div ref={editorContainerRef} />;
   return (
     <>
-      <div id="custom-quill-toolbar" className="mb-4 border rounded p-2">
+      <div id="custom-quill-toolbar" ref={toolbarRef}>
+        <span className="ql-formats">
+          <select className="ql-header" defaultValue="">
+            <option value="1">Heading 1</option>
+            <option value="2">Heading 2</option>
+            <option value="3">Heading 3</option>
+            <option value="">Normal</option>
+          </select>
+        </span>
         <span className="ql-formats">
           <button className="ql-bold" />
           <button className="ql-italic" />
           <button className="ql-underline" />
+          <button className="ql-strike" />
           <button className="ql-blockquote" />
         </span>
-
         <span className="ql-formats">
           <button className="ql-list" value="ordered" />
           <button className="ql-list" value="bullet" />
           <button className="ql-indent" value="-1" />
           <button className="ql-indent" value="+1" />
         </span>
-
         <span className="ql-formats">
           <button className="ql-link" />
-        </span>
-
-        <span className="ql-formats">
           <button className="ql-clean" />
         </span>
       </div>
-
-      <div ref={editorContainerRef} />
+      <div ref={editorRef} />
     </>
   );
 });
-// QuillEditor.displayName = "QuillEditor";
+QuillEditor.displayName = "QuillEditor";
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
