@@ -168,6 +168,7 @@ const QuillEditor = React.forwardRef<
       }
       quillInstanceRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

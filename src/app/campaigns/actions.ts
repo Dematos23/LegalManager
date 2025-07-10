@@ -19,7 +19,7 @@ function getTemplateType(templateBody: string): TemplateType {
         return 'multi-trademark';
     }
     const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    if (singleTrademarkFields.test(templateBody)) {
+    if (singleTrademarkFields.test(templateBody) && !templateBody.includes('{{#each')) {
         return 'single-trademark';
     }
     return 'plain';
@@ -186,9 +186,9 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
 type FullOwner = Owner & { trademarks: Trademark[] };
 type FullContact = Contact & { agent: Agent };
 
-function createHandlebarsContext(contact: FullContact, owners: (Owner & { trademarks?: Trademark[] })[], allTrademarks: Trademark[]): any {
+function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allTrademarks: Trademark[]): any {
     const ownersContext = owners.map(owner => ({
-        ...owner,
+        name: owner.name,
         country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
         trademarks: (owner.trademarks || []).map(tm => ({
             denomination: tm.denomination,
@@ -216,13 +216,15 @@ function createHandlebarsContext(contact: FullContact, owners: (Owner & { tradem
             email: contact.email,
         },
         owners: ownersContext,
-        trademarks: trademarksContextData,
     };
-
+    
+    // For single-owner contexts, provide a top-level `owner` and `trademarks` object for convenience
     if (ownersContext.length === 1) {
         handlebarsContext.owner = ownersContext[0];
+        handlebarsContext.trademarks = ownersContext[0].trademarks;
     }
     
+    // For single-trademark contexts, provide top-level trademark fields
     if (trademarksContextData.length === 1) {
         handlebarsContext = {
             ...handlebarsContext,
