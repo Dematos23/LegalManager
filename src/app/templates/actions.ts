@@ -12,6 +12,21 @@ const TemplateSchema = z.object({
   body: z.string().min(1, { message: 'Body must be at least 1 character long.' }),
 });
 
+function validateTemplateLogic(body: string) {
+    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(body);
+    const hasOwnersLoop = /\{\{#each owners\}\}/.test(body);
+
+    if (hasTrademarksLoop && !hasOwnersLoop) {
+        return {
+            isValid: false,
+            error: { body: ["A multi-trademark loop ('{{#each trademarks}}') can only be used inside a multi-owner loop ('{{#each owners}}'). For a single owner, use single trademark fields like '{{denomination}}' directly."] }
+        };
+    }
+
+    return { isValid: true };
+}
+
+
 export async function getEmailTemplates() {
   return prisma.emailTemplate.findMany({
     orderBy: {
@@ -38,6 +53,11 @@ export async function createEmailTemplate(formData: FormData) {
     return {
       errors: validatedFields.error.flatten().fieldErrors,
     };
+  }
+  
+  const logicValidation = validateTemplateLogic(validatedFields.data.body);
+  if (!logicValidation.isValid) {
+    return { errors: logicValidation.error };
   }
 
   try {
@@ -72,6 +92,11 @@ export async function updateEmailTemplate(id: number, formData: FormData) {
         };
       }
     
+      const logicValidation = validateTemplateLogic(validatedFields.data.body);
+      if (!logicValidation.isValid) {
+          return { errors: logicValidation.error };
+      }
+
       try {
         await prisma.emailTemplate.update({
           where: { id },
