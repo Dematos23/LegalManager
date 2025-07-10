@@ -22,9 +22,9 @@ import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { Eye, Calendar as CalendarIcon, X, ArrowUpDown } from 'lucide-react';
+import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2 } from 'lucide-react';
 import { Badge } from './ui/badge';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useTransition } from 'react';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -39,17 +39,35 @@ import {
     SortingState,
     useReactTable,
 } from '@tanstack/react-table';
+import { deleteCampaignAction } from '@/app/campaigns/actions';
+import { useToast } from '@/hooks/use-toast';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Label } from './ui/label';
 
 type TrackingClientProps = {
   campaigns: CampaignWithDetails[];
 };
 
-export function TrackingClient({ campaigns }: TrackingClientProps) {
+export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientProps) {
   const { language, dictionary } = useLanguage();
+  const { toast } = useToast();
+  const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [searchTerm, setSearchTerm] = useState('');
   const [templateFilter, setTemplateFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [deleteInput, setDeleteInput] = useState('');
 
   const formatDate = (date: Date) => {
     return format(date, 'MMM dd, yyyy, h:mm a', {
@@ -74,6 +92,26 @@ export function TrackingClient({ campaigns }: TrackingClientProps) {
         return matchesSearch && matchesTemplate && matchesDate;
     })
   }, [campaigns, searchTerm, templateFilter, dateRange]);
+
+  const handleDelete = (campaignId: number) => {
+      startDeleteTransition(async () => {
+        const result = await deleteCampaignAction(campaignId);
+        if (result.success) {
+            setCampaigns(prev => prev.filter(c => c.id !== campaignId));
+            toast({
+                title: dictionary.tracking.deleteDialog.successTitle,
+                description: dictionary.tracking.deleteDialog.successDescription,
+            });
+        } else {
+            toast({
+                title: dictionary.tracking.deleteDialog.errorTitle,
+                description: result.error,
+                variant: 'destructive',
+            });
+        }
+        setDeleteInput('');
+      });
+  }
 
   const columns = useMemo<ColumnDef<CampaignWithDetails>[]>(() => [
     {
@@ -116,17 +154,60 @@ export function TrackingClient({ campaigns }: TrackingClientProps) {
         id: 'actions',
         header: () => <div className="text-right">{dictionary.tracking.table.actions}</div>,
         cell: ({ row }) => (
-            <div className="text-right">
+            <div className="flex items-center justify-end gap-2">
                 <Button asChild variant="outline" size="sm">
                     <Link href={`/tracking/${row.original.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         {dictionary.tracking.table.view}
                     </Link>
                 </Button>
+                 <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                           <Trash2 className="mr-2 h-4 w-4" />
+                           {dictionary.tracking.table.delete}
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{dictionary.tracking.deleteDialog.title}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {dictionary.tracking.deleteDialog.description}
+                                <span className="font-bold text-destructive">
+                                    {row.original.name}
+                                </span>
+                                . {dictionary.tracking.deleteDialog.confirm}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="grid gap-2">
+                           <Label htmlFor="delete-confirm">{dictionary.tracking.deleteDialog.confirmLabel}</Label>
+                            <Input 
+                                id="delete-confirm"
+                                value={deleteInput}
+                                onChange={(e) => setDeleteInput(e.target.value)}
+                                placeholder="DELETE"
+                                autoFocus
+                            />
+                        </div>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setDeleteInput('')}>{dictionary.tracking.deleteDialog.cancel}</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => handleDelete(row.original.id)}
+                                disabled={deleteInput !== 'DELETE' || isDeleting}
+                                className={cn(
+                                    buttonVariants({ variant: 'destructive' })
+                                )}
+                            >
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {dictionary.tracking.deleteDialog.continue}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         ),
     }
-  ], [dictionary, formatDate]);
+  ], [dictionary, formatDate, deleteInput, isDeleting]);
 
   const table = useReactTable({
     data: filteredCampaigns,

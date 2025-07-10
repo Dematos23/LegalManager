@@ -316,3 +316,24 @@ export async function syncCampaignStatusAction(campaignId: number) {
         return { error: 'An unexpected error occurred while syncing.' };
     }
 }
+
+export async function deleteCampaignAction(campaignId: number) {
+    try {
+        // Use a transaction to ensure both deletions succeed or fail together
+        await prisma.$transaction([
+            // First, delete all SentEmail records associated with the campaign
+            prisma.sentEmail.deleteMany({
+                where: { campaignId: campaignId },
+            }),
+            // Then, delete the Campaign itself
+            prisma.campaign.delete({
+                where: { id: campaignId },
+            }),
+        ]);
+        revalidatePath('/tracking');
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete campaign:', error);
+        return { error: 'An unexpected error occurred while deleting the campaign.' };
+    }
+}

@@ -163,6 +163,18 @@ export const en = {
       sentAt: 'Sent At',
       actions: 'Actions',
       view: 'View',
+      delete: 'Delete'
+    },
+    deleteDialog: {
+      title: 'Are you sure?',
+      description: 'This action cannot be undone. This will permanently delete the campaign',
+      confirm: 'To confirm, please type DELETE below.',
+      confirmLabel: 'Type DELETE to confirm',
+      cancel: 'Cancel',
+      continue: 'Delete Campaign',
+      successTitle: 'Campaign Deleted',
+      successDescription: 'The campaign has been successfully deleted.',
+      errorTitle: 'Delete Failed',
     },
     details: {
       title: 'Campaign Details',

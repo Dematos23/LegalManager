@@ -166,6 +166,18 @@ export const es: Dictionary = {
       sentAt: 'Enviado el',
       actions: 'Acciones',
       view: 'Ver',
+      delete: 'Eliminar'
+    },
+    deleteDialog: {
+      title: '¿Está seguro?',
+      description: 'Esta acción no se puede deshacer. Esto eliminará permanentemente la campaña',
+      confirm: 'Para confirmar, por favor escriba DELETE a continuación.',
+      confirmLabel: 'Escriba DELETE para confirmar',
+      cancel: 'Cancelar',
+      continue: 'Eliminar Campaña',
+      successTitle: 'Campaña Eliminada',
+      successDescription: 'La campaña ha sido eliminada exitosamente.',
+      errorTitle: 'Fallo al Eliminar',
     },
     details: {
       title: 'Detalles de la Campaña',
