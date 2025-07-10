@@ -6,22 +6,25 @@ import { Resend } from 'resend';
 import * as Handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import type { Contact, Owner, Trademark, Agent } from '@prisma/client';
 
-type TemplateType = 'plain' | 'single' | 'multi';
+type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark' | 'multi-owner';
 
 // Helper to analyze the template body
 function getTemplateType(templateBody: string): TemplateType {
-    const singleFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    const multiField = /\{\{#each trademarks\}\}/;
-
-    if (multiField.test(templateBody)) {
-        return 'multi';
+    if (templateBody.includes('{{#each owners}}')) {
+        return 'multi-owner';
     }
-    if (singleFields.test(templateBody)) {
-        return 'single';
+    if (templateBody.includes('{{#each trademarks}}')) {
+        return 'multi-trademark';
+    }
+    const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
+    if (singleTrademarkFields.test(templateBody)) {
+        return 'single-trademark';
     }
     return 'plain';
 }
+
 
 interface SendCampaignByTrademarkPayload {
     sendMode: 'trademark';
@@ -61,37 +64,42 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             if (templateType === 'plain') {
                 return { error: "This is a plain text template. It should be sent by contact, not by trademark, as it doesn't use any trademark data." };
             }
+             if (templateType === 'multi-owner') {
+                return { error: "This template is designed to list multiple owners. It must be sent by contact." };
+            }
         } else if (payload.sendMode === 'contact') {
-            if (templateType === 'single') {
+            if (templateType === 'single-trademark') {
                 return { error: "This template is for a single trademark, but no specific trademark was selected. To send it, please use the 'Send by Trademark' option and select the desired trademarks." };
             }
         }
 
-
-        // --- Email Processing ---
         const campaign = await prisma.campaign.create({
             data: { name: campaignName, emailTemplateId: template.id },
         });
 
-        // This map will hold the final email jobs to be sent.
-        // Key: A unique key to prevent duplicate emails. Value: object with contact and context.
         const emailJobs = new Map<string, { contact: any, context: any }>();
         
         if (payload.sendMode === 'contact') {
-             // Handles 'plain' and 'multi' template types
             const contacts = await prisma.contact.findMany({
                 where: { id: { in: payload.contactIds } },
                 include: {
                     agent: true,
-                    owners: { include: { trademarks: { orderBy: { expiration: 'asc' } } } }
+                    owners: { 
+                        include: { 
+                            trademarks: { orderBy: { expiration: 'asc' } } 
+                        } 
+                    }
                 }
             });
 
             for (const contact of contacts) {
-                const allTrademarks = contact.owners.flatMap(owner => owner.trademarks);
-                const firstOwner = allTrademarks.length > 0 ? await prisma.owner.findFirst({ where: { trademarks: { some: { id: allTrademarks[0].id } } } }) : null;
+                // For 'plain' and 'multi-trademark', we can still create a context.
+                // For 'multi-owner', this is the primary path.
+                const allOwners = contact.owners;
+                const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+                const firstOwner = allOwners.length > 0 ? allOwners[0] : null;
 
-                const context = createHandlebarsContext(contact, firstOwner, allTrademarks);
+                const context = createHandlebarsContext(contact, allOwners, allTrademarks);
                 emailJobs.set(contact.email, { contact, context });
             }
 
@@ -101,7 +109,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 include: { owner: { include: { contacts: { include: { agent: true } } } } }
             });
             
-            if (templateType === 'multi') {
+            if (templateType === 'multi-trademark') {
                 // Multi-trademark: Send one email per owner, per contact.
                 const trademarksByOwnerContact = new Map<string, { contact: any; owner: any; trademarks: any[] }>();
                 for (const tm of selectedTrademarks) {
@@ -115,16 +123,15 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 }
                 
                 for (const { contact, owner, trademarks } of trademarksByOwnerContact.values()) {
-                    const context = createHandlebarsContext(contact, owner, trademarks);
-                    const jobKey = `${contact.email}-${owner.id}`; // Unique job per contact-owner pair
+                    const context = createHandlebarsContext(contact, [owner], trademarks);
+                    const jobKey = `${contact.email}-${owner.id}`; 
                     emailJobs.set(jobKey, { contact, context });
                 }
 
             } else { // Single-trademark: Send one email per trademark, per contact
                 for (const tm of selectedTrademarks) {
                      for (const contact of tm.owner.contacts) {
-                        const context = createHandlebarsContext(contact, tm.owner, [tm]);
-                        // Create a unique key for each trademark-contact pair to avoid overwriting jobs
+                        const context = createHandlebarsContext(contact, [tm.owner], [tm]);
                         const jobKey = `${contact.email}-${tm.id}`;
                         emailJobs.set(jobKey, { contact, context });
                     }
@@ -175,9 +182,24 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
     }
 }
 
+type FullOwner = Owner & { trademarks: Trademark[] };
+type FullContact = Contact & { agent: Agent };
 
-function createHandlebarsContext(contact: any, owner: any, trademarks: any[]): any {
-    const trademarksContextData = trademarks.map(tm => ({
+function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allTrademarks: Trademark[]): any {
+    const ownersContext = owners.map(owner => ({
+        ...owner,
+        country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        trademarks: owner.trademarks.map(tm => ({
+            denomination: tm.denomination,
+            class: String(tm.class),
+            certificate: tm.certificate,
+            expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+            products: tm.products,
+            type: tm.type
+        }))
+    }));
+
+    const trademarksContextData = allTrademarks.map(tm => ({
         denomination: tm.denomination,
         class: String(tm.class),
         certificate: tm.certificate,
@@ -188,18 +210,18 @@ function createHandlebarsContext(contact: any, owner: any, trademarks: any[]): a
 
     let handlebarsContext: any = {
         agent: contact.agent,
-        owner: owner ? {
-            ...owner,
-            country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
-        } : null,
         contact: {
             name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
             email: contact.email,
         },
+        owners: ownersContext,
         trademarks: trademarksContextData,
     };
 
-    // If there is only one trademark, also add its properties to the top level
+    if (ownersContext.length === 1) {
+        handlebarsContext.owner = ownersContext[0];
+    }
+    
     if (trademarksContextData.length === 1) {
         handlebarsContext = {
             ...handlebarsContext,

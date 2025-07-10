@@ -41,17 +41,19 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-type TemplateType = 'plain' | 'single' | 'multi';
+type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark' | 'multi-owner';
+
 
 function getTemplateType(templateBody: string): TemplateType {
-    const singleFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    const multiField = /\{\{#each trademarks\}\}/;
-
-    if (multiField.test(templateBody)) {
-        return 'multi';
+    if (templateBody.includes('{{#each owners}}')) {
+        return 'multi-owner';
     }
-    if (singleFields.test(templateBody)) {
-        return 'single';
+    if (templateBody.includes('{{#each trademarks}}')) {
+        return 'multi-trademark';
+    }
+    const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
+    if (singleTrademarkFields.test(templateBody)) {
+        return 'single-trademark';
     }
     return 'plain';
 }
@@ -68,10 +70,12 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  // Set initial sendMode based on template type to guide the user
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(
-    templateType === 'plain' ? 'contact' : 'trademark'
-  );
+  const initialSendMode = React.useMemo(() => {
+    if (templateType === 'plain' || templateType === 'multi-owner') return 'contact';
+    return 'trademark';
+  }, [templateType]);
+  
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -129,15 +133,19 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
     switch(templateType) {
         case 'plain':
             title = "Plain Text Template";
-            description = "This template does not contain trademark-specific fields. It is best sent by 'Contact'.";
+            description = "This template does not contain trademark-specific fields. It must be sent by 'Contact'.";
             break;
-        case 'single':
+        case 'single-trademark':
             title = "Single Trademark Template";
             description = "This template uses fields for one trademark (e.g., {{denomination}}). It must be sent by 'Trademark'.";
             break;
-        case 'multi':
-            title = "Multi-Trademark Template";
-            description = "This template lists multiple trademarks (using {{#each trademarks}}). It can be sent by 'Trademark' (to send selected marks) or by 'Contact' (to send all marks for that contact).";
+        case 'multi-trademark':
+            title = "Multi-Trademark Template (Single Owner)";
+            description = "This template lists multiple trademarks (using {{#each trademarks}}). It is best sent by 'Trademark' (to send selected marks) or by 'Contact' (to send all marks for that contact, grouped by owner).";
+            break;
+        case 'multi-owner':
+            title = "Multi-Owner Template";
+            description = "This template lists multiple owners and their trademarks (using {{#each owners}}). It must be sent by 'Contact'.";
             break;
     }
     return (
@@ -175,8 +183,8 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
         
         <Tabs value={sendMode} onValueChange={(value) => setSendMode(value as 'trademark' | 'contact')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="trademark" disabled={templateType === 'plain'}>Send by Trademark</TabsTrigger>
-                <TabsTrigger value="contact" disabled={templateType === 'single'}>Send by Contact</TabsTrigger>
+                <TabsTrigger value="trademark" disabled={templateType === 'plain' || templateType === 'multi-owner'}>Send by Trademark</TabsTrigger>
+                <TabsTrigger value="contact" disabled={templateType === 'single-trademark'}>Send by Contact</TabsTrigger>
             </TabsList>
             <TabsContent value="trademark">
                 <TrademarkFilters table={trademarkTable} agentAreas={getAgentAreas(trademarks)} expirationYears={getExpirationYears(trademarks)} />

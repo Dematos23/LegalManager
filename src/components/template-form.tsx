@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { useForm, ControllerRenderProps } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -52,9 +52,7 @@ const TemplateSchema = z.object({
   subject: z
     .string()
     .min(3, { message: "Subject must be at least 3 characters long." }),
-  body: z
-    .string()
-    .min(10, { message: "Body must be at least 10 characters long." }),
+  body: z.string().min(1, "Body cannot be empty."),
 });
 
 type TemplateFormValues = z.infer<typeof TemplateSchema>;
@@ -83,15 +81,24 @@ const MERGE_FIELDS = [
     ],
   },
   {
-    group: "Owner",
+    group: "Owners (Loop)",
     fields: [
-      { name: "Owner Name", value: "{{owner.name}}" },
-      { name: "Owner Country", value: "{{owner.country}}" },
+        { name: "Start Owners Loop", value: "{{#each owners}}" },
+        { name: "Owner Name", value: "{{name}}" },
+        { name: "Owner Country", value: "{{country}}" },
+        { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
+        { name: "Denomination", value: "{{denomination}}" },
+        { name: "Class", value: "{{class}}" },
+        { name: "Expiration", value: "{{expiration}}" },
+        { name: "End Trademarks Loop", value: "{{/each}}" },
+        { name: "End Owners Loop", value: "{{/each}}" },
     ],
   },
   {
-    group: "Trademarks (Loop)",
+    group: "Trademarks (Loop - Single Owner)",
     fields: [
+      { name: "Owner Name", value: "{{owner.name}}" },
+      { name: "Owner Country", value: "{{owner.country}}" },
       { name: "Start Loop", value: "{{#each trademarks}}" },
       { name: "Denomination", value: "{{denomination}}" },
       { name: "Class", value: "{{class}}" },
@@ -103,95 +110,79 @@ const MERGE_FIELDS = [
   },
 ];
 
+
 type QuillEditorHandle = {
   insert: (html: string) => void;
 };
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { field: ControllerRenderProps<TemplateFormValues, "body"> }
->(({ field }, ref) => {
-  const quillInstanceRef = useRef<Quill | null>(null);
-  const editorContainerRef = useRef<HTMLDivElement>(null);
-  const toolbarContainerRef = useRef<HTMLDivElement>(null);
+  { value: string; onChange: (value: string) => void }
+>(({ value, onChange }, ref) => {
+  const quillInstanceRef = React.useRef<Quill | null>(null);
+  const editorContainerRef = React.useRef<HTMLDivElement>(null);
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
         let range = quill.getSelection();
-        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
-        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
+        let index = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(index, html, 'user');
         quill.focus();
       }
     },
   }));
 
   useEffect(() => {
-    if (!editorContainerRef.current || !toolbarContainerRef.current) return;
-
-    // Ensure we don't re-initialize
-    if (quillInstanceRef.current) return;
+    if (!editorContainerRef.current || !toolbarRef.current || quillInstanceRef.current) return;
 
     const quill = new Quill(editorContainerRef.current, {
-      theme: "snow",
+      theme: 'snow',
       modules: {
-        toolbar: {
-          container: toolbarContainerRef.current, // Use direct ref
-        },
-        clipboard: true,
-        history: true,
+        toolbar: toolbarRef.current,
       },
     });
 
     quillInstanceRef.current = quill;
 
-    // Set initial content
-    if (field.value) {
-      const delta = quill.clipboard.convert({ html: field.value });
-      quill.setContents(delta, "silent");
+    if (value) {
+      quill.clipboard.dangerouslyPasteHTML(0, value);
     }
 
-    // Listen for changes
-    quill.on("text-change", (delta, oldDelta, source) => {
-      if (source === "user") {
-        const editorContent = quill.root.innerHTML;
-        const finalContent = editorContent === "<p><br></p>" ? "" : editorContent;
-        // Use the passed onChange from react-hook-form's field render prop
-        field.onChange(finalContent);
+    const handler = (delta: any, oldDelta: any, source: string) => {
+      if (source === 'user') {
+        const currentContent = quill.root.innerHTML;
+        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
       }
-    });
-
-    // Cleanup
-    return () => {
-        if(quillInstanceRef.current) {
-            quillInstanceRef.current.off("text-change");
-            // The editor element is part of the component's render,
-            // so React will remove it from the DOM.
-            // We just need to nullify the ref.
-            quillInstanceRef.current = null;
-        }
     };
-    // field is an object, so we depend on its name and value for stability
-  }, [field.name]);
-  
-   // Sync value from form state to editor
-   useEffect(() => {
-    const quill = quillInstanceRef.current;
-    if (quill) {
-      // Avoid overwriting if editor already has the same content
-      // and avoid loop by not updating if editor has focus
-      if (field.value !== quill.root.innerHTML && !quill.hasFocus()) {
-        const delta = quill.clipboard.convert({html: field.value || ''});
-        quill.setContents(delta, 'silent');
+    
+    quill.on('text-change', handler);
+
+    return () => {
+      quill.off('text-change', handler);
+      const editorElement = editorContainerRef.current;
+      if (editorElement) {
+        editorElement.innerHTML = '';
       }
+      quillInstanceRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const quill = quillInstanceRef.current;
+    if (quill && value !== quill.root.innerHTML) {
+        if (!quill.hasFocus()) {
+            quill.clipboard.dangerouslyPasteHTML(0, value || '');
+        }
     }
-  }, [field.value]);
+  }, [value]);
 
 
   return (
     <>
-      <div id="custom-quill-toolbar" ref={toolbarContainerRef}>
+      <div id="custom-quill-toolbar" ref={toolbarRef}>
         <span className="ql-formats">
           <select className="ql-header">
             <option value="1"></option>
@@ -236,7 +227,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const [selectedAgentId, setSelectedAgentId] = React.useState<string>("");
   const [selectedContactId, setSelectedContactId] = React.useState<string>("");
-  const [selectedOwnerId, setSelectedOwnerId] = React.useState<string>("");
+  const [selectedOwnerId, setSelectedOwnerId] = React.useState<string>("all");
   const [selectedTrademarkId, setSelectedTrademarkId] =
     React.useState<string>("all");
 
@@ -286,18 +277,22 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const selectedContact = availableContacts.find(
     (c) => c.id === Number(selectedContactId)
   );
+  
   const availableOwners = selectedContact?.owners || [];
+  
+  const ownersForPreview = selectedOwnerId !== "all"
+    ? availableOwners.filter(o => o.id === Number(selectedOwnerId))
+    : availableOwners;
 
-  const selectedOwner = availableOwners.find(
-    (o) => o.id === Number(selectedOwnerId)
-  );
+  const selectedOwner = ownersForPreview.length === 1 ? ownersForPreview[0] : null;
+
   const availableTrademarks = selectedOwner?.trademarks || [];
 
   React.useEffect(() => {
     setSelectedContactId("");
   }, [selectedAgentId]);
   React.useEffect(() => {
-    setSelectedOwnerId("");
+    setSelectedOwnerId("all");
   }, [selectedContactId]);
   React.useEffect(() => {
     setSelectedTrademarkId("all");
@@ -307,78 +302,67 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const templateSubject = form.watch("subject");
 
   const renderedPreview = React.useMemo(() => {
-    if (
-      viewMode === "edit" ||
-      !selectedAgent ||
-      !selectedContact ||
-      !selectedOwner
-    ) {
+    if (viewMode === "edit" || !selectedAgent || !selectedContact) {
       return { subject: "", body: "" };
     }
 
-    const trademarksForPreview =
-      selectedTrademarkId !== "all"
-        ? availableTrademarks.filter(
+    const trademarksForSingleOwnerPreview =
+      selectedTrademarkId !== "all" && selectedOwner
+        ? selectedOwner.trademarks.filter(
             (tm) => tm.id === Number(selectedTrademarkId)
           )
-        : availableTrademarks;
+        : selectedOwner?.trademarks || [];
 
-    const trademarksContextData = trademarksForPreview.map((tm) => ({
-      denomination: tm.denomination,
-      class: String(tm.class),
-      certificate: tm.certificate,
-      expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
-      products: tm.products,
-      type: tm.type,
+    const ownersContext = ownersForPreview.map(owner => ({
+        ...owner,
+        country: owner.country.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
+        trademarks: owner.trademarks.map(tm => ({
+            denomination: tm.denomination,
+            class: String(tm.class),
+            certificate: tm.certificate,
+            expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
+            products: tm.products,
+            type: tm.type,
+        }))
+    }));
+
+    const allTrademarksContext = (selectedOwner?.trademarks || []).map(tm => ({
+        denomination: tm.denomination,
+        class: String(tm.class),
+        certificate: tm.certificate,
+        expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
+        products: tm.products,
+        type: tm.type,
     }));
 
     let finalContext: any = {
       agent: {
-        id: selectedAgent.id,
         name: selectedAgent.name,
-        country: selectedAgent.country
-          .replace(/_/g, " ")
-          .replace(
-            /\w\S*/g,
-            (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-          ),
+        country: selectedAgent.country.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
         area: selectedAgent.area,
       },
-      owner: {
-        id: selectedOwner.id,
-        name: selectedOwner.name,
-        country: selectedOwner.country
-          .replace(/_/g, " ")
-          .replace(
-            /\w\S*/g,
-            (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-          ),
-      },
       contact: {
-        name: `${selectedContact.firstName || ""} ${
-          selectedContact.lastName || ""
-        }`.trim(),
+        name: `${selectedContact.firstName || ""} ${selectedContact.lastName || ""}`.trim(),
         email: selectedContact.email,
       },
-      trademarks: trademarksContextData,
+      owners: ownersContext,
+      trademarks: allTrademarksContext
     };
-
-    if (trademarksContextData.length === 1) {
-      finalContext = {
-        ...finalContext,
-        ...trademarksContextData[0],
-      };
+    
+    if (ownersContext.length === 1) {
+        finalContext.owner = ownersContext[0];
+    }
+    
+    if (allTrademarksContext.length === 1) {
+        finalContext = {
+            ...finalContext,
+            ...allTrademarksContext[0],
+        };
     }
 
     try {
-      const cleanSubject = (templateSubject || "").replace(
-        /<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g,
-        "$1"
-      );
-      const cleanBody = (templateBody || "").replace(
-        /<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g,
-        "$1"
-      );
+      const cleanSubject = (templateSubject || "").replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, "$1");
+      const cleanBody = (templateBody || "").replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, "$1");
 
       const subjectTemplate = Handlebars.compile(cleanSubject);
       const bodyTemplate = Handlebars.compile(cleanBody);
@@ -398,11 +382,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
     viewMode,
     selectedAgent,
     selectedContact,
+    ownersForPreview,
     selectedOwner,
     selectedTrademarkId,
     templateSubject,
     templateBody,
-    availableTrademarks,
   ]);
 
   const onSubmit = async (data: TemplateFormValues) => {
@@ -420,20 +404,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      // The type of errors can be { name?: string[], ... } | { _form: string[] }
-      if ('name' in errors && errors.name) {
+      if ("name" in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if ('subject' in errors && errors.subject) {
+      if ("subject" in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if ('body' in errors && errors.body) {
+      if ("body" in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if ('_form' in errors && errors._form) {
+      if ("_form" in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -544,7 +527,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
                         <div className="w-full rounded-md border border-input bg-background">
                           <QuillEditor
                             ref={quillEditorRef}
-                            field={field}
+                            value={field.value}
+                            onChange={field.onChange}
                           />
                         </div>
                       </FormControl>
@@ -624,11 +608,10 @@ export function TemplateForm({ template }: TemplateFormProps) {
                         disabled={!selectedContactId}
                       >
                         <SelectTrigger>
-                          <SelectValue
-                            placeholder={dictionary.templateForm.selectOwner}
-                          />
+                          <SelectValue placeholder={dictionary.templateForm.selectOwner} />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="all">All Owners</SelectItem>
                           {availableOwners.map((owner) => (
                             <SelectItem key={owner.id} value={String(owner.id)}>
                               {owner.name}
@@ -639,7 +622,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <Select
                         value={selectedTrademarkId}
                         onValueChange={setSelectedTrademarkId}
-                        disabled={!selectedOwnerId}
+                        disabled={!selectedOwnerId || selectedOwnerId === 'all'}
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -667,7 +650,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                 </CardContent>
               </Card>
               <Separator />
-              {selectedOwnerId ? (
+              {selectedContactId ? (
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-muted-foreground">
