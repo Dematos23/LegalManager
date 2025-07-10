@@ -21,7 +21,7 @@ import {
 import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
 import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import React, { useState, useMemo, useTransition } from 'react';
@@ -345,3 +345,5 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
     </div>
   );
 }
+
+    
