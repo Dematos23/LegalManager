@@ -147,10 +147,11 @@ const QuillEditor = React.forwardRef<
 
     quillInstanceRef.current = quill;
 
+    // Set initial content
     if (value) {
       quill.clipboard.dangerouslyPasteHTML(0, value);
     }
-
+    
     const handler = (delta: any, oldDelta: any, source: string) => {
       if (source === 'user') {
         const currentContent = quill.root.innerHTML;
@@ -168,15 +169,16 @@ const QuillEditor = React.forwardRef<
       }
       quillInstanceRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+  
+  // This effect ensures that if the `value` prop changes from outside (e.g., form.reset),
+  // the editor updates its content, but only if it doesn't currently have focus.
+  // This prevents losing the user's cursor position during typing.
   useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill && value !== quill.root.innerHTML) {
-        if (!quill.hasFocus()) {
-            quill.clipboard.dangerouslyPasteHTML(0, value || '');
-        }
+    if (quill && value !== quill.root.innerHTML && !quill.hasFocus()) {
+      quill.clipboard.dangerouslyPasteHTML(0, value || '');
     }
   }, [value]);
 
