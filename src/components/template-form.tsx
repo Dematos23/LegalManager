@@ -65,7 +65,7 @@ const MERGE_FIELDS = [
       group: "Agent",
       fields: [
         { name: "Agent Name", value: "{{agent.name}}" },
-        { name: "Agent Country", value = "{{agent.country}}" },
+        { name: "Agent Country", value: "{{agent.country}}" },
         { name: "Agent Area", value: "{{agent.area}}" },
       ],
     },
@@ -118,7 +118,6 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitializedRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -141,9 +140,9 @@ const QuillEditor = React.forwardRef<
         });
         quillInstanceRef.current = quill;
 
-        if (value && !isInitializedRef.current) {
-             quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-             isInitializedRef.current = true;
+        // Set initial content only if value exists
+        if (value) {
+           quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
         }
 
         const handler = () => {
@@ -151,7 +150,7 @@ const QuillEditor = React.forwardRef<
             onChange(currentContent === '<p><br></p>' ? '' : currentContent);
         };
         quill.on('text-change', handler);
-        
+
         return () => {
             quill.off('text-change', handler);
             quillInstanceRef.current = null;
@@ -159,6 +158,21 @@ const QuillEditor = React.forwardRef<
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+   useEffect(() => {
+    // This effect ensures that if the `value` prop changes from outside
+    // (e.g., due to form.reset), the editor's content is updated.
+    // It compares with the current editor content to avoid redundant updates
+    // and infinite loops.
+    const quill = quillInstanceRef.current;
+    if (quill && value !== quill.root.innerHTML && value !== '<p><br></p>') {
+      const selection = quill.getSelection();
+      quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+      if (selection) {
+        quill.setSelection(selection);
+      }
+    }
+  }, [value]);
 
   return (
     <>
@@ -287,13 +301,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
       return { subject: "", body: "" };
     }
 
-    const trademarksForSingleOwnerPreview =
-      selectedTrademarkId !== "all" && selectedOwner
-        ? selectedOwner.trademarks.filter(
-            (tm) => tm.id === Number(selectedTrademarkId)
-          )
-        : selectedOwner?.trademarks || [];
-
     const ownersContext = ownersForPreview.map(owner => ({
         ...owner,
         country: owner.country.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
@@ -307,7 +314,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
         }))
     }));
 
-    const allTrademarksContext = (selectedOwner?.trademarks || []).map(tm => ({
+    const allTrademarksForContext = (selectedOwner?.trademarks || []).map(tm => ({
         denomination: tm.denomination,
         class: String(tm.class),
         certificate: tm.certificate,
@@ -315,6 +322,14 @@ export function TemplateForm({ template }: TemplateFormProps) {
         products: tm.products,
         type: tm.type,
     }));
+
+     const trademarksForSingleOwnerPreview =
+      selectedTrademarkId !== "all" && selectedOwner
+        ? allTrademarksForContext.filter(
+            (tm) => tm.certificate === availableTrademarks.find(t => t.id === Number(selectedTrademarkId))?.certificate
+          )
+        : allTrademarksForContext;
+
 
     let finalContext: any = {
       agent: {
@@ -327,33 +342,34 @@ export function TemplateForm({ template }: TemplateFormProps) {
         email: selectedContact.email,
       },
       owners: ownersContext,
-      trademarks: allTrademarksContext
     };
     
     if (ownersContext.length === 1) {
         finalContext.owner = ownersContext[0];
+        finalContext.trademarks = trademarksForSingleOwnerPreview;
     }
     
-    if (allTrademarksContext.length === 1) {
+    if (trademarksForSingleOwnerPreview.length === 1) {
         finalContext = {
             ...finalContext,
-            ...allTrademarksContext[0],
+            ...trademarksForSingleOwnerPreview[0],
         };
     }
 
-    const cleanTemplateForHandlebars = (html: string): string => {
-        if (!html) return '';
+    const cleanTemplateForHandlebars = (htmlString: string): string => {
+        if (!htmlString) return '';
 
+        // Create a temporary div to parse the HTML
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
+        tempDiv.innerHTML = htmlString;
+
         // Use placeholders to protect Handlebars expressions
         const placeholders: string[] = [];
-        let cleanHtml = tempDiv.innerHTML.replace(/{{[{#]?[^}]+}}/g, (match) => {
+        let cleanHtml = tempDiv.innerHTML.replace(/{{[{#][^}]+}}/g, (match) => {
             placeholders.push(match);
             return `__PLACEHOLDER_${placeholders.length - 1}__`;
         });
-        
+
         // Now convert the HTML to text content, which strips tags
         tempDiv.innerHTML = cleanHtml;
         let textContent = tempDiv.textContent || "";
@@ -367,12 +383,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
     };
     
     const compileAndRender = (templateString: string): string => {
-        const cleanedTemplate = cleanTemplateForHandlebars(templateString);
-        if (!cleanedTemplate.trim()) return '';
+        const textContent = cleanTemplateForHandlebars(templateString);
+        if (!textContent.trim()) return '';
 
         try {
-            const compiled = Handlebars.compile(cleanedTemplate, { noEscape: true });
-            return compiled(finalContext).replace(/\n/g, '<br />');
+            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
+            return compiledTemplate(finalContext).replace(/\n/g, '<br />');
         } catch (e) {
             console.error("Template rendering error:", e);
             const errorMessage = e instanceof Error ? e.message : "Unknown error.";
@@ -403,6 +419,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     ownersForPreview,
     selectedOwner,
     selectedTrademarkId,
+    availableTrademarks,
     templateSubject,
     templateBody,
   ]);
@@ -412,7 +429,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("subject", data.subject);
-    formData.append("body", data.body);
+    const cleanedBody = (data.body || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>&nbsp;/g, '$1');
+    formData.append("body", cleanedBody);
 
     if (template) {
       result = await updateEmailTemplate(template.id, formData);
@@ -729,5 +747,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use server';
 
 import prisma from '@/lib/prisma';
@@ -8,7 +9,7 @@ import { redirect } from 'next/navigation';
 const TemplateSchema = z.object({
   name: z.string().min(3, { message: 'Name must be at least 3 characters long.' }),
   subject: z.string().min(3, { message: 'Subject must be at least 3 characters long.' }),
-  body: z.string().min(10, { message: 'Body must be at least 10 characters long.' }),
+  body: z.string().min(1, { message: 'Body must be at least 1 character long.' }),
 });
 
 export async function getEmailTemplates() {
