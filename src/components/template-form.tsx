@@ -65,50 +65,50 @@ type TemplateFormProps = {
 };
 
 const MERGE_FIELDS = [
-  {
-    group: "Agent",
-    fields: [
-      { name: "Agent Name", value: "{{agent.name}}" },
-      { name: "Agent Country", value: "{{agent.country}}" },
-      { name: "Agent Area", value: "{{agent.area}}" },
-    ],
-  },
-  {
-    group: "Contact",
-    fields: [
-      { name: "Contact Name", value: "{{contact.name}}" },
-      { name: "Contact Email", value: "{{contact.email}}" },
-    ],
-  },
-  {
-    group: "Owners (Loop)",
-    fields: [
-        { name: "Start Owners Loop", value: "{{#each owners}}" },
-        { name: "Owner Name", value: "{{name}}" },
-        { name: "Owner Country", value: "{{country}}" },
-        { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
+    {
+      group: "Agent",
+      fields: [
+        { name: "Agent Name", value: "{{agent.name}}" },
+        { name: "Agent Country", value: "{{agent.country}}" },
+        { name: "Agent Area", value: "{{agent.area}}" },
+      ],
+    },
+    {
+      group: "Contact",
+      fields: [
+        { name: "Contact Name", value: "{{contact.name}}" },
+        { name: "Contact Email", value: "{{contact.email}}" },
+      ],
+    },
+    {
+      group: "Owners (Loop)",
+      fields: [
+          { name: "Start Owners Loop", value: "{{#each owners}}" },
+          { name: "Owner Name", value: "{{name}}" },
+          { name: "Owner Country", value: "{{country}}" },
+          { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
+          { name: "Denomination", value: "{{denomination}}" },
+          { name: "Class", value: "{{class}}" },
+          { name: "Expiration", value: "{{expiration}}" },
+          { name: "End Trademarks Loop", value: "{{/each}}" },
+          { name: "End Owners Loop", value: "{{/each}}" },
+      ],
+    },
+    {
+      group: "Trademarks (Loop - Single Owner)",
+      fields: [
+        { name: "Owner Name", value: "{{owner.name}}" },
+        { name: "Owner Country", value: "{{owner.country}}" },
+        { name: "Start Loop", value: "{{#each trademarks}}" },
         { name: "Denomination", value: "{{denomination}}" },
         { name: "Class", value: "{{class}}" },
-        { name: "Expiration", value: "{{expiration}}" },
-        { name: "End Trademarks Loop", value: "{{/each}}" },
-        { name: "End Owners Loop", value: "{{/each}}" },
-    ],
-  },
-  {
-    group: "Trademarks (Loop - Single Owner)",
-    fields: [
-      { name: "Owner Name", value: "{{owner.name}}" },
-      { name: "Owner Country", value: "{{owner.country}}" },
-      { name: "Start Loop", value: "{{#each trademarks}}" },
-      { name: "Denomination", value: "{{denomination}}" },
-      { name: "Class", value: "{{class}}" },
-      { name: "Certificate", value: "{{certificate}}" },
-      { name: "Expiration Date", value: "{{expiration}}" },
-      { name: "Products", value: "{{products}}" },
-      { name: "End Loop", value: "{{/each}}" },
-    ],
-  },
-];
+        { name: "Certificate", value: "{{certificate}}" },
+        { name: "Expiration Date", value: "{{expiration}}" },
+        { name: "Products", value: "{{products}}" },
+        { name: "End Loop", value: "{{/each}}" },
+      ],
+    },
+  ];
 
 
 type QuillEditorHandle = {
@@ -117,59 +117,50 @@ type QuillEditorHandle = {
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { value: string; onChange: (value: string) => void }
->(({ value, onChange }, ref) => {
+  { value: string; onChange: (value: string) => void, onReady?: (quill: Quill) => void }
+>(({ value, onChange, onReady }, ref) => {
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isComponentMounted = React.useRef(false);
+  const isInitialized = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
-        let range = quill.getSelection();
-        let index = range ? range.index : quill.getLength();
-        quill.clipboard.dangerouslyPasteHTML(index, html, 'user');
+        let range = quill.getSelection(true);
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
         quill.focus();
       }
     },
   }));
 
   useEffect(() => {
-    if (isComponentMounted.current || !editorContainerRef.current || !toolbarRef.current) return;
-    
-    const quill = new Quill(editorContainerRef.current, {
-      theme: 'snow',
-      modules: {
-        toolbar: toolbarRef.current,
-      },
-    });
+    if (!isInitialized.current && editorContainerRef.current && toolbarRef.current) {
+        isInitialized.current = true;
+        const quill = new Quill(editorContainerRef.current, {
+            theme: 'snow',
+            modules: {
+            toolbar: toolbarRef.current,
+            },
+        });
+        quillInstanceRef.current = quill;
 
-    quillInstanceRef.current = quill;
+        const handler = (delta: any, oldDelta: any, source: string) => {
+            if (source === 'user') {
+                const currentContent = quill.root.innerHTML;
+                onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+            }
+        };
 
-    quill.clipboard.dangerouslyPasteHTML(0, value);
-    
-    const handler = (delta: any, oldDelta: any, source: string) => {
-      if (source === 'user') {
-        const currentContent = quill.root.innerHTML;
-        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
-      }
-    };
-    
-    quill.on('text-change', handler);
-    isComponentMounted.current = true;
-
-    return () => {
-      quill.off('text-change', handler);
-      const editorElement = editorContainerRef.current;
-      if (editorElement) {
-        editorElement.innerHTML = '';
-      }
-      quillInstanceRef.current = null;
-    };
+        quill.on('text-change', handler);
+        onReady?.(quill);
+    }
+    // No cleanup function is needed here for text-change listener,
+    // as we want it to persist for the component's lifetime.
+    // The Quill instance itself will be garbage collected with the component.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  }, []);
 
   return (
     <>
@@ -210,6 +201,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
   const quillEditorRef = React.useRef<QuillEditorHandle>(null);
+  const quillInstanceRef = React.useRef<Quill | null>(null);
+
   const [viewMode, setViewMode] = React.useState<"edit" | "preview">("edit");
   const [previewData, setPreviewData] = React.useState<AgentWithNestedData[]>(
     []
@@ -232,17 +225,18 @@ export function TemplateForm({ template }: TemplateFormProps) {
     mode: 'onChange'
   });
 
-  React.useEffect(() => {
-    if (template) {
-      form.reset({
-        name: template.name,
-        subject: template.subject,
-        body: template.body,
-      });
+  useEffect(() => {
+    if (template && quillInstanceRef.current) {
+        form.reset({
+            name: template.name,
+            subject: template.subject,
+            body: template.body,
+        });
+        quillInstanceRef.current.clipboard.dangerouslyPasteHTML(0, template.body || '');
     }
   }, [template, form]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function fetchData() {
       try {
         const data = await getTemplatePreviewData();
@@ -352,14 +346,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
 
     try {
-      const cleanTemplate = (templateString: string) => 
-        (templateString || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1').replace(/&nbsp;/g, ' ');
+      const cleanTemplate = (templateString: string) => {
+          if (!templateString) return '';
+          // Create a temporary div to parse the HTML string
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = templateString;
+          // Return the text content, which strips all HTML tags
+          return tempDiv.textContent || tempDiv.innerText || '';
+      };
 
       const subjectTemplate = Handlebars.compile(cleanTemplate(templateSubject));
       const bodyTemplate = Handlebars.compile(cleanTemplate(templateBody));
       return {
         subject: subjectTemplate(finalContext),
-        body: bodyTemplate(finalContext),
+        body: bodyTemplate(finalContext).replace(/\n/g, '<br />'), // Preserve line breaks
       };
     } catch (e) {
       console.error("Template rendering error:", e);
@@ -419,7 +419,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
@@ -520,6 +520,12 @@ export function TemplateForm({ template }: TemplateFormProps) {
                             ref={quillEditorRef}
                             value={field.value}
                             onChange={field.onChange}
+                            onReady={(quill) => {
+                                quillInstanceRef.current = quill;
+                                if (template?.body) {
+                                    quill.clipboard.dangerouslyPasteHTML(0, template.body);
+                                }
+                            }}
                           />
                         </div>
                       </FormControl>
@@ -702,3 +708,5 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
+    
