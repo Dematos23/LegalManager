@@ -42,18 +42,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
-type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark' | 'multi-owner';
+type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 'multi-owner';
 
-
+// Helper to analyze the template body
 function getTemplateType(templateBody: string): TemplateType {
-    if (templateBody.includes('{{#each owners}}')) {
+    const hasOwnersLoop = /\{\{#each owners\}\}/.test(templateBody);
+    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(templateBody);
+    const hasSingleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/.test(templateBody);
+    
+    if (hasOwnersLoop) {
         return 'multi-owner';
     }
-    if (templateBody.includes('{{#each trademarks}}')) {
-        return 'multi-trademark';
+    if (hasTrademarksLoop) {
+        return 'multi-trademark-no-owner';
     }
-    const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    if (singleTrademarkFields.test(templateBody) && !templateBody.includes('{{#each')) {
+    if (hasSingleTrademarkFields && !hasTrademarksLoop && !hasOwnersLoop) {
         return 'single-trademark';
     }
     return 'plain';
@@ -71,17 +74,23 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(
-    templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark'
-  );
+  const initialSendMode = React.useMemo(() => {
+    switch (templateType) {
+      case 'plain':
+      case 'multi-owner':
+        return 'contact';
+      case 'single-trademark':
+      case 'multi-trademark-no-owner':
+      default:
+        return 'trademark';
+    }
+  }, [templateType]);
+  
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
 
   React.useEffect(() => {
-      const newSendMode = templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark';
-      if (sendMode !== newSendMode) {
-        setSendMode(newSendMode);
-      }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [templateType]);
+    setSendMode(initialSendMode);
+  }, [initialSendMode]);
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -142,38 +151,38 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
         switch(templateType) {
             case 'plain':
                 title = "Invalid: Plain Template";
-                description = "This is a plain text template without trademark data. It must be sent by contact.";
+                description = "This plain text template must be sent by contact.";
                 break;
             case 'multi-owner':
                  title = "Invalid: Multi-Owner Template";
-                 description = "This template lists multiple owners and their data. It must be sent by contact.";
+                 description = "This template lists all data for a contact and must be sent by contact.";
                  break;
             case 'single-trademark':
                  title = "Mode: Single Trademark";
-                 description = "You are sending one email for each selected trademark.";
+                 description = "One email will be sent for each selected trademark-contact pair.";
                  break;
-            case 'multi-trademark':
-                title = "Mode: Multi-Trademark (Grouped by Owner)";
-                description = "You are sending one email per owner, containing a list of their selected trademarks.";
+            case 'multi-trademark-no-owner':
+                title = "Mode: Multi-Trademark (Grouped by Contact)";
+                description = "One email will be sent per contact, containing a list of their selected trademarks.";
                 break;
         }
     } else { // sendMode === 'contact'
          switch(templateType) {
             case 'single-trademark':
                 title = "Invalid: Single Trademark Template";
-                description = "This template is for a single trademark, but no specific trademark was selected. It must be sent by trademark.";
+                description = "This template requires a specific trademark and must be sent by trademark.";
                 break;
-            case 'multi-trademark':
-                title = "Invalid: Multi-Trademark (Single Owner)";
-                description = "This template lists trademarks for a single owner, but 'Send by Contact' doesn't specify which owner's marks to send. Use 'Send by Trademark' or a 'Multi-Owner' template.";
-                break;
+            case 'multi-trademark-no-owner':
+                 title = "Mode: Multi-Trademark Summary";
+                 description = "One email will be sent per contact, containing all trademarks associated with them.";
+                 break;
             case 'plain':
                  title = "Mode: Plain Email";
-                 description = "You are sending one email to each selected contact.";
+                 description = "One email will be sent to each selected contact.";
                  break;
             case 'multi-owner':
                  title = "Mode: Multi-Owner Summary";
-                 description = "You are sending one email per contact, containing all trademarks for all their associated owners.";
+                 description = "One email will be sent per contact, containing all trademarks for all their associated owners.";
                  break;
         }
     }
@@ -188,7 +197,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   }
 
   const isTrademarkSendDisabled = templateType === 'plain' || templateType === 'multi-owner';
-  const isContactSendDisabled = templateType === 'single-trademark' || templateType === 'multi-trademark';
+  const isContactSendDisabled = templateType === 'single-trademark';
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">

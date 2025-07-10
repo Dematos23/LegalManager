@@ -18,11 +18,12 @@ function validateTemplateLogic(body: string) {
     // This regex looks for single owner fields like {{owner.name}} but not inside an owners loop.
     const hasSingleOwnerFields = /\{\{owner\.(name|country)\}\}/.test(body);
 
-    // The template is invalid ONLY IF it has a trademark loop AND single owner fields, but NOT an owners loop.
+    // Rule 3: multitrademark and single owner: should never be possible to create.
+    // This is invalid if it has a trademark loop AND single owner fields, but NOT an owners loop.
     if (hasTrademarksLoop && !hasOwnersLoop && hasSingleOwnerFields) {
         return {
             isValid: false,
-            error: { body: ["A multi-trademark loop ('{{#each trademarks}}') cannot be used with single owner fields ('{{owner.name}}'). Use a multi-owner loop ('{{#each owners}}') or remove the single owner fields."] }
+            error: { body: ["Invalid combination: A multi-trademark loop ('{{#each trademarks}}') cannot be used with single owner fields ('{{owner.name}}') outside of a multi-owner loop ('{{#each owners}}'). This template structure is ambiguous."] }
         };
     }
 

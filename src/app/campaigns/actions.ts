@@ -8,18 +8,22 @@ import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 import type { Contact, Owner, Trademark, Agent } from '@prisma/client';
 
-type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark' | 'multi-owner';
+type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 'multi-owner';
 
 // Helper to analyze the template body
 function getTemplateType(templateBody: string): TemplateType {
-    if (templateBody.includes('{{#each owners}}')) {
+    const hasOwnersLoop = /\{\{#each owners\}\}/.test(body);
+    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(body);
+    const hasSingleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/.test(body);
+    
+    if (hasOwnersLoop) {
         return 'multi-owner';
     }
-    if (templateBody.includes('{{#each trademarks}}')) {
-        return 'multi-trademark';
+    if (hasTrademarksLoop) {
+        // Doesn't have owner loop, but has trademark loop
+        return 'multi-trademark-no-owner';
     }
-    const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    if (singleTrademarkFields.test(templateBody) && !templateBody.includes('{{#each')) {
+    if (hasSingleTrademarkFields && !hasTrademarksLoop && !hasOwnersLoop) {
         return 'single-trademark';
     }
     return 'plain';
@@ -62,17 +66,14 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
         // --- Logic Validation ---
         if (payload.sendMode === 'trademark') {
             if (templateType === 'plain') {
-                return { error: "This is a plain text template. It should be sent by contact, not by trademark, as it doesn't use any trademark data." };
+                return { error: "Plain text templates don't use trademark data and must be sent by contact." };
             }
-             if (templateType === 'multi-owner') {
-                return { error: "This template is designed to list multiple owners and trademarks. It must be sent by contact." };
+            if (templateType === 'multi-owner') {
+                return { error: "This multi-owner template includes all of a contact's data and must be sent by contact." };
             }
         } else if (payload.sendMode === 'contact') {
             if (templateType === 'single-trademark') {
-                return { error: "This template is for a single trademark, but no specific trademark was selected. To send it, please use the 'Send by Trademark' option and select the desired trademarks." };
-            }
-             if (templateType === 'multi-trademark') {
-                return { error: "This template lists trademarks for a single owner, but 'Send by Contact' doesn't specify which owner's marks to send. It must be sent by trademark." };
+                return { error: "This template is for a single trademark, but no specific trademark was selected. It must be sent by trademark." };
             }
         }
 
@@ -83,6 +84,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
         const emailJobs = new Map<string, { contact: any, context: any }>();
         
         if (payload.sendMode === 'contact') {
+            // Processing for 'Send by Contact'
             const contacts = await prisma.contact.findMany({
                 where: { id: { in: payload.contactIds } },
                 include: {
@@ -96,36 +98,38 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             });
 
             for (const contact of contacts) {
-                // For 'plain' and 'multi-owner', this is the primary path.
                 const allOwners = contact.owners;
                 const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
 
+                // For 'plain', 'multi-owner', and 'multi-trademark-no-owner' templates sent by contact
                 const context = createHandlebarsContext(contact, allOwners, allTrademarks);
                 emailJobs.set(contact.email, { contact, context });
             }
 
         } else if (payload.sendMode === 'trademark') {
+            // Processing for 'Send by Trademark'
             const selectedTrademarks = await prisma.trademark.findMany({
                 where: { id: { in: payload.trademarkIds } },
                 include: { owner: { include: { contacts: { include: { agent: true } } } } }
             });
             
-            if (templateType === 'multi-trademark') {
-                // Multi-trademark: Send one email per owner, per contact.
-                const trademarksByOwnerContact = new Map<string, { contact: any; owner: any; trademarks: any[] }>();
+            if (templateType === 'multi-trademark-no-owner') {
+                // Group trademarks by their contact. One email per contact with a list of their trademarks.
+                const trademarksByContact = new Map<number, { contact: any; trademarks: any[] }>();
                 for (const tm of selectedTrademarks) {
                     for (const contact of tm.owner.contacts) {
-                        const key = `${contact.id}-${tm.owner.id}`;
-                        if (!trademarksByOwnerContact.has(key)) {
-                            trademarksByOwnerContact.set(key, { contact, owner: tm.owner, trademarks: [] });
+                        if (!trademarksByContact.has(contact.id)) {
+                            trademarksByContact.set(contact.id, { contact, trademarks: [] });
                         }
-                        trademarksByOwnerContact.get(key)!.trademarks.push(tm);
+                        trademarksByContact.get(contact.id)!.trademarks.push(tm);
                     }
                 }
                 
-                for (const { contact, owner, trademarks } of trademarksByOwnerContact.values()) {
+                for (const { contact, trademarks } of trademarksByContact.values()) {
+                    // Context will have a list of trademarks for a single-owner (the one associated with the marks)
+                    const owner = trademarks[0].owner;
                     const context = createHandlebarsContext(contact, [owner], trademarks);
-                    const jobKey = `${contact.email}-${owner.id}`; 
+                    const jobKey = `${contact.email}`; // Unique key per contact
                     emailJobs.set(jobKey, { contact, context });
                 }
 
@@ -133,7 +137,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 for (const tm of selectedTrademarks) {
                      for (const contact of tm.owner.contacts) {
                         const context = createHandlebarsContext(contact, [tm.owner], [tm]);
-                        const jobKey = `${contact.email}-${tm.id}`;
+                        const jobKey = `${contact.email}-${tm.id}`; // Unique key per contact-trademark pair
                         emailJobs.set(jobKey, { contact, context });
                     }
                 }
@@ -200,6 +204,8 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
         }))
     }));
 
+    // For multi-trademark-no-owner, trademarks are grouped under a single owner in the context
+    // For single-trademark, allTrademarks will just have one.
     const trademarksContextData = allTrademarks.map(tm => ({
         denomination: tm.denomination,
         class: String(tm.class),
@@ -218,10 +224,11 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
         owners: ownersContext,
     };
     
-    // For single-owner contexts, provide a top-level `owner` and `trademarks` object for convenience
-    if (ownersContext.length === 1) {
+    // For convenience in 'multi-trademark-no-owner' and 'single-trademark' templates
+    // where there's logically only one owner in the context.
+    if (owners.length === 1) {
         handlebarsContext.owner = ownersContext[0];
-        handlebarsContext.trademarks = ownersContext[0].trademarks;
+        handlebarsContext.trademarks = trademarksContextData;
     }
     
     // For single-trademark contexts, provide top-level trademark fields
