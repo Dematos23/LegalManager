@@ -30,6 +30,24 @@ export async function getTrademarks(): Promise<TrademarkWithDetails[]> {
   }
 }
 
+export async function getContacts() {
+    try {
+        const contacts = await prisma.contact.findMany({
+            include: {
+                agent: true,
+            },
+            orderBy: [
+                { firstName: 'asc' },
+                { lastName: 'asc' }
+            ]
+        });
+        return contacts;
+    } catch (error) {
+        console.error('Database Error:', error);
+        return [];
+    }
+}
+
 export async function getContactAndTrademarksForEmail(contactEmail: string) {
     try {
         const contact = await prisma.contact.findUnique({
@@ -85,3 +103,5 @@ export async function getContactDetails(id: number) {
     return null;
   }
 }
+
+    

@@ -6,19 +6,26 @@ import { Resend } from 'resend';
 import * as Handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
-import type { Contact, Trademark } from '@/types';
 
-interface SendCampaignPayload {
+interface SendCampaignByTrademarkPayload {
+    sendMode: 'trademark';
     templateId: number;
     campaignName: string;
-    contactsData: {
-        contactId: number;
-        trademarkIds: number[];
-    }[];
+    mergeTrademarks: boolean;
+    trademarkIds: number[];
 }
 
+interface SendCampaignByContactPayload {
+    sendMode: 'contact';
+    templateId: number;
+    campaignName: string;
+    contactIds: number[];
+}
+
+type SendCampaignPayload = SendCampaignByTrademarkPayload | SendCampaignByContactPayload;
+
 export async function sendCampaignAction(payload: SendCampaignPayload) {
-    const { templateId, campaignName, contactsData } = payload;
+    const { templateId, campaignName } = payload;
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
@@ -32,65 +39,76 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
         }
 
         const campaign = await prisma.campaign.create({
-            data: {
-                name: campaignName,
-                emailTemplateId: template.id,
-            },
+            data: { name: campaignName, emailTemplateId: template.id },
         });
 
-        for (const item of contactsData) {
-            const contact = await prisma.contact.findUnique({
-                where: { id: item.contactId },
-                include: { agent: true }
+        // This map will hold the final email jobs to be sent.
+        // Key: contact email. Value: object with contact and context for Handlebars.
+        const emailJobs = new Map<string, { contact: any, context: any }>();
+        
+        if (payload.sendMode === 'contact') {
+            const contacts = await prisma.contact.findMany({
+                where: { id: { in: payload.contactIds } },
+                include: {
+                    agent: true,
+                    owners: { include: { trademarks: true } }
+                }
             });
-            const trademarks = await prisma.trademark.findMany({
-                where: { id: { in: item.trademarkIds } },
-                include: { owner: true }
-            });
 
-            if (!contact) continue;
+            for (const contact of contacts) {
+                const allTrademarks = contact.owners.flatMap(owner => owner.trademarks);
+                const firstOwner = allTrademarks.length > 0 ? await prisma.owner.findFirst({ where: { trademarks: { some: { id: allTrademarks[0].id } } } }) : null;
 
-            const owner = trademarks.length > 0 ? trademarks[0].owner : null;
-
-            const trademarksContextData = trademarks.map(tm => ({
-                denomination: tm.denomination,
-                class: String(tm.class),
-                certificate: tm.certificate,
-                expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
-                products: tm.products,
-                type: tm.type
-            }));
-
-            let handlebarsContext: any = {
-                agent: contact.agent,
-                owner: owner ? {
-                    ...owner,
-                    country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
-                } : null,
-                contact: {
-                    name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
-                    email: contact.email,
-                },
-                trademarks: trademarksContextData,
-            };
-
-            // If there's only one trademark, flatten its properties into the main context
-            // so merge fields like {{denomination}} work directly.
-            if (trademarksContextData.length === 1) {
-                handlebarsContext = {
-                    ...handlebarsContext,
-                    ...trademarksContextData[0]
-                };
+                const context = createHandlebarsContext(contact, firstOwner, allTrademarks);
+                emailJobs.set(contact.email, { contact, context });
             }
 
-            const cleanSubject = (template.subject || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
-            const cleanBody = (template.body || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+        } else if (payload.sendMode === 'trademark') {
+            const selectedTrademarks = await prisma.trademark.findMany({
+                where: { id: { in: payload.trademarkIds } },
+                include: { owner: { include: { contacts: { include: { agent: true } } } } }
+            });
 
-            const subjectTemplate = Handlebars.compile(cleanSubject);
-            const bodyTemplate = Handlebars.compile(cleanBody);
-            const emailSubject = subjectTemplate(handlebarsContext);
-            const emailBody = bodyTemplate(handlebarsContext);
-            
+            if (payload.mergeTrademarks) {
+                // Group trademarks by owner, then by contact
+                const trademarksByOwnerContact = new Map<string, { contact: any; owner: any; trademarks: any[] }>();
+
+                for (const tm of selectedTrademarks) {
+                    for (const contact of tm.owner.contacts) {
+                        const key = `${contact.id}-${tm.owner.id}`;
+                        if (!trademarksByOwnerContact.has(key)) {
+                            trademarksByOwnerContact.set(key, { contact, owner: tm.owner, trademarks: [] });
+                        }
+                        trademarksByOwnerContact.get(key)!.trademarks.push(tm);
+                    }
+                }
+                
+                for (const { contact, owner, trademarks } of trademarksByOwnerContact.values()) {
+                    const context = createHandlebarsContext(contact, owner, trademarks);
+                     // We might overwrite if a contact is linked to multiple owners, but each email is owner-specific.
+                     // A more complex key might be needed if one contact gets multiple distinct emails.
+                     // For now, let's key by contact email + owner id to ensure unique jobs.
+                    const jobKey = `${contact.email}-${owner.id}`;
+                    emailJobs.set(jobKey, { contact, context });
+                }
+
+            } else { // Send one email per trademark
+                for (const tm of selectedTrademarks) {
+                     for (const contact of tm.owner.contacts) {
+                        const context = createHandlebarsContext(contact, tm.owner, [tm]);
+                        // Create a unique key for each trademark-contact pair to avoid overwriting jobs
+                        const jobKey = `${contact.email}-${tm.id}`;
+                        emailJobs.set(jobKey, { contact, context });
+                    }
+                }
+            }
+        }
+
+        // Process all email jobs
+        for (const { contact, context } of emailJobs.values()) {
+            const emailSubject = compileAndRender(template.subject, context);
+            const emailBody = compileAndRender(template.body, context);
+
             const { data, error } = await resend.emails.send({
                 from: 'LegalIntel CRM <notifications@updates.artecasa.com.pe>',
                 to: [contact.email],
@@ -104,7 +122,6 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             
             if (error || !data) {
                 console.error(`Failed to send email to ${contact.email}:`, error);
-                // Optionally, log this failure somewhere
                 continue;
             }
 
@@ -113,14 +130,12 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                     resendId: data.id,
                     campaignId: campaign.id,
                     contactId: contact.id,
-                    deliveredAt: null,
-                    openedAt: null,
                 },
             });
         }
 
         revalidatePath('/tracking');
-        return { success: `Campaign "${campaign.name}" sent successfully.` };
+        return { success: `Campaign "${campaign.name}" sent successfully to ${emailJobs.size} recipients.` };
 
     } catch (error) {
         console.error('Failed to send campaign:', error);
@@ -128,6 +143,43 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
     }
 }
 
+function createHandlebarsContext(contact: any, owner: any, trademarks: any[]): any {
+    const trademarksContextData = trademarks.map(tm => ({
+        denomination: tm.denomination,
+        class: String(tm.class),
+        certificate: tm.certificate,
+        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+        products: tm.products,
+        type: tm.type
+    }));
+
+    let handlebarsContext: any = {
+        agent: contact.agent,
+        owner: owner ? {
+            ...owner,
+            country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())
+        } : null,
+        contact: {
+            name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+            email: contact.email,
+        },
+        trademarks: trademarksContextData,
+    };
+
+    if (trademarksContextData.length === 1) {
+        handlebarsContext = {
+            ...handlebarsContext,
+            ...trademarksContextData[0]
+        };
+    }
+    return handlebarsContext;
+}
+
+function compileAndRender(templateString: string, context: any): string {
+    const cleanTemplate = (templateString || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+    const compiledTemplate = Handlebars.compile(cleanTemplate);
+    return compiledTemplate(context);
+}
 
 export async function getCampaigns() {
     return prisma.campaign.findMany({
@@ -183,7 +235,6 @@ export async function syncCampaignStatusAction(campaignId: number) {
                 if (data.last_event === 'delivered' && !email.deliveredAt) {
                     updates.deliveredAt = new Date();
                 } else if (data.last_event === 'opened' && !email.openedAt) {
-                    // If it was opened, it must have been delivered.
                     if (!email.deliveredAt) {
                         updates.deliveredAt = new Date();
                     }
@@ -207,3 +258,5 @@ export async function syncCampaignStatusAction(campaignId: number) {
         return { error: 'An unexpected error occurred while syncing.' };
     }
 }
+
+    
