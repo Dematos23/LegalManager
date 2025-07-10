@@ -65,7 +65,7 @@ const MERGE_FIELDS = [
       group: "Agent",
       fields: [
         { name: "Agent Name", value: "{{agent.name}}" },
-        { name: "Agent Country", value: "{{agent.country}}" },
+        { name: "Agent Country", value = "{{agent.country}}" },
         { name: "Agent Area", value: "{{agent.area}}" },
       ],
     },
@@ -118,6 +118,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const isInitializedRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -140,8 +141,9 @@ const QuillEditor = React.forwardRef<
         });
         quillInstanceRef.current = quill;
 
-        if (value) {
+        if (value && !isInitializedRef.current) {
              quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+             isInitializedRef.current = true;
         }
 
         const handler = () => {
@@ -192,6 +194,10 @@ const QuillEditor = React.forwardRef<
   );
 });
 QuillEditor.displayName = "QuillEditor";
+
+interface TemplateFormProps {
+  template?: EmailTemplate;
+}
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
@@ -335,44 +341,61 @@ export function TemplateForm({ template }: TemplateFormProps) {
         };
     }
 
-    const compileAndRender = (templateString: string): string => {
-        if (!templateString) return '';
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = templateString;
+    const cleanTemplateForHandlebars = (html: string): string => {
+        if (!html) return '';
 
-        // Replace <p><br></p> with a single newline, and other <p> with content + newline
-        const paragraphs = Array.from(tempDiv.querySelectorAll('p'));
-        const textContent = paragraphs.map(p => {
-          if (p.innerHTML === '<br>') return '\n';
-          return p.textContent || p.innerText;
-        }).join('\n');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Use placeholders to protect Handlebars expressions
+        const placeholders: string[] = [];
+        let cleanHtml = tempDiv.innerHTML.replace(/{{[{#]?[^}]+}}/g, (match) => {
+            placeholders.push(match);
+            return `__PLACEHOLDER_${placeholders.length - 1}__`;
+        });
+        
+        // Now convert the HTML to text content, which strips tags
+        tempDiv.innerHTML = cleanHtml;
+        let textContent = tempDiv.textContent || "";
+        
+        // Restore placeholders
+        textContent = textContent.replace(/__PLACEHOLDER_(\d+)__/g, (match, index) => {
+            return placeholders[parseInt(index, 10)];
+        });
+
+        return textContent;
+    };
+    
+    const compileAndRender = (templateString: string): string => {
+        const cleanedTemplate = cleanTemplateForHandlebars(templateString);
+        if (!cleanedTemplate.trim()) return '';
 
         try {
-            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
-            return compiledTemplate(finalContext);
+            const compiled = Handlebars.compile(cleanedTemplate, { noEscape: true });
+            return compiled(finalContext).replace(/\n/g, '<br />');
         } catch (e) {
             console.error("Template rendering error:", e);
             const errorMessage = e instanceof Error ? e.message : "Unknown error.";
             return `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`;
         }
     };
-
-    const subjectTemplate = Handlebars.compile(templateSubject || '', { noEscape: true });
-
-    try {
-      return {
-        subject: subjectTemplate(finalContext),
-        body: compileAndRender(templateBody).replace(/\n/g, '<br />'),
-      };
-    } catch (e) {
-      console.error("Template rendering error:", e);
-      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
-      return {
-        subject: "Error",
-        body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`
-      };
+    
+    const compileSubject = (templateString: string): string => {
+        if (!templateString) return '';
+        try {
+            const compiled = Handlebars.compile(templateString, { noEscape: true });
+            return compiled(finalContext);
+        } catch (e) {
+            console.error("Subject rendering error:", e);
+            return "Error in subject";
+        }
     }
+
+    return {
+        subject: compileSubject(templateSubject),
+        body: compileAndRender(templateBody),
+    };
+
   }, [
     viewMode,
     selectedAgent,
@@ -423,7 +446,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
