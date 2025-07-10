@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -117,8 +117,8 @@ type QuillEditorHandle = {
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { value: string; onChange: (value: string) => void, onReady?: (quill: Quill) => void }
->(({ value, onChange, onReady }, ref) => {
+  { defaultValue: string; onChange: (value: string) => void, onReady?: (quill: Quill) => void }
+>(({ defaultValue, onChange, onReady }, ref) => {
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
@@ -146,19 +146,22 @@ const QuillEditor = React.forwardRef<
         });
         quillInstanceRef.current = quill;
 
-        const handler = (delta: any, oldDelta: any, source: string) => {
-            if (source === 'user') {
-                const currentContent = quill.root.innerHTML;
-                onChange(currentContent === '<p><br></p>' ? '' : currentContent);
-            }
+        if (defaultValue) {
+             quill.clipboard.dangerouslyPasteHTML(0, defaultValue, 'api');
+        }
+
+        const handler = () => {
+            const currentContent = quill.root.innerHTML;
+            onChange(currentContent === '<p><br></p>' ? '' : currentContent);
         };
 
         quill.on('text-change', handler);
         onReady?.(quill);
+
+        return () => {
+            quill.off('text-change', handler);
+        }
     }
-    // No cleanup function is needed here for text-change listener,
-    // as we want it to persist for the component's lifetime.
-    // The Quill instance itself will be garbage collected with the component.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -201,7 +204,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();
   const { dictionary } = useLanguage();
   const quillEditorRef = React.useRef<QuillEditorHandle>(null);
-  const quillInstanceRef = React.useRef<Quill | null>(null);
 
   const [viewMode, setViewMode] = React.useState<"edit" | "preview">("edit");
   const [previewData, setPreviewData] = React.useState<AgentWithNestedData[]>(
@@ -214,7 +216,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
   const [selectedOwnerId, setSelectedOwnerId] = React.useState<string>("all");
   const [selectedTrademarkId, setSelectedTrademarkId] =
     React.useState<string>("all");
-
+    
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
     defaultValues: {
@@ -224,17 +226,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
     },
     mode: 'onChange'
   });
-
-  useEffect(() => {
-    if (template && quillInstanceRef.current) {
-        form.reset({
-            name: template.name,
-            subject: template.subject,
-            body: template.body,
-        });
-        quillInstanceRef.current.clipboard.dangerouslyPasteHTML(0, template.body || '');
-    }
-  }, [template, form]);
 
   useEffect(() => {
     async function fetchData() {
@@ -345,30 +336,32 @@ export function TemplateForm({ template }: TemplateFormProps) {
         };
     }
 
-    try {
-      const cleanTemplate = (templateString: string) => {
-          if (!templateString) return '';
-          // Create a temporary div to parse the HTML string
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = templateString;
-          // Return the text content, which strips all HTML tags
-          return tempDiv.textContent || tempDiv.innerText || '';
-      };
+    const compileAndRender = (templateString: string): string => {
+        if (!templateString) return '';
+        // Remove the wrapper span but keep the content
+        const cleanTemplate = templateString
+            .replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1')
+            .replace(/&nbsp;/g, ' '); // Replace non-breaking spaces
+            
+        // Use a temporary div to parse HTML and get text content, preserving Handlebars tags
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cleanTemplate;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
 
-      const subjectTemplate = Handlebars.compile(cleanTemplate(templateSubject));
-      const bodyTemplate = Handlebars.compile(cleanTemplate(templateBody));
-      return {
-        subject: subjectTemplate(finalContext),
-        body: bodyTemplate(finalContext).replace(/\n/g, '<br />'), // Preserve line breaks
-      };
-    } catch (e) {
-      console.error("Template rendering error:", e);
-      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
-      return {
-        subject: "Error rendering subject",
-        body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`,
-      };
-    }
+        try {
+            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
+            return compiledTemplate(finalContext);
+        } catch (e) {
+            console.error("Template rendering error:", e);
+            const errorMessage = e instanceof Error ? e.message : "Unknown error.";
+            return `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`;
+        }
+    };
+
+    return {
+        subject: compileAndRender(templateSubject),
+        body: compileAndRender(templateBody).replace(/\n/g, '<br />'),
+    };
   }, [
     viewMode,
     selectedAgent,
@@ -419,7 +412,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span> `;
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
@@ -518,14 +511,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
                         <div className="w-full rounded-md border border-input bg-background">
                           <QuillEditor
                             ref={quillEditorRef}
-                            value={field.value}
+                            defaultValue={field.value}
                             onChange={field.onChange}
-                            onReady={(quill) => {
-                                quillInstanceRef.current = quill;
-                                if (template?.body) {
-                                    quill.clipboard.dangerouslyPasteHTML(0, template.body);
-                                }
-                            }}
                           />
                         </div>
                       </FormControl>
@@ -661,7 +648,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       {dictionary.templateForm.renderedPreview}
                     </p>
                     <div
-                      className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black"
+                      className="w-full overflow-x-auto rounded-md border p-4 min-h-[400px] bg-white text-black whitespace-pre-wrap"
                       dangerouslySetInnerHTML={{ __html: renderedPreview.body }}
                     />
                   </div>
