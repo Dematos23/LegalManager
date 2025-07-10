@@ -58,17 +58,88 @@ type TrackingClientProps = {
   campaigns: CampaignWithDetails[];
 };
 
+function DeleteCampaignDialog({ campaign, onCampaignDeleted }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void }) {
+    const { dictionary } = useLanguage();
+    const { toast } = useToast();
+    const [isDeleting, startDeleteTransition] = useTransition();
+    const [deleteInput, setDeleteInput] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleDelete = () => {
+        startDeleteTransition(async () => {
+            const result = await deleteCampaignAction(campaign.id);
+            if (result.success) {
+                onCampaignDeleted(campaign.id);
+                toast({
+                    title: dictionary.tracking.deleteDialog.successTitle,
+                    description: dictionary.tracking.deleteDialog.successDescription,
+                });
+                setIsOpen(false);
+            } else {
+                toast({
+                    title: dictionary.tracking.deleteDialog.errorTitle,
+                    description: result.error,
+                    variant: 'destructive',
+                });
+            }
+            setDeleteInput('');
+        });
+    };
+
+    return (
+        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                   <Trash2 className="mr-2 h-4 w-4" />
+                   {dictionary.tracking.table.delete}
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{dictionary.tracking.deleteDialog.title}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {dictionary.tracking.deleteDialog.description}
+                        <span className="font-bold text-destructive">
+                            {campaign.name}
+                        </span>
+                        . {dictionary.tracking.deleteDialog.confirm}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="grid gap-2">
+                   <Label htmlFor={`delete-confirm-${campaign.id}`}>{dictionary.tracking.deleteDialog.confirmLabel}</Label>
+                    <Input 
+                        id={`delete-confirm-${campaign.id}`}
+                        value={deleteInput}
+                        onChange={(e) => setDeleteInput(e.target.value)}
+                        placeholder="DELETE"
+                        autoFocus
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeleteInput('')}>{dictionary.tracking.deleteDialog.cancel}</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={deleteInput !== 'DELETE' || isDeleting}
+                        className={cn(buttonVariants({ variant: 'destructive' }))}
+                    >
+                        {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {dictionary.tracking.deleteDialog.continue}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+
 export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientProps) {
   const { language, dictionary } = useLanguage();
-  const { toast } = useToast();
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [searchTerm, setSearchTerm] = useState('');
   const [templateFilter, setTemplateFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [isDeleting, startDeleteTransition] = useTransition();
-  const [deleteInput, setDeleteInput] = useState('');
-
+  
   const formatDate = (date: Date) => {
     return format(date, 'MMM dd, yyyy, h:mm a', {
       locale: language === 'es' ? es : undefined,
@@ -77,11 +148,11 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
 
   const templates = useMemo(() => {
     const uniqueTemplates = new Map<number, EmailTemplate>();
-    campaigns.forEach(campaign => {
+    initialCampaigns.forEach(campaign => {
         uniqueTemplates.set(campaign.emailTemplate.id, campaign.emailTemplate);
     });
     return Array.from(uniqueTemplates.values());
-  }, [campaigns]);
+  }, [initialCampaigns]);
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
@@ -93,24 +164,8 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
     })
   }, [campaigns, searchTerm, templateFilter, dateRange]);
 
-  const handleDelete = (campaignId: number) => {
-      startDeleteTransition(async () => {
-        const result = await deleteCampaignAction(campaignId);
-        if (result.success) {
-            setCampaigns(prev => prev.filter(c => c.id !== campaignId));
-            toast({
-                title: dictionary.tracking.deleteDialog.successTitle,
-                description: dictionary.tracking.deleteDialog.successDescription,
-            });
-        } else {
-            toast({
-                title: dictionary.tracking.deleteDialog.errorTitle,
-                description: result.error,
-                variant: 'destructive',
-            });
-        }
-        setDeleteInput('');
-      });
+  const handleCampaignDeleted = (campaignId: number) => {
+      setCampaigns(prev => prev.filter(c => c.id !== campaignId));
   }
 
   const columns = useMemo<ColumnDef<CampaignWithDetails>[]>(() => [
@@ -161,53 +216,11 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
                         {dictionary.tracking.table.view}
                     </Link>
                 </Button>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                           <Trash2 className="mr-2 h-4 w-4" />
-                           {dictionary.tracking.table.delete}
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{dictionary.tracking.deleteDialog.title}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                {dictionary.tracking.deleteDialog.description}
-                                <span className="font-bold text-destructive">
-                                    {row.original.name}
-                                </span>
-                                . {dictionary.tracking.deleteDialog.confirm}
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div className="grid gap-2">
-                           <Label htmlFor="delete-confirm">{dictionary.tracking.deleteDialog.confirmLabel}</Label>
-                            <Input 
-                                id="delete-confirm"
-                                value={deleteInput}
-                                onChange={(e) => setDeleteInput(e.target.value)}
-                                placeholder="DELETE"
-                                autoFocus
-                            />
-                        </div>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setDeleteInput('')}>{dictionary.tracking.deleteDialog.cancel}</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => handleDelete(row.original.id)}
-                                disabled={deleteInput !== 'DELETE' || isDeleting}
-                                className={cn(
-                                    buttonVariants({ variant: 'destructive' })
-                                )}
-                            >
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {dictionary.tracking.deleteDialog.continue}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                 <DeleteCampaignDialog campaign={row.original} onCampaignDeleted={handleCampaignDeleted} />
             </div>
         ),
     }
-  ], [dictionary, formatDate, deleteInput, isDeleting]);
+  ], [dictionary, formatDate]);
 
   const table = useReactTable({
     data: filteredCampaigns,
@@ -345,5 +358,3 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
     </div>
   );
 }
-
-    
