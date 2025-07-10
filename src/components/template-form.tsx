@@ -129,7 +129,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const lastContentRef = React.useRef(value);
+  const isInitialized = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -143,7 +143,7 @@ const QuillEditor = React.forwardRef<
   }));
 
   useEffect(() => {
-    if (!editorContainerRef.current || !toolbarRef.current || quillInstanceRef.current) return;
+    if (!editorContainerRef.current || !toolbarRef.current || isInitialized.current) return;
 
     const quill = new Quill(editorContainerRef.current, {
       theme: 'snow',
@@ -152,42 +152,29 @@ const QuillEditor = React.forwardRef<
       },
     });
     quillInstanceRef.current = quill;
-    quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-    lastContentRef.current = value;
+
+    if (value) {
+      quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+    }
     
-    const handler = () => {
+    quill.on('text-change', () => {
       const currentContent = quill.root.innerHTML;
-      if (currentContent !== lastContentRef.current) {
-        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
-        lastContentRef.current = currentContent;
+      if (currentContent === '<p><br></p>') {
+        onChange('');
+      } else {
+        onChange(currentContent);
       }
-    };
-    quill.on('text-change', handler);
+    });
+    
+    isInitialized.current = true;
 
     return () => {
-      quill.off('text-change', handler);
       if (quillInstanceRef.current) {
         quillInstanceRef.current = null;
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-  // This effect ensures that if the form is reset from the outside,
-  // the editor's content updates accordingly.
-  useEffect(() => {
-    const quill = quillInstanceRef.current;
-    if (quill && value !== lastContentRef.current) {
-        const selection = quill.getSelection();
-        quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-        lastContentRef.current = value;
-        if (selection) {
-            // Try to restore the cursor position
-            quill.setSelection(selection.index, selection.length, 'silent');
-        }
-    }
-  }, [value]);
-
 
   return (
     <>
@@ -371,30 +358,22 @@ export function TemplateForm({ template }: TemplateFormProps) {
         };
     }
     
-    const isMultiLoopTemplate = (body: string) => /\{\{#each\s+owners\}\}/.test(body);
+    const isMultiOwnerTemplate = (body: string) => /\{\{#each\s+owners\}\}/.test(body);
 
-    const renderMultiLoopPreview = (templateString: string, context: any) => {
+    const renderMultiOwnerPreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = templateString;
-
-        // Replace <p> tags with newlines to preserve them
-        tempDiv.querySelectorAll('p').forEach(p => {
-            p.appendChild(document.createTextNode('\n'));
-        });
-        
-        const textContent = (tempDiv.textContent || "").trim();
-
         try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(templateString, 'text/html');
+            const textContent = doc.body.textContent || "";
             const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
-            return compiledTemplate(finalContext).replace(/\n/g, '<br />');
+            return compiledTemplate(context).replace(/\n/g, '<br />');
         } catch (e) {
-            console.error("Template rendering error:", e);
-            const errorMessage = e instanceof Error ? e.message : "Unknown error.";
-            return `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`;
+            console.error("Multi-owner template rendering error:", e);
+            return "Error rendering multi-owner template.";
         }
     };
-
+    
     const renderSimplePreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
         try {
@@ -402,7 +381,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
             const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
             return compiledTemplate(context);
         } catch (e) {
-            console.error("Template rendering error:", e);
+            console.error("Simple template rendering error:", e);
             return "Error rendering template.";
         }
     };
@@ -420,8 +399,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     return {
         subject: compileSubject(templateSubject),
-        body: isMultiLoopTemplate(templateBody)
-          ? renderMultiLoopPreview(templateBody, finalContext)
+        body: isMultiOwnerTemplate(templateBody)
+          ? renderMultiOwnerPreview(templateBody, finalContext)
           : renderSimplePreview(templateBody, finalContext),
     };
 
@@ -476,7 +455,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
