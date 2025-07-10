@@ -129,6 +129,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const isInitializedRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -152,7 +153,6 @@ const QuillEditor = React.forwardRef<
     });
     quillInstanceRef.current = quill;
     
-    // Set initial content only if it's not the default empty state
     if (value && value !== '<p><br></p>') {
       quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
     }
@@ -173,6 +173,18 @@ const QuillEditor = React.forwardRef<
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Set initial content once form is reset
+  useEffect(() => {
+    const quill = quillInstanceRef.current;
+    if (quill && value && value !== quill.root.innerHTML && !isInitializedRef.current) {
+      if (value !== '<p><br></p>') {
+        quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+      }
+      isInitializedRef.current = true;
+    }
+  }, [value]);
+
 
   return (
     <>
@@ -356,15 +368,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
         };
     }
     
-    const compileAndRender = (templateString: string): string => {
+    const compileAndRender = (templateString: string, context: any): string => {
         if (!templateString) return '';
-        
-        // This regex removes HTML tags but keeps the content.
-        const plainTextTemplate = templateString.replace(/<[^>]*>/g, '');
+        if (typeof window === 'undefined') return ''; // Cannot parse on the server
 
         try {
-            const compiledTemplate = Handlebars.compile(plainTextTemplate, { noEscape: true });
-            return compiledTemplate(finalContext);
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(templateString, 'text/html');
+            const textContent = doc.body.textContent || "";
+            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
+            return compiledTemplate(context).replace(/\n/g, '<br />');
         } catch (e) {
             console.error("Template rendering error:", e);
             const errorMessage = e instanceof Error ? e.message : "Unknown error.";
@@ -385,7 +398,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     return {
         subject: compileSubject(templateSubject),
-        body: compileAndRender(templateBody).replace(/\n/g, '<br />'),
+        body: compileAndRender(templateBody, finalContext),
     };
 
   }, [
@@ -722,3 +735,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
