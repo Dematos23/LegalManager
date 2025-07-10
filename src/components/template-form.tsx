@@ -127,43 +127,28 @@ const QuillEditor = React.forwardRef<
   React.useEffect(() => {
     if (!editorContainerRef.current || quillInstanceRef.current) return;
 
-    const toolbarOptions = [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike", "blockquote"],
-      [
-        { list: "ordered" },
-        { list: "bullet" },
-        { indent: "-1" },
-        { indent: "+1" },
-      ],
-      ["link"],
-      ["clean"],
-    ];
-
     const quill = new Quill(editorContainerRef.current, {
-  theme: "snow",
-  modules: {
-    toolbar: {
-      container: "#custom-quill-toolbar",
-    },
-    clipboard: true,
-    history: true,
-  },
-  formats: [
-    "header",
-    "bold",
-    "italic",
-    "underline",
-    "strike",
-    "blockquote",
-    "list",
-    "bullet",
-    "indent",
-    "link",
-    "clean",
-  ],
-});
-
+      theme: "snow",
+      modules: {
+        toolbar: {
+          container: "#custom-quill-toolbar",
+        },
+        clipboard: { matchVisual: true },
+      },
+      formats: [
+        "font",
+        "size",
+        "bold",
+        "italic",
+        "underline",
+        "blockquote",
+        "list",
+        "indent",
+        "link",
+        "image",
+        "align",
+      ],
+    });
 
     quillInstanceRef.current = quill;
 
@@ -202,38 +187,35 @@ const QuillEditor = React.forwardRef<
   // return <div ref={editorContainerRef} />;
   return (
     <>
-      <div id="custom-quill-toolbar">
-        <span className="ql-formats">
-          <select className="ql-header">
-            <option value="1" />
-            <option value="2" />
-            <option value="3" />
-            <option value="" />
-          </select>
-        </span>
+      <div id="custom-quill-toolbar" className="mb-4 border rounded p-2">
         <span className="ql-formats">
           <button className="ql-bold" />
           <button className="ql-italic" />
           <button className="ql-underline" />
-          <button className="ql-strike" />
           <button className="ql-blockquote" />
         </span>
+
         <span className="ql-formats">
           <button className="ql-list" value="ordered" />
           <button className="ql-list" value="bullet" />
           <button className="ql-indent" value="-1" />
           <button className="ql-indent" value="+1" />
         </span>
+
         <span className="ql-formats">
           <button className="ql-link" />
+        </span>
+
+        <span className="ql-formats">
           <button className="ql-clean" />
         </span>
       </div>
+
       <div ref={editorContainerRef} />
     </>
   );
 });
-QuillEditor.displayName = "QuillEditor";
+// QuillEditor.displayName = "QuillEditor";
 
 export function TemplateForm({ template }: TemplateFormProps) {
   const { toast } = useToast();

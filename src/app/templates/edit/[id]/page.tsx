@@ -9,8 +9,9 @@ type EditTemplatePageProps = {
 }
 
 export default async function EditTemplatePage({ params }: EditTemplatePageProps) {
-  const id = parseInt(params.id, 10);
-  const template = await getEmailTemplate(id);
+  const { id } = await params;
+  const templateId = parseInt(id, 10);
+  const template = await getEmailTemplate(templateId);
 
   if (!template) {
     notFound();
