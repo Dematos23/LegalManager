@@ -129,7 +129,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitializedRef = React.useRef(false);
+  const lastContentRef = React.useRef(value);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -152,17 +152,14 @@ const QuillEditor = React.forwardRef<
       },
     });
     quillInstanceRef.current = quill;
+    quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+    lastContentRef.current = value;
     
-    // Set initial content only if it's not the default empty state and hasn't been set before
-    if (value && value !== '<p><br></p>' && !isInitializedRef.current) {
-        quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-        isInitializedRef.current = true;
-    }
-
     const handler = () => {
       const currentContent = quill.root.innerHTML;
-      if (currentContent !== value) {
+      if (currentContent !== lastContentRef.current) {
         onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+        lastContentRef.current = currentContent;
       }
     };
     quill.on('text-change', handler);
@@ -176,16 +173,18 @@ const QuillEditor = React.forwardRef<
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // Update content if the value prop changes from outside (e.g. form reset)
+  // This effect ensures that if the form is reset from the outside,
+  // the editor's content updates accordingly.
   useEffect(() => {
     const quill = quillInstanceRef.current;
-    // Check if form has been reset to a new value which is different from the editor's current content
-    if (quill && value !== quill.root.innerHTML) {
-      if(value && value !== '<p><br></p>') {
+    if (quill && value !== lastContentRef.current) {
+        const selection = quill.getSelection();
         quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-      } else {
-        quill.setText('');
-      }
+        lastContentRef.current = value;
+        if (selection) {
+            // Try to restore the cursor position
+            quill.setSelection(selection.index, selection.length, 'silent');
+        }
     }
   }, [value]);
 
@@ -372,25 +371,39 @@ export function TemplateForm({ template }: TemplateFormProps) {
         };
     }
     
-    const compileAndRender = (templateString: string, context: any): string => {
+    const isMultiLoopTemplate = (body: string) => /\{\{#each\s+owners\}\}/.test(body);
+
+    const renderMultiLoopPreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
-    
-        // This function reliably converts Quill's HTML to a clean string for Handlebars
-        const getCleanText = (html: string) => {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            // Replace <p> with \n for line breaks, then get text content
-            doc.querySelectorAll('p').forEach(p => p.appendChild(document.createTextNode('\n')));
-            return doc.body.textContent || "";
-        }
-    
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = templateString;
+
+        // Replace <p> tags with newlines to preserve them
+        tempDiv.querySelectorAll('p').forEach(p => {
+            p.appendChild(document.createTextNode('\n'));
+        });
+        
+        const textContent = (tempDiv.textContent || "").trim();
+
         try {
-            const cleanTemplate = getCleanText(templateString);
-            const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
-            return compiledTemplate(context).replace(/\n/g, '<br />');
+            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
+            return compiledTemplate(finalContext).replace(/\n/g, '<br />');
         } catch (e) {
             console.error("Template rendering error:", e);
             const errorMessage = e instanceof Error ? e.message : "Unknown error.";
             return `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`;
+        }
+    };
+
+    const renderSimplePreview = (templateString: string, context: any) => {
+        if (!templateString || typeof window === 'undefined') return '';
+        try {
+            const cleanTemplate = templateString.replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+            const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
+            return compiledTemplate(context);
+        } catch (e) {
+            console.error("Template rendering error:", e);
+            return "Error rendering template.";
         }
     };
     
@@ -407,7 +420,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     return {
         subject: compileSubject(templateSubject),
-        body: compileAndRender(templateBody, finalContext),
+        body: isMultiLoopTemplate(templateBody)
+          ? renderMultiLoopPreview(templateBody, finalContext)
+          : renderSimplePreview(templateBody, finalContext),
     };
 
   }, [
@@ -744,5 +759,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
-    
