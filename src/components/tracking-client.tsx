@@ -22,7 +22,7 @@ import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { Eye, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Eye, Calendar as CalendarIcon, X, ArrowUpDown } from 'lucide-react';
 import { Badge } from './ui/badge';
 import React, { useState, useMemo } from 'react';
 import { Input } from './ui/input';
@@ -31,6 +31,14 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import {
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    getSortedRowModel,
+    SortingState,
+    useReactTable,
+} from '@tanstack/react-table';
 
 type TrackingClientProps = {
   campaigns: CampaignWithDetails[];
@@ -41,6 +49,7 @@ export function TrackingClient({ campaigns }: TrackingClientProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [templateFilter, setTemplateFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const formatDate = (date: Date) => {
     return format(date, 'MMM dd, yyyy, h:mm a', {
@@ -58,19 +67,77 @@ export function TrackingClient({ campaigns }: TrackingClientProps) {
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter(campaign => {
-        // Search Term Filter
         const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        // Template Filter
         const matchesTemplate = templateFilter === 'all' || campaign.emailTemplateId === Number(templateFilter);
-
-        // Date Range Filter
         const campaignDate = new Date(campaign.createdAt);
         const matchesDate = !dateRange || (dateRange.from && isWithinInterval(campaignDate, { start: dateRange.from, end: dateRange.to || dateRange.from }));
-
         return matchesSearch && matchesTemplate && matchesDate;
     })
   }, [campaigns, searchTerm, templateFilter, dateRange]);
+
+  const columns = useMemo<ColumnDef<CampaignWithDetails>[]>(() => [
+    {
+        accessorKey: 'name',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                {dictionary.tracking.table.campaignName}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    },
+    {
+        accessorKey: 'emailTemplate.name',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                {dictionary.tracking.table.template}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => row.original.emailTemplate.name,
+    },
+    {
+        accessorKey: '_count.sentEmails',
+        header: dictionary.tracking.table.recipients,
+        cell: ({ row }) => <Badge variant="outline">{row.original._count.sentEmails}</Badge>,
+        enableSorting: false,
+    },
+    {
+        accessorKey: 'createdAt',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                {dictionary.tracking.table.sentAt}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => formatDate(new Date(row.getValue('createdAt'))),
+    },
+    {
+        id: 'actions',
+        header: () => <div className="text-right">{dictionary.tracking.table.actions}</div>,
+        cell: ({ row }) => (
+            <div className="text-right">
+                <Button asChild variant="outline" size="sm">
+                    <Link href={`/tracking/${row.original.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        {dictionary.tracking.table.view}
+                    </Link>
+                </Button>
+            </div>
+        ),
+    }
+  ], [dictionary, formatDate]);
+
+  const table = useReactTable({
+    data: filteredCampaigns,
+    columns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -158,43 +225,40 @@ export function TrackingClient({ campaigns }: TrackingClientProps) {
           <CardTitle>Campaign List</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredCampaigns.length === 0 ? (
-            <div className="flex justify-center items-center h-40">
-              <p className="text-muted-foreground">{dictionary.dashboard.table.noResults}</p>
-            </div>
-          ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>{dictionary.tracking.table.campaignName}</TableHead>
-                  <TableHead>{dictionary.tracking.table.template}</TableHead>
-                  <TableHead>{dictionary.tracking.table.recipients}</TableHead>
-                  <TableHead>{dictionary.tracking.table.sentAt}</TableHead>
-                  <TableHead className="text-right">{dictionary.tracking.table.actions}</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                        {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                    ))}
+                    </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
-                {filteredCampaigns.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell className="font-medium">{campaign.name}</TableCell>
-                    <TableCell>{campaign.emailTemplate.name}</TableCell>
-                    <TableCell>
-                        <Badge variant="outline">{campaign._count.sentEmails}</Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(new Date(campaign.createdAt))}</TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/tracking/${campaign.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            {dictionary.tracking.table.view}
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                            {row.getVisibleCells().map((cell) => (
+                                <TableCell key={cell.id}>
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={columns.length} className="h-40 text-center">
+                            {dictionary.dashboard.table.noResults}
+                        </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
-          )}
         </CardContent>
       </Card>
     </div>
