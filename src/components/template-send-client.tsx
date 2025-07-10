@@ -28,7 +28,7 @@ import {
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
 import type { TrademarkWithDetails, EmailTemplate, Contact } from '@/types';
 import { cn } from '@/lib/utils';
-import { ArrowUpDown, Send, Loader2, Info } from 'lucide-react';
+import { ArrowUpDown, Send, Loader2, Info, X } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/context/language-context';
 import Link from 'next/link';
@@ -40,6 +40,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark' | 'multi-owner';
 
@@ -76,6 +77,10 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   }, [templateType]);
   
   const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
+
+  React.useEffect(() => {
+    setSendMode(initialSendMode);
+  }, [initialSendMode]);
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -247,14 +252,43 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                                 {dictionary.sendTemplate.sendButton} ({selectedCount})
                             </Button>
                         </div>
-                         <div className="pt-4">
-                           <Input
-                                placeholder="Search contacts..."
-                                value={(contactTable.getState().globalFilter as string) ?? ''}
-                                onChange={(event) => contactTable.setGlobalFilter(event.target.value)}
-                                className="w-full md:max-w-sm"
-                            />
-                        </div>
+                         <Card className="mt-4">
+                            <CardHeader>
+                                <CardTitle>{dictionary.dashboard.filtersTitle}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <Input
+                                        placeholder="Search contacts..."
+                                        value={(contactTable.getState().globalFilter as string) ?? ''}
+                                        onChange={(event) => contactTable.setGlobalFilter(event.target.value)}
+                                        className="w-full"
+                                    />
+                                    <Select
+                                        value={(contactTable.getColumn('agent')?.getFilterValue() as string) ?? ''}
+                                        onValueChange={(value) => contactTable.getColumn('agent')?.setFilterValue(value === 'all' ? null : value)}
+                                    >
+                                        <SelectTrigger>
+                                        <SelectValue placeholder={dictionary.dashboard.areaFilterLabel} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                        <SelectItem value="all">{dictionary.dashboard.allAreas}</SelectItem>
+                                        {getContactAgentAreas(contacts).map((area) => (
+                                            <SelectItem key={area} value={area}>
+                                            {area}
+                                            </SelectItem>
+                                        ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                 <div className="flex justify-end">
+                                    <Button variant="ghost" onClick={() => { contactTable.resetColumnFilters(); contactTable.resetGlobalFilter(); }}>
+                                        <X className="mr-2 h-4 w-4" />
+                                        {dictionary.dashboard.clearFilters}
+                                    </Button>
+                                </div>
+                            </CardContent>
+                         </Card>
                     </CardHeader>
                      <CardContent>
                         <DataTable table={contactTable} columns={contactColumns} />
@@ -350,6 +384,7 @@ const useTrademarkTable = (data: TrademarkWithDetails[]) => {
 
 const useContactTable = (data: (Contact & { agent: any })[]) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
   const [globalFilter, setGlobalFilter] = React.useState('');
 
@@ -357,6 +392,7 @@ const useContactTable = (data: (Contact & { agent: any })[]) => {
     data,
     columns: contactColumns,
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -364,7 +400,7 @@ const useContactTable = (data: (Contact & { agent: any })[]) => {
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: globalContactFilterFn,
-    state: { sorting, rowSelection, globalFilter },
+    state: { sorting, columnFilters, rowSelection, globalFilter },
   });
 };
 
@@ -477,7 +513,14 @@ const contactColumns: ColumnDef<Contact & { agent: any }>[] = [
         cell: ({ row }) => <Link href={`/contacts/${row.original.id}`} className="font-medium hover:underline text-primary">{`${row.original.firstName} ${row.original.lastName}`}</Link>,
     },
     { accessorKey: 'email', header: 'Email' },
-    { accessorKey: 'agent.name', header: 'Agent' },
+    {
+        accessorKey: 'agent.name', id: 'agent', header: 'Agent', filterFn: areaFilterFn,
+        cell: ({ row }) => {
+            const agent = row.original.agent;
+            if (!agent) return 'N/A';
+            return <div className="flex flex-col"><span>{agent.name}</span>{agent.area && <span className="text-xs text-muted-foreground">{agent.area}</span>}</div>;
+        },
+    },
 ];
 
 // --- Helper Functions ---
@@ -486,6 +529,16 @@ const getAgentAreas = (trademarks: TrademarkWithDetails[]) => {
     trademarks.forEach(tm => {
         if (tm.owner.contacts[0]?.agent?.area) {
             areas.add(tm.owner.contacts[0].agent.area);
+        }
+    });
+    return Array.from(areas).sort();
+};
+
+const getContactAgentAreas = (contacts: (Contact & { agent: any })[]) => {
+    const areas = new Set<string>();
+    contacts.forEach(c => {
+        if (c.agent?.area) {
+            areas.add(c.agent.area);
         }
     });
     return Array.from(areas).sort();
