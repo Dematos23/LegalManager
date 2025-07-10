@@ -71,13 +71,13 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(() => 
     templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark'
   );
 
   React.useEffect(() => {
-    const newSendMode = templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark';
-    setSendMode(newSendMode);
+      const newSendMode = templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark';
+      setSendMode(newSendMode);
   }, [templateType]);
 
   const { dictionary } = useLanguage();
