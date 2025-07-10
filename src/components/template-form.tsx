@@ -362,11 +362,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
 
     try {
-      const cleanSubject = (templateSubject || "").replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, "$1");
-      const cleanBody = (templateBody || "").replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, "$1");
+      const cleanTemplate = (templateString: string) => 
+        (templateString || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1').replace(/&nbsp;/g, ' ');
 
-      const subjectTemplate = Handlebars.compile(cleanSubject);
-      const bodyTemplate = Handlebars.compile(cleanBody);
+      const subjectTemplate = Handlebars.compile(cleanTemplate(templateSubject));
+      const bodyTemplate = Handlebars.compile(cleanTemplate(templateBody));
       return {
         subject: subjectTemplate(finalContext),
         body: bodyTemplate(finalContext),
@@ -429,7 +429,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   const handleInsertMergeField = (value: string) => {
     if (quillEditorRef.current) {
-      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>&nbsp;`;
+      const htmlToInsert = `<span class="merge-tag" contenteditable="false">${value}</span>`;
       quillEditorRef.current.insert(htmlToInsert);
     }
   };
