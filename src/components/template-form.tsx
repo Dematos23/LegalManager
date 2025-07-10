@@ -113,12 +113,11 @@ type QuillEditorHandle = {
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { value: string; onChange: (value: string) => void; }
->(({ value, onChange }, ref) => {
+  { value: string; onChange: (value: string) => void; template?: EmailTemplate }
+>(({ value, onChange, template }, ref) => {
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitializedRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -132,35 +131,36 @@ const QuillEditor = React.forwardRef<
   }));
 
   useEffect(() => {
-    if (editorContainerRef.current && toolbarRef.current && !quillInstanceRef.current) {
-        const quill = new Quill(editorContainerRef.current, {
-            theme: 'snow',
-            modules: {
-            toolbar: toolbarRef.current,
-            },
-        });
-        quillInstanceRef.current = quill;
+    if (!editorContainerRef.current || !toolbarRef.current || quillInstanceRef.current) return;
 
-        if (value && !isInitializedRef.current) {
-           quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-           isInitializedRef.current = true;
-        }
+    const quill = new Quill(editorContainerRef.current, {
+      theme: 'snow',
+      modules: {
+        toolbar: toolbarRef.current,
+      },
+    });
+    quillInstanceRef.current = quill;
 
-        const handler = () => {
-            const currentContent = quill.root.innerHTML;
-            if (currentContent !== value) {
-                onChange(currentContent === '<p><br></p>' ? '' : currentContent);
-            }
-        };
-        quill.on('text-change', handler);
-
-        return () => {
-            quill.off('text-change', handler);
-            quillInstanceRef.current = null;
-        }
+    if (template) {
+        quill.clipboard.dangerouslyPasteHTML(0, template.body, 'api');
     }
+
+    const handler = () => {
+      const currentContent = quill.root.innerHTML;
+      if (currentContent !== value) {
+        onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+      }
+    };
+    quill.on('text-change', handler);
+
+    return () => {
+      quill.off('text-change', handler);
+      if (quillInstanceRef.current) {
+        quillInstanceRef.current = null;
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [template]);
 
   return (
     <>
@@ -349,15 +349,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
         
         const placeholders: string[] = [];
         // 1. Replace all merge tags with placeholders
-        let textContent = templateString.replace(/{{[#\s\S]*?}}/g, (match) => {
-            placeholders.push(match);
+        let textContent = templateString.replace(/<span class="merge-tag" contenteditable="false">({{[#\s\S]*?}})<\/span>/g, (match, mergeTag) => {
+            placeholders.push(mergeTag);
             return `__PLACEHOLDER_${placeholders.length - 1}__`;
         });
 
         // 2. Convert HTML to plain text, preserving line breaks from <p> and <br> tags
-        textContent = textContent.replace(/<p>/gi, '\n').replace(/<\/p>/gi, '').replace(/<br\s*\/?>/gi, '\n');
+        textContent = textContent
+            .replace(/<\/p><p>/gi, '\n') // Treat paragraph breaks as newlines
+            .replace(/<p>/gi, '') // Remove opening paragraph tags
+            .replace(/<\/p>/gi, '') // Remove closing paragraph tags
+            .replace(/<br\s*\/?>/gi, '\n'); // Treat line breaks as newlines
         
-        // 3. Strip any remaining HTML tags
+        // 3. Strip any remaining HTML tags using a temporary DOM element
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = textContent;
         textContent = tempDiv.textContent || tempDiv.innerText || "";
@@ -410,8 +414,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     const formData = new FormData();
     formData.append("name", data.name);
     formData.append("subject", data.subject);
-    const cleanedBody = (data.body || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>&nbsp;/g, '$1');
-    formData.append("body", cleanedBody);
+    formData.append("body", data.body);
 
     if (template) {
       result = await updateEmailTemplate(template.id, formData);
@@ -546,6 +549,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                             ref={quillEditorRef}
                             value={field.value}
                             onChange={field.onChange}
+                            template={template}
                           />
                         </div>
                       </FormControl>
@@ -728,3 +732,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
+
+    
