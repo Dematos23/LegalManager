@@ -118,6 +118,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const isInitializedRef = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -140,14 +141,16 @@ const QuillEditor = React.forwardRef<
         });
         quillInstanceRef.current = quill;
 
-        // Set initial content only if value exists
-        if (value) {
+        if (value && !isInitializedRef.current) {
            quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+           isInitializedRef.current = true;
         }
 
         const handler = () => {
             const currentContent = quill.root.innerHTML;
-            onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+            if (currentContent !== value) {
+                onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+            }
         };
         quill.on('text-change', handler);
 
@@ -158,21 +161,6 @@ const QuillEditor = React.forwardRef<
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-   useEffect(() => {
-    // This effect ensures that if the `value` prop changes from outside
-    // (e.g., due to form.reset), the editor's content is updated.
-    // It compares with the current editor content to avoid redundant updates
-    // and infinite loops.
-    const quill = quillInstanceRef.current;
-    if (quill && value !== quill.root.innerHTML && value !== '<p><br></p>') {
-      const selection = quill.getSelection();
-      quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-      if (selection) {
-        quill.setSelection(selection);
-      }
-    }
-  }, [value]);
 
   return (
     <>
@@ -355,36 +343,29 @@ export function TemplateForm({ template }: TemplateFormProps) {
             ...trademarksForSingleOwnerPreview[0],
         };
     }
-
-    const cleanTemplateForHandlebars = (htmlString: string): string => {
-        if (!htmlString) return '';
-
-        // Create a temporary div to parse the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlString;
-
-        // Use placeholders to protect Handlebars expressions
+    
+    const compileAndRender = (templateString: string): string => {
+        if (!templateString) return '';
+        
         const placeholders: string[] = [];
-        let cleanHtml = tempDiv.innerHTML.replace(/{{[{#][^}]+}}/g, (match) => {
+        // 1. Replace all merge tags with placeholders
+        let textContent = templateString.replace(/{{[#\s\S]*?}}/g, (match) => {
             placeholders.push(match);
             return `__PLACEHOLDER_${placeholders.length - 1}__`;
         });
 
-        // Now convert the HTML to text content, which strips tags
-        tempDiv.innerHTML = cleanHtml;
-        let textContent = tempDiv.textContent || "";
+        // 2. Convert HTML to plain text, preserving line breaks from <p> and <br> tags
+        textContent = textContent.replace(/<p>/gi, '\n').replace(/<\/p>/gi, '').replace(/<br\s*\/?>/gi, '\n');
         
-        // Restore placeholders
+        // 3. Strip any remaining HTML tags
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = textContent;
+        textContent = tempDiv.textContent || tempDiv.innerText || "";
+
+        // 4. Restore the merge tags
         textContent = textContent.replace(/__PLACEHOLDER_(\d+)__/g, (match, index) => {
             return placeholders[parseInt(index, 10)];
         });
-
-        return textContent;
-    };
-    
-    const compileAndRender = (templateString: string): string => {
-        const textContent = cleanTemplateForHandlebars(templateString);
-        if (!textContent.trim()) return '';
 
         try {
             const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
