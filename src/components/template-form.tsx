@@ -60,10 +60,6 @@ type AgentWithNestedData = Awaited<
   ReturnType<typeof getTemplatePreviewData>
 >[0];
 
-type TemplateFormProps = {
-  template?: EmailTemplate | null;
-};
-
 const MERGE_FIELDS = [
     {
       group: "Agent",
@@ -117,12 +113,11 @@ type QuillEditorHandle = {
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { defaultValue: string; onChange: (value: string) => void, onReady?: (quill: Quill) => void }
->(({ defaultValue, onChange, onReady }, ref) => {
+  { value: string; onChange: (value: string) => void; }
+>(({ value, onChange }, ref) => {
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitialized = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -136,8 +131,7 @@ const QuillEditor = React.forwardRef<
   }));
 
   useEffect(() => {
-    if (!isInitialized.current && editorContainerRef.current && toolbarRef.current) {
-        isInitialized.current = true;
+    if (editorContainerRef.current && toolbarRef.current && !quillInstanceRef.current) {
         const quill = new Quill(editorContainerRef.current, {
             theme: 'snow',
             modules: {
@@ -146,20 +140,19 @@ const QuillEditor = React.forwardRef<
         });
         quillInstanceRef.current = quill;
 
-        if (defaultValue) {
-             quill.clipboard.dangerouslyPasteHTML(0, defaultValue, 'api');
+        if (value) {
+             quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
         }
 
         const handler = () => {
             const currentContent = quill.root.innerHTML;
             onChange(currentContent === '<p><br></p>' ? '' : currentContent);
         };
-
         quill.on('text-change', handler);
-        onReady?.(quill);
-
+        
         return () => {
             quill.off('text-change', handler);
+            quillInstanceRef.current = null;
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -219,13 +212,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
     
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(TemplateSchema),
-    defaultValues: {
-      name: template?.name || "",
-      subject: template?.subject || "",
-      body: template?.body || "",
+    defaultValues: template || {
+      name: "",
+      subject: "",
+      body: "",
     },
     mode: 'onChange'
   });
+
+  useEffect(() => {
+    if (template) {
+      form.reset(template);
+    }
+  }, [template, form]);
 
   useEffect(() => {
     async function fetchData() {
@@ -338,15 +337,16 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     const compileAndRender = (templateString: string): string => {
         if (!templateString) return '';
-        // Remove the wrapper span but keep the content
-        const cleanTemplate = templateString
-            .replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1')
-            .replace(/&nbsp;/g, ' '); // Replace non-breaking spaces
-            
-        // Use a temporary div to parse HTML and get text content, preserving Handlebars tags
+        
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = cleanTemplate;
-        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        tempDiv.innerHTML = templateString;
+
+        // Replace <p><br></p> with a single newline, and other <p> with content + newline
+        const paragraphs = Array.from(tempDiv.querySelectorAll('p'));
+        const textContent = paragraphs.map(p => {
+          if (p.innerHTML === '<br>') return '\n';
+          return p.textContent || p.innerText;
+        }).join('\n');
 
         try {
             const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
@@ -358,10 +358,21 @@ export function TemplateForm({ template }: TemplateFormProps) {
         }
     };
 
-    return {
-        subject: compileAndRender(templateSubject),
+    const subjectTemplate = Handlebars.compile(templateSubject || '', { noEscape: true });
+
+    try {
+      return {
+        subject: subjectTemplate(finalContext),
         body: compileAndRender(templateBody).replace(/\n/g, '<br />'),
-    };
+      };
+    } catch (e) {
+      console.error("Template rendering error:", e);
+      const errorMessage = e instanceof Error ? e.message : "Unknown error.";
+      return {
+        subject: "Error",
+        body: `<p>Error rendering template. Check your merge field syntax.</p><p><b>Error:</b> ${errorMessage}</p>`
+      };
+    }
   }, [
     viewMode,
     selectedAgent,
@@ -511,7 +522,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
                         <div className="w-full rounded-md border border-input bg-background">
                           <QuillEditor
                             ref={quillEditorRef}
-                            defaultValue={field.value}
+                            value={field.value}
                             onChange={field.onChange}
                           />
                         </div>
