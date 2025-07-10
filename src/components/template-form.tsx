@@ -153,8 +153,10 @@ const QuillEditor = React.forwardRef<
     });
     quillInstanceRef.current = quill;
     
-    if (value && value !== '<p><br></p>') {
-      quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+    // Set initial content only if it's not the default empty state and hasn't been set before
+    if (value && value !== '<p><br></p>' && !isInitializedRef.current) {
+        quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+        isInitializedRef.current = true;
     }
 
     const handler = () => {
@@ -174,14 +176,16 @@ const QuillEditor = React.forwardRef<
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  // Set initial content once form is reset
+  // Update content if the value prop changes from outside (e.g. form reset)
   useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill && value && value !== quill.root.innerHTML && !isInitializedRef.current) {
-      if (value !== '<p><br></p>') {
+    // Check if form has been reset to a new value which is different from the editor's current content
+    if (quill && value !== quill.root.innerHTML) {
+      if(value && value !== '<p><br></p>') {
         quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
+      } else {
+        quill.setText('');
       }
-      isInitializedRef.current = true;
     }
   }, [value]);
 
@@ -369,14 +373,19 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
     
     const compileAndRender = (templateString: string, context: any): string => {
-        if (!templateString) return '';
-        if (typeof window === 'undefined') return ''; // Cannot parse on the server
-
+        if (!templateString || typeof window === 'undefined') return '';
+    
+        // This function reliably converts Quill's HTML to a clean string for Handlebars
+        const getCleanText = (html: string) => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            // Replace <p> with \n for line breaks, then get text content
+            doc.querySelectorAll('p').forEach(p => p.appendChild(document.createTextNode('\n')));
+            return doc.body.textContent || "";
+        }
+    
         try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(templateString, 'text/html');
-            const textContent = doc.body.textContent || "";
-            const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
+            const cleanTemplate = getCleanText(templateString);
+            const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
             return compiledTemplate(context).replace(/\n/g, '<br />');
         } catch (e) {
             console.error("Template rendering error:", e);
@@ -736,3 +745,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
   );
 }
 
+    
