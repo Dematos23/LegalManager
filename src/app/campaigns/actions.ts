@@ -186,11 +186,11 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
 type FullOwner = Owner & { trademarks: Trademark[] };
 type FullContact = Contact & { agent: Agent };
 
-function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allTrademarks: Trademark[]): any {
+function createHandlebarsContext(contact: FullContact, owners: (Owner & { trademarks?: Trademark[] })[], allTrademarks: Trademark[]): any {
     const ownersContext = owners.map(owner => ({
         ...owner,
         country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
-        trademarks: owner.trademarks.map(tm => ({
+        trademarks: (owner.trademarks || []).map(tm => ({
             denomination: tm.denomination,
             class: String(tm.class),
             certificate: tm.certificate,
@@ -235,7 +235,7 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
 
 function compileAndRender(templateString: string, context: any): string {
     const cleanTemplate = (templateString || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
-    const compiledTemplate = Handlebars.compile(cleanTemplate);
+    const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
     return compiledTemplate(context);
 }
 
