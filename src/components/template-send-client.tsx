@@ -53,7 +53,7 @@ function getTemplateType(templateBody: string): TemplateType {
         return 'multi-trademark';
     }
     const singleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
-    if (singleTrademarkFields.test(templateBody)) {
+    if (singleTrademarkFields.test(templateBody) && !templateBody.includes('{{#each')) {
         return 'single-trademark';
     }
     return 'plain';
@@ -71,16 +71,14 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const initialSendMode = React.useMemo(() => {
-    if (templateType === 'plain' || templateType === 'multi-owner') return 'contact';
-    return 'trademark';
-  }, [templateType]);
-  
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(
+    templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark'
+  );
 
   React.useEffect(() => {
-    setSendMode(initialSendMode);
-  }, [initialSendMode]);
+    const newSendMode = templateType === 'plain' || templateType === 'multi-owner' ? 'contact' : 'trademark';
+    setSendMode(newSendMode);
+  }, [templateType]);
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
