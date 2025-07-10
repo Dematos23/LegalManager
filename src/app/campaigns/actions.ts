@@ -65,11 +65,14 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 return { error: "This is a plain text template. It should be sent by contact, not by trademark, as it doesn't use any trademark data." };
             }
              if (templateType === 'multi-owner') {
-                return { error: "This template is designed to list multiple owners. It must be sent by contact." };
+                return { error: "This template is designed to list multiple owners and trademarks. It must be sent by contact." };
             }
         } else if (payload.sendMode === 'contact') {
             if (templateType === 'single-trademark') {
                 return { error: "This template is for a single trademark, but no specific trademark was selected. To send it, please use the 'Send by Trademark' option and select the desired trademarks." };
+            }
+             if (templateType === 'multi-trademark') {
+                return { error: "This template lists trademarks for a single owner, but 'Send by Contact' doesn't specify which owner's marks to send. It must be sent by trademark." };
             }
         }
 
@@ -93,11 +96,9 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             });
 
             for (const contact of contacts) {
-                // For 'plain' and 'multi-trademark', we can still create a context.
-                // For 'multi-owner', this is the primary path.
+                // For 'plain' and 'multi-owner', this is the primary path.
                 const allOwners = contact.owners;
                 const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
-                const firstOwner = allOwners.length > 0 ? allOwners[0] : null;
 
                 const context = createHandlebarsContext(contact, allOwners, allTrademarks);
                 emailJobs.set(contact.email, { contact, context });

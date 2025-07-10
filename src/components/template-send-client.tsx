@@ -129,25 +129,49 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   }
 
   const renderGuidance = () => {
-    let title, description;
-    switch(templateType) {
-        case 'plain':
-            title = "Plain Text Template";
-            description = "This template does not contain trademark-specific fields. It must be sent by 'Contact'.";
-            break;
-        case 'single-trademark':
-            title = "Single Trademark Template";
-            description = "This template uses fields for one trademark (e.g., {{denomination}}). It must be sent by 'Trademark'.";
-            break;
-        case 'multi-trademark':
-            title = "Multi-Trademark Template (Single Owner)";
-            description = "This template lists multiple trademarks (using {{#each trademarks}}). It is best sent by 'Trademark' (to send selected marks) or by 'Contact' (to send all marks for that contact, grouped by owner).";
-            break;
-        case 'multi-owner':
-            title = "Multi-Owner Template";
-            description = "This template lists multiple owners and their trademarks (using {{#each owners}}). It must be sent by 'Contact'.";
-            break;
+    let title = "Guidance";
+    let description = "Select a sending method below.";
+
+    if (sendMode === 'trademark') {
+        switch(templateType) {
+            case 'plain':
+                title = "Invalid: Plain Template";
+                description = "This is a plain text template without trademark data. It must be sent by contact.";
+                break;
+            case 'multi-owner':
+                 title = "Invalid: Multi-Owner Template";
+                 description = "This template lists multiple owners and their data. It must be sent by contact.";
+                 break;
+            case 'single-trademark':
+                 title = "Mode: Single Trademark";
+                 description = "You are sending one email for each selected trademark.";
+                 break;
+            case 'multi-trademark':
+                title = "Mode: Multi-Trademark (Grouped by Owner)";
+                description = "You are sending one email per owner, containing a list of their selected trademarks.";
+                break;
+        }
+    } else { // sendMode === 'contact'
+         switch(templateType) {
+            case 'single-trademark':
+                title = "Invalid: Single Trademark Template";
+                description = "This template is for a single trademark, but no specific trademark was selected. It must be sent by trademark.";
+                break;
+            case 'multi-trademark':
+                title = "Invalid: Multi-Trademark (Single Owner)";
+                description = "This template lists trademarks for a single owner, but 'Send by Contact' doesn't specify which owner's marks to send. Use 'Send by Trademark' or a 'Multi-Owner' template.";
+                break;
+            case 'plain':
+                 title = "Mode: Plain Email";
+                 description = "You are sending one email to each selected contact.";
+                 break;
+            case 'multi-owner':
+                 title = "Mode: Multi-Owner Summary";
+                 description = "You are sending one email per contact, containing all trademarks for all their associated owners.";
+                 break;
+        }
     }
+
     return (
         <Alert>
             <Info className="h-4 w-4" />
@@ -156,6 +180,9 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
         </Alert>
     )
   }
+
+  const isTrademarkSendDisabled = templateType === 'plain' || templateType === 'multi-owner';
+  const isContactSendDisabled = templateType === 'single-trademark' || templateType === 'multi-trademark';
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -183,8 +210,8 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
         
         <Tabs value={sendMode} onValueChange={(value) => setSendMode(value as 'trademark' | 'contact')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="trademark" disabled={templateType === 'plain' || templateType === 'multi-owner'}>Send by Trademark</TabsTrigger>
-                <TabsTrigger value="contact" disabled={templateType === 'single-trademark'}>Send by Contact</TabsTrigger>
+                <TabsTrigger value="trademark" disabled={isTrademarkSendDisabled}>Send by Trademark</TabsTrigger>
+                <TabsTrigger value="contact" disabled={isContactSendDisabled}>Send by Contact</TabsTrigger>
             </TabsList>
             <TabsContent value="trademark">
                 <TrademarkFilters table={trademarkTable} agentAreas={getAgentAreas(trademarks)} expirationYears={getExpirationYears(trademarks)} />
