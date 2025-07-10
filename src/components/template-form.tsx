@@ -122,6 +122,7 @@ const QuillEditor = React.forwardRef<
   const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorContainerRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
+  const isComponentMounted = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -136,8 +137,8 @@ const QuillEditor = React.forwardRef<
   }));
 
   useEffect(() => {
-    if (!editorContainerRef.current || !toolbarRef.current || quillInstanceRef.current) return;
-
+    if (isComponentMounted.current || !editorContainerRef.current || !toolbarRef.current) return;
+    
     const quill = new Quill(editorContainerRef.current, {
       theme: 'snow',
       modules: {
@@ -147,10 +148,7 @@ const QuillEditor = React.forwardRef<
 
     quillInstanceRef.current = quill;
 
-    // Set initial content
-    if (value) {
-      quill.clipboard.dangerouslyPasteHTML(0, value);
-    }
+    quill.clipboard.dangerouslyPasteHTML(0, value);
     
     const handler = (delta: any, oldDelta: any, source: string) => {
       if (source === 'user') {
@@ -160,6 +158,7 @@ const QuillEditor = React.forwardRef<
     };
     
     quill.on('text-change', handler);
+    isComponentMounted.current = true;
 
     return () => {
       quill.off('text-change', handler);
@@ -170,18 +169,7 @@ const QuillEditor = React.forwardRef<
       quillInstanceRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  // This effect ensures that if the `value` prop changes from outside (e.g., form.reset),
-  // the editor updates its content, but only if it doesn't currently have focus.
-  // This prevents losing the user's cursor position during typing.
-  useEffect(() => {
-    const quill = quillInstanceRef.current;
-    if (quill && value !== quill.root.innerHTML && !quill.hasFocus()) {
-      quill.clipboard.dangerouslyPasteHTML(0, value || '');
-    }
   }, [value]);
-
 
   return (
     <>
