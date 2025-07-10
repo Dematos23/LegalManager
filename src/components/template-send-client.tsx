@@ -28,7 +28,7 @@ import {
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
 import type { TrademarkWithDetails, EmailTemplate, Contact } from '@/types';
 import { cn } from '@/lib/utils';
-import { ArrowUpDown, Send, Loader2 } from 'lucide-react';
+import { ArrowUpDown, Send, Loader2, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/context/language-context';
 import Link from 'next/link';
@@ -39,60 +39,22 @@ import { sendCampaignAction } from '@/app/campaigns/actions';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-// --- Filter Functions ---
-const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
-    const expiration = row.getValue(columnId) as Date;
-    if (!value) return true;
-    const now = new Date();
-    const expirationDate = new Date(expiration);
-    switch(value) {
-        case '30': return expirationDate >= now && expirationDate <= addDays(now, 30);
-        case '60': return expirationDate > addDays(now, 30) && expirationDate <= addDays(now, 60);
-        case '90': return expirationDate > addDays(now, 60) && expirationDate <= addDays(now, 90);
-        case '180': return expirationDate > addDays(now, 90) && expirationDate <= addDays(now, 180);
-        case 'over_180': return expirationDate > addDays(now, 180);
-        default: return true;
+type TemplateType = 'plain' | 'single' | 'multi';
+
+function getTemplateType(templateBody: string): TemplateType {
+    const singleFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
+    const multiField = /\{\{#each trademarks\}\}/;
+
+    if (multiField.test(templateBody)) {
+        return 'multi';
     }
-};
-
-const areaFilterFn: FilterFn<any> = (row, columnId, value) => {
-    if (!value) return true;
-    const agent = row.original.owner?.contacts?.[0]?.agent ?? row.original.agent;
-    return agent?.area === value;
-};
-
-const yearFilterFn: FilterFn<any> = (row, columnId, value) => {
-    if (!value) return true;
-    const expirationDate = new Date(row.original.expiration);
-    return getYear(expirationDate).toString() === value;
-};
-
-const globalTrademarkFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
-    const trademark = row.original as TrademarkWithDetails;
-    const search = String(value).toLowerCase();
-    const flatString = [
-        trademark.denomination,
-        trademark.owner.name,
-        trademark.class.toString(),
-        trademark.certificate,
-        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
-    ].filter(Boolean).join(' ').toLowerCase();
-    return flatString.includes(search);
-};
-
-const globalContactFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
-    const contact = row.original as Contact & { agent: any };
-    const search = String(value).toLowerCase();
-    const flatString = [
-        contact.firstName,
-        contact.lastName,
-        contact.email,
-        contact.agent.name,
-        contact.agent.area,
-    ].filter(Boolean).join(' ').toLowerCase();
-    return flatString.includes(search);
-};
+    if (singleFields.test(templateBody)) {
+        return 'single';
+    }
+    return 'plain';
+}
 
 type TemplateSendClientProps = {
   template: EmailTemplate;
@@ -103,8 +65,13 @@ type TemplateSendClientProps = {
 export function TemplateSendClient({ template, trademarks, contacts }: TemplateSendClientProps) {
   const [isSending, startSendingTransition] = React.useTransition();
   const [campaignName, setCampaignName] = React.useState('');
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>('trademark');
-  const [mergeTrademarks, setMergeTrademarks] = React.useState(false);
+  
+  const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
+  
+  // Set initial sendMode based on template type to guide the user
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(
+    templateType === 'plain' ? 'contact' : 'trademark'
+  );
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -117,23 +84,6 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
     : contactTable.getFilteredSelectedRowModel().rows.length;
 
   const handleSendCampaign = () => {
-    if (campaignName.trim().length < 10) {
-        toast({
-            title: dictionary.sendTemplate.campaignErrorTitle,
-            description: dictionary.sendTemplate.campaignNameTooShort,
-            variant: "destructive",
-        });
-        return;
-    }
-    if (selectedCount === 0) {
-        toast({
-            title: dictionary.sendTemplate.noSelectionTitle,
-            description: dictionary.sendTemplate.noSelectionDesc,
-            variant: "destructive",
-        });
-        return;
-    }
-
     let payload: any;
     if (sendMode === 'trademark') {
         const selectedTrademarks = trademarkTable.getFilteredSelectedRowModel().rows.map(row => row.original);
@@ -141,7 +91,6 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
             templateId: template.id,
             campaignName,
             sendMode: 'trademark',
-            mergeTrademarks,
             trademarkIds: selectedTrademarks.map(t => t.id)
         }
     } else { // contact mode
@@ -161,6 +110,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                 title: dictionary.sendTemplate.campaignErrorTitle,
                 description: result.error,
                 variant: 'destructive',
+                duration: 8000
             });
         } else {
             toast({
@@ -174,6 +124,31 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
     });
   }
 
+  const renderGuidance = () => {
+    let title, description;
+    switch(templateType) {
+        case 'plain':
+            title = "Plain Text Template";
+            description = "This template does not contain trademark-specific fields. It is best sent by 'Contact'.";
+            break;
+        case 'single':
+            title = "Single Trademark Template";
+            description = "This template uses fields for one trademark (e.g., {{denomination}}). It must be sent by 'Trademark'.";
+            break;
+        case 'multi':
+            title = "Multi-Trademark Template";
+            description = "This template lists multiple trademarks (using {{#each trademarks}}). It can be sent by 'Trademark' (to send selected marks) or by 'Contact' (to send all marks for that contact).";
+            break;
+    }
+    return (
+        <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>{title}</AlertTitle>
+            <AlertDescription>{description}</AlertDescription>
+        </Alert>
+    )
+  }
+
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
         <Card>
@@ -183,7 +158,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                     {dictionary.sendTemplate.description} <strong>{template.name}</strong>
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="campaignName">{dictionary.sendTemplate.campaignNameLabel}</Label>
                     <Input 
@@ -194,13 +169,14 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                         disabled={isSending}
                     />
                 </div>
+                 {renderGuidance()}
             </CardContent>
         </Card>
         
         <Tabs value={sendMode} onValueChange={(value) => setSendMode(value as 'trademark' | 'contact')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="trademark">Send by Trademark</TabsTrigger>
-                <TabsTrigger value="contact">Send by Contact</TabsTrigger>
+                <TabsTrigger value="trademark" disabled={templateType === 'plain'}>Send by Trademark</TabsTrigger>
+                <TabsTrigger value="contact" disabled={templateType === 'single'}>Send by Contact</TabsTrigger>
             </TabsList>
             <TabsContent value="trademark">
                 <TrademarkFilters table={trademarkTable} agentAreas={getAgentAreas(trademarks)} expirationYears={getExpirationYears(trademarks)} />
@@ -216,10 +192,6 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                                 {dictionary.sendTemplate.sendButton} ({selectedCount})
                             </Button>
                         </div>
-                        <div className="flex items-center space-x-2 pt-4">
-                            <Checkbox id="mergeTrademarks" checked={mergeTrademarks} onCheckedChange={(checked) => setMergeTrademarks(!!checked)} />
-                            <Label htmlFor="mergeTrademarks">Merge trademarks for the same owner into a single email</Label>
-                        </div>
                     </CardHeader>
                     <CardContent>
                         <DataTable table={trademarkTable} columns={trademarkColumns} />
@@ -233,7 +205,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                             <div>
                                 <CardTitle>{dictionary.sendTemplate.recipientsTitle}</CardTitle>
-                                <CardDescription>Select contacts to send this campaign to. Each contact will receive one email with all their associated trademarks.</CardDescription>
+                                <CardDescription>Select contacts to send this campaign to. Each contact will receive one email.</CardDescription>
                             </div>
                              <Button onClick={handleSendCampaign} disabled={isSending || selectedCount === 0 || campaignName.trim().length < 10} className="w-full md:w-auto">
                                 {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2" />}
@@ -320,7 +292,6 @@ function DataTablePagination({ table }: { table: any }) {
 
 // --- Hooks for Tables ---
 const useTrademarkTable = (data: TrademarkWithDetails[]) => {
-  const { dictionary } = useLanguage();
   const [sorting, setSorting] = React.useState<SortingState>([{ id: 'expiration', desc: false }]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
@@ -360,6 +331,60 @@ const useContactTable = (data: (Contact & { agent: any })[]) => {
     globalFilterFn: globalContactFilterFn,
     state: { sorting, rowSelection, globalFilter },
   });
+};
+
+// --- Filter Functions ---
+const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
+    const expiration = row.getValue(columnId) as Date;
+    if (!value) return true;
+    const now = new Date();
+    const expirationDate = new Date(expiration);
+    switch(value) {
+        case '30': return expirationDate >= now && expirationDate <= addDays(now, 30);
+        case '60': return expirationDate > addDays(now, 30) && expirationDate <= addDays(now, 60);
+        case '90': return expirationDate > addDays(now, 60) && expirationDate <= addDays(now, 90);
+        case '180': return expirationDate > addDays(now, 90) && expirationDate <= addDays(now, 180);
+        case 'over_180': return expirationDate > addDays(now, 180);
+        default: return true;
+    }
+};
+
+const areaFilterFn: FilterFn<any> = (row, columnId, value) => {
+    if (!value) return true;
+    const agent = row.original.owner?.contacts?.[0]?.agent ?? row.original.agent;
+    return agent?.area === value;
+};
+
+const yearFilterFn: FilterFn<any> = (row, columnId, value) => {
+    if (!value) return true;
+    const expirationDate = new Date(row.original.expiration);
+    return getYear(expirationDate).toString() === value;
+};
+
+const globalTrademarkFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
+    const trademark = row.original as TrademarkWithDetails;
+    const search = String(value).toLowerCase();
+    const flatString = [
+        trademark.denomination,
+        trademark.owner.name,
+        trademark.class.toString(),
+        trademark.certificate,
+        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
+    ].filter(Boolean).join(' ').toLowerCase();
+    return flatString.includes(search);
+};
+
+const globalContactFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
+    const contact = row.original as Contact & { agent: any };
+    const search = String(value).toLowerCase();
+    const flatString = [
+        contact.firstName,
+        contact.lastName,
+        contact.email,
+        contact.agent.name,
+        contact.agent.area,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return flatString.includes(search);
 };
 
 // --- Column Definitions ---
@@ -438,5 +463,3 @@ const getExpirationYears = (trademarks: TrademarkWithDetails[]) => {
     });
     return Array.from(years).sort((a, b) => b - a);
 };
-
-    

@@ -7,11 +7,26 @@ import * as Handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 
+type TemplateType = 'plain' | 'single' | 'multi';
+
+// Helper to analyze the template body
+function getTemplateType(templateBody: string): TemplateType {
+    const singleFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/;
+    const multiField = /\{\{#each trademarks\}\}/;
+
+    if (multiField.test(templateBody)) {
+        return 'multi';
+    }
+    if (singleFields.test(templateBody)) {
+        return 'single';
+    }
+    return 'plain';
+}
+
 interface SendCampaignByTrademarkPayload {
     sendMode: 'trademark';
     templateId: number;
     campaignName: string;
-    mergeTrademarks: boolean;
     trademarkIds: number[];
 }
 
@@ -29,6 +44,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
+        // --- Basic Validation ---
         if (!campaignName || campaignName.trim().length < 10) {
             return { error: 'Campaign name must be at least 10 characters long.' };
         }
@@ -37,21 +53,37 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
         if (!template) {
             return { error: 'Email template not found.' };
         }
+        
+        const templateType = getTemplateType(template.body);
 
+        // --- Logic Validation ---
+        if (payload.sendMode === 'trademark') {
+            if (templateType === 'plain') {
+                return { error: "This is a plain text template. It should be sent by contact, not by trademark, as it doesn't use any trademark data." };
+            }
+        } else if (payload.sendMode === 'contact') {
+            if (templateType === 'single') {
+                return { error: "This template is for a single trademark, but no specific trademark was selected. To send it, please use the 'Send by Trademark' option and select the desired trademarks." };
+            }
+        }
+
+
+        // --- Email Processing ---
         const campaign = await prisma.campaign.create({
             data: { name: campaignName, emailTemplateId: template.id },
         });
 
         // This map will hold the final email jobs to be sent.
-        // Key: contact email. Value: object with contact and context for Handlebars.
+        // Key: A unique key to prevent duplicate emails. Value: object with contact and context.
         const emailJobs = new Map<string, { contact: any, context: any }>();
         
         if (payload.sendMode === 'contact') {
+             // Handles 'plain' and 'multi' template types
             const contacts = await prisma.contact.findMany({
                 where: { id: { in: payload.contactIds } },
                 include: {
                     agent: true,
-                    owners: { include: { trademarks: true } }
+                    owners: { include: { trademarks: { orderBy: { expiration: 'asc' } } } }
                 }
             });
 
@@ -68,11 +100,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 where: { id: { in: payload.trademarkIds } },
                 include: { owner: { include: { contacts: { include: { agent: true } } } } }
             });
-
-            if (payload.mergeTrademarks) {
-                // Group trademarks by owner, then by contact
+            
+            if (templateType === 'multi') {
+                // Multi-trademark: Send one email per owner, per contact.
                 const trademarksByOwnerContact = new Map<string, { contact: any; owner: any; trademarks: any[] }>();
-
                 for (const tm of selectedTrademarks) {
                     for (const contact of tm.owner.contacts) {
                         const key = `${contact.id}-${tm.owner.id}`;
@@ -85,14 +116,11 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 
                 for (const { contact, owner, trademarks } of trademarksByOwnerContact.values()) {
                     const context = createHandlebarsContext(contact, owner, trademarks);
-                     // We might overwrite if a contact is linked to multiple owners, but each email is owner-specific.
-                     // A more complex key might be needed if one contact gets multiple distinct emails.
-                     // For now, let's key by contact email + owner id to ensure unique jobs.
-                    const jobKey = `${contact.email}-${owner.id}`;
+                    const jobKey = `${contact.email}-${owner.id}`; // Unique job per contact-owner pair
                     emailJobs.set(jobKey, { contact, context });
                 }
 
-            } else { // Send one email per trademark
+            } else { // Single-trademark: Send one email per trademark, per contact
                 for (const tm of selectedTrademarks) {
                      for (const contact of tm.owner.contacts) {
                         const context = createHandlebarsContext(contact, tm.owner, [tm]);
@@ -104,7 +132,11 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
             }
         }
 
-        // Process all email jobs
+        if (emailJobs.size === 0) {
+            return { error: 'No valid recipients found for this campaign based on your selection.' };
+        }
+
+        // --- Send Emails ---
         for (const { contact, context } of emailJobs.values()) {
             const emailSubject = compileAndRender(template.subject, context);
             const emailBody = compileAndRender(template.body, context);
@@ -143,6 +175,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
     }
 }
 
+
 function createHandlebarsContext(contact: any, owner: any, trademarks: any[]): any {
     const trademarksContextData = trademarks.map(tm => ({
         denomination: tm.denomination,
@@ -166,12 +199,14 @@ function createHandlebarsContext(contact: any, owner: any, trademarks: any[]): a
         trademarks: trademarksContextData,
     };
 
+    // If there is only one trademark, also add its properties to the top level
     if (trademarksContextData.length === 1) {
         handlebarsContext = {
             ...handlebarsContext,
             ...trademarksContextData[0]
         };
     }
+    
     return handlebarsContext;
 }
 
@@ -258,5 +293,3 @@ export async function syncCampaignStatusAction(campaignId: number) {
         return { error: 'An unexpected error occurred while syncing.' };
     }
 }
-
-    
