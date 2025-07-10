@@ -52,7 +52,16 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
 
             const owner = trademarks.length > 0 ? trademarks[0].owner : null;
 
-            const handlebarsContext = {
+            const trademarksContextData = trademarks.map(tm => ({
+                denomination: tm.denomination,
+                class: String(tm.class),
+                certificate: tm.certificate,
+                expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+                products: tm.products,
+                type: tm.type
+            }));
+
+            let handlebarsContext: any = {
                 agent: contact.agent,
                 owner: owner ? {
                     ...owner,
@@ -62,15 +71,17 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                     name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
                     email: contact.email,
                 },
-                trademarks: trademarks.map(tm => ({
-                    denomination: tm.denomination,
-                    class: String(tm.class),
-                    certificate: tm.certificate,
-                    expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
-                    products: tm.products,
-                    type: tm.type
-                })),
+                trademarks: trademarksContextData,
             };
+
+            // If there's only one trademark, flatten its properties into the main context
+            // so merge fields like {{denomination}} work directly.
+            if (trademarksContextData.length === 1) {
+                handlebarsContext = {
+                    ...handlebarsContext,
+                    ...trademarksContextData[0]
+                };
+            }
 
             const cleanSubject = (template.subject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
             const cleanBody = (template.body || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
