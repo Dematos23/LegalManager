@@ -1,8 +1,8 @@
 
 "use client";
 
-import React from "react";
-import { useForm } from "react-hook-form";
+import React, { useRef, useEffect } from "react";
+import { useForm, ControllerRenderProps } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -109,98 +109,116 @@ type QuillEditorHandle = {
 
 const QuillEditor = React.forwardRef<
   QuillEditorHandle,
-  { value: string; onChange: (value: string) => void }
->(({ value, onChange }, ref) => {
-  const editorRef = React.useRef<HTMLDivElement>(null);
-  const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const quillInstanceRef = React.useRef<Quill | null>(null);
+  { field: ControllerRenderProps<TemplateFormValues, "body"> }
+>(({ field }, ref) => {
+  const quillInstanceRef = useRef<Quill | null>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const toolbarContainerRef = useRef<HTMLDivElement>(null);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
-        quill.focus();
         let range = quill.getSelection();
         let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
         quill.clipboard.dangerouslyPasteHTML(index, html, "user");
-        quill.setSelection(index + html.length, 0);
+        quill.focus();
       }
     },
   }));
 
-  React.useEffect(() => {
-    if (quillInstanceRef.current) return; // Initialize only once
+  useEffect(() => {
+    if (!editorContainerRef.current || !toolbarContainerRef.current) return;
 
-    if (editorRef.current && toolbarRef.current) {
-        const quill = new Quill(editorRef.current, {
-        theme: "snow",
-        modules: {
-          toolbar: toolbarRef.current,
-          clipboard: true,
-          history: true,
+    // Ensure we don't re-initialize
+    if (quillInstanceRef.current) return;
+
+    const quill = new Quill(editorContainerRef.current, {
+      theme: "snow",
+      modules: {
+        toolbar: {
+          container: toolbarContainerRef.current, // Use direct ref
         },
-      });
+        clipboard: true,
+        history: true,
+      },
+    });
 
-      quillInstanceRef.current = quill;
+    quillInstanceRef.current = quill;
 
-      if (value) {
-        const delta = quill.clipboard.convert({ html: value });
-        quill.setContents(delta, "silent");
-      }
-
-      quill.on("text-change", (delta, oldDelta, source) => {
-        if (source === "user") {
-          const currentContent = quill.root.innerHTML;
-          onChange(currentContent === "<p><br></p>" ? "" : currentContent);
-        }
-      });
-    }
-
-    return () => {
-      if (quillInstanceRef.current) {
-        quillInstanceRef.current.off("text-change");
-      }
-    };
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-  React.useEffect(() => {
-    const quill = quillInstanceRef.current;
-    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
-      const delta = quill.clipboard.convert({ html: value || "" });
+    // Set initial content
+    if (field.value) {
+      const delta = quill.clipboard.convert({ html: field.value });
       quill.setContents(delta, "silent");
     }
-  }, [value]);
+
+    // Listen for changes
+    quill.on("text-change", (delta, oldDelta, source) => {
+      if (source === "user") {
+        const editorContent = quill.root.innerHTML;
+        const finalContent = editorContent === "<p><br></p>" ? "" : editorContent;
+        // Use the passed onChange from react-hook-form's field render prop
+        field.onChange(finalContent);
+      }
+    });
+
+    // Cleanup
+    return () => {
+        if(quillInstanceRef.current) {
+            quillInstanceRef.current.off("text-change");
+            // The editor element is part of the component's render,
+            // so React will remove it from the DOM.
+            // We just need to nullify the ref.
+            quillInstanceRef.current = null;
+        }
+    };
+    // field is an object, so we depend on its name and value for stability
+  }, [field.name]);
+  
+   // Sync value from form state to editor
+   useEffect(() => {
+    const quill = quillInstanceRef.current;
+    if (quill) {
+      // Avoid overwriting if editor already has the same content
+      // and avoid loop by not updating if editor has focus
+      if (field.value !== quill.root.innerHTML && !quill.hasFocus()) {
+        const delta = quill.clipboard.convert({html: field.value || ''});
+        quill.setContents(delta, 'silent');
+      }
+    }
+  }, [field.value]);
+
 
   return (
     <>
-      <div id="custom-quill-toolbar" ref={toolbarRef}>
+      <div id="custom-quill-toolbar" ref={toolbarContainerRef}>
         <span className="ql-formats">
-          <select className="ql-header" defaultValue="">
-            <option value="1">Heading 1</option>
-            <option value="2">Heading 2</option>
-            <option value="3">Heading 3</option>
-            <option value="">Normal</option>
+          <select className="ql-header">
+            <option value="1"></option>
+            <option value="2"></option>
+            <option value="3"></option>
+            <option value=""></option>
           </select>
         </span>
         <span className="ql-formats">
-          <button className="ql-bold" />
-          <button className="ql-italic" />
-          <button className="ql-underline" />
-          <button className="ql-strike" />
-          <button className="ql-blockquote" />
+          <button className="ql-bold"></button>
+          <button className="ql-italic"></button>
+          <button className="ql-underline"></button>
+          <button className="ql-strike"></button>
+          <button className="ql-blockquote"></button>
         </span>
         <span className="ql-formats">
-          <button className="ql-list" value="ordered" />
-          <button className="ql-list" value="bullet" />
-          <button className="ql-indent" value="-1" />
-          <button className="ql-indent" value="+1" />
+          <button className="ql-list" value="ordered"></button>
+          <button className="ql-list" value="bullet"></button>
+          <button className="ql-indent" value="-1"></button>
+          <button className="ql-indent" value="+1"></button>
         </span>
         <span className="ql-formats">
-          <button className="ql-link" />
-          <button className="ql-clean" />
+          <button className="ql-link"></button>
+          <button className="ql-clean"></button>
         </span>
       </div>
-      <div ref={editorRef} />
+      <div ref={editorContainerRef} />
     </>
   );
 });
@@ -229,6 +247,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
       subject: template?.subject || "",
       body: template?.body || "",
     },
+    mode: 'onChange'
   });
 
   React.useEffect(() => {
@@ -353,11 +372,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     try {
       const cleanSubject = (templateSubject || "").replace(
-        /<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g,
+        /<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g,
         "$1"
       );
       const cleanBody = (templateBody || "").replace(
-        /<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g,
+        /<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g,
         "$1"
       );
 
@@ -401,19 +420,20 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     if (result?.errors) {
       const { errors } = result;
-      if ("name" in errors && errors.name) {
+      // The type of errors can be { name?: string[], ... } | { _form: string[] }
+      if ('name' in errors && errors.name) {
         form.setError("name", { type: "manual", message: errors.name[0] });
       }
-      if ("subject" in errors && errors.subject) {
+      if ('subject' in errors && errors.subject) {
         form.setError("subject", {
           type: "manual",
           message: errors.subject[0],
         });
       }
-      if ("body" in errors && errors.body) {
+      if ('body' in errors && errors.body) {
         form.setError("body", { type: "manual", message: errors.body[0] });
       }
-      if ("_form" in errors && errors._form) {
+      if ('_form' in errors && errors._form) {
         toast({
           title: "Error",
           description: errors._form[0],
@@ -522,12 +542,9 @@ export function TemplateForm({ template }: TemplateFormProps) {
                       <FormLabel>{dictionary.templateForm.bodyLabel}</FormLabel>
                       <FormControl>
                         <div className="w-full rounded-md border border-input bg-background">
-                          {/* EMAIL EDITOR */}
-
                           <QuillEditor
                             ref={quillEditorRef}
-                            value={field.value}
-                            onChange={field.onChange}
+                            field={field}
                           />
                         </div>
                       </FormControl>
