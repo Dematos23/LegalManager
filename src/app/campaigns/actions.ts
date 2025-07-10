@@ -83,8 +83,8 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 };
             }
 
-            const cleanSubject = (template.subject || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
-            const cleanBody = (template.body || '').replace(/<span class="merge-tag" contenteditable="false">(.*?)<\/span>/g, '$1');
+            const cleanSubject = (template.subject || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+            const cleanBody = (template.body || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
 
             const subjectTemplate = Handlebars.compile(cleanSubject);
             const bodyTemplate = Handlebars.compile(cleanBody);
