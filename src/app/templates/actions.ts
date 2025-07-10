@@ -15,11 +15,14 @@ const TemplateSchema = z.object({
 function validateTemplateLogic(body: string) {
     const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(body);
     const hasOwnersLoop = /\{\{#each owners\}\}/.test(body);
+    // This regex looks for single owner fields like {{owner.name}} but not inside an owners loop.
+    const hasSingleOwnerFields = /\{\{owner\.(name|country)\}\}/.test(body);
 
-    if (hasTrademarksLoop && !hasOwnersLoop) {
+    // The template is invalid ONLY IF it has a trademark loop AND single owner fields, but NOT an owners loop.
+    if (hasTrademarksLoop && !hasOwnersLoop && hasSingleOwnerFields) {
         return {
             isValid: false,
-            error: { body: ["A multi-trademark loop ('{{#each trademarks}}') can only be used inside a multi-owner loop ('{{#each owners}}'). For a single owner, use single trademark fields like '{{denomination}}' directly."] }
+            error: { body: ["A multi-trademark loop ('{{#each trademarks}}') cannot be used with single owner fields ('{{owner.name}}'). Use a multi-owner loop ('{{#each owners}}') or remove the single owner fields."] }
         };
     }
 
