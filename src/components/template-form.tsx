@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -117,7 +117,6 @@ const MERGE_FIELDS = [
     }
   ];
 
-
 type QuillEditorHandle = {
   insert: (html: string) => void;
 };
@@ -126,55 +125,64 @@ const QuillEditor = React.forwardRef<
   QuillEditorHandle,
   { value: string; onChange: (value: string) => void }
 >(({ value, onChange }, ref) => {
-  const quillInstanceRef = React.useRef<Quill | null>(null);
-  const editorContainerRef = React.useRef<HTMLDivElement>(null);
+  const editorRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitialized = React.useRef(false);
+  const quillInstanceRef = React.useRef<Quill | null>(null);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
-        let range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
         quill.focus();
+        let range = quill.getSelection();
+        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
+        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
+        quill.setSelection(index + html.length, 0);
       }
     },
   }));
 
-  useEffect(() => {
-    if (!editorContainerRef.current || !toolbarRef.current || isInitialized.current) return;
+  React.useEffect(() => {
+    if (quillInstanceRef.current) return; // Initialize only once
 
-    const quill = new Quill(editorContainerRef.current, {
-      theme: 'snow',
-      modules: {
-        toolbar: toolbarRef.current,
-      },
-    });
-    quillInstanceRef.current = quill;
+    if (editorRef.current && toolbarRef.current) {
+      const quill = new Quill(editorRef.current, {
+        theme: "snow",
+        modules: {
+          toolbar: toolbarRef.current,
+        },
+      });
 
-    if (value) {
-      quill.clipboard.dangerouslyPasteHTML(0, value, 'api');
-    }
-    
-    quill.on('text-change', () => {
-      const currentContent = quill.root.innerHTML;
-      if (currentContent === '<p><br></p>') {
-        onChange('');
-      } else {
-        onChange(currentContent);
+      quillInstanceRef.current = quill;
+
+      if (value) {
+        const delta = quill.clipboard.convert({ html: value });
+        quill.setContents(delta, "silent");
       }
-    });
-    
-    isInitialized.current = true;
+
+      quill.on("text-change", (delta, oldDelta, source) => {
+        if (source === "user") {
+          const currentContent = quill.root.innerHTML;
+          onChange(currentContent === "<p><br></p>" ? "" : currentContent);
+        }
+      });
+    }
 
     return () => {
       if (quillInstanceRef.current) {
-        quillInstanceRef.current = null;
+        quillInstanceRef.current.off("text-change");
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  React.useEffect(() => {
+    const quill = quillInstanceRef.current;
+    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
+      const delta = quill.clipboard.convert({ html: value || "" });
+      quill.setContents(delta, "silent");
+    }
+  }, [value]);
 
   return (
     <>
@@ -205,7 +213,7 @@ const QuillEditor = React.forwardRef<
           <button className="ql-clean"></button>
         </span>
       </div>
-      <div ref={editorContainerRef} />
+      <div ref={editorRef} />
     </>
   );
 });
@@ -242,13 +250,13 @@ export function TemplateForm({ template }: TemplateFormProps) {
     mode: 'onChange'
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (template) {
       form.reset(template);
     }
   }, [template, form]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     async function fetchData() {
       try {
         const data = await getTemplatePreviewData();
@@ -738,3 +746,5 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
+    
