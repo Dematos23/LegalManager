@@ -125,25 +125,26 @@ const QuillEditor = React.forwardRef<
   QuillEditorHandle,
   { value: string; onChange: (value: string) => void }
 >(({ value, onChange }, ref) => {
+  const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const quillInstanceRef = React.useRef<Quill | null>(null);
+  const isInitialized = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
         quill.focus();
-        let range = quill.getSelection();
-        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
-        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
-        quill.setSelection(index + html.length, 0);
+        let range = quill.getSelection(true);
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
+        quill.setSelection(range.index + html.length, 0);
       }
     },
   }));
 
   React.useEffect(() => {
-    if (editorRef.current && !quillInstanceRef.current) {
+    if (isInitialized.current) return;
+    if (editorRef.current && toolbarRef.current) {
       const quill = new Quill(editorRef.current, {
         theme: "snow",
         modules: {
@@ -151,6 +152,14 @@ const QuillEditor = React.forwardRef<
         },
       });
       quillInstanceRef.current = quill;
+      
+      const setInitialContent = () => {
+        if (value) {
+          const delta = quill.clipboard.convert({ html: value });
+          quill.setContents(delta, 'silent');
+        }
+      };
+      setInitialContent();
 
       quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') {
@@ -158,26 +167,17 @@ const QuillEditor = React.forwardRef<
           onChange(currentContent === '<p><br></p>' ? '' : currentContent);
         }
       });
-      
-      if (value) {
-        const delta = quill.clipboard.convert({ html: value });
-        quill.setContents(delta, 'silent');
-      }
+
+      isInitialized.current = true;
     }
-    
-    return () => {
-      if (quillInstanceRef.current?.off) {
-        quillInstanceRef.current.off('text-change');
-      }
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
+
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
+    if (quill && !quill.hasFocus() && quill.root.innerHTML !== value) {
       const delta = quill.clipboard.convert({ html: value || "" });
-      quill.setContents(delta, "silent");
+      quill.setContents(delta, 'silent');
     }
   }, [value]);
 
@@ -368,12 +368,13 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
     
     const isMultiOwnerTemplate = (body: string) => /\{\{#each\s+owners\}\}/.test(body);
+    const cleanTemplate = (str: string) => str.replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
 
     const renderMultiOwnerPreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
         try {
             const parser = new DOMParser();
-            const doc = parser.parseFromString(templateString, 'text/html');
+            const doc = parser.parseFromString(cleanTemplate(templateString), 'text/html');
             const textContent = doc.body.textContent || "";
             const compiledTemplate = Handlebars.compile(textContent, { noEscape: true });
             return compiledTemplate(context).replace(/\n/g, '<br />');
@@ -386,8 +387,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     const renderSimplePreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
         try {
-            const cleanTemplate = templateString.replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
-            const compiledTemplate = Handlebars.compile(cleanTemplate, { noEscape: true });
+            const compiledTemplate = Handlebars.compile(cleanTemplate(templateString), { noEscape: true });
             return compiledTemplate(context);
         } catch (e) {
             console.error("Simple template rendering error:", e);
@@ -398,7 +398,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     const compileSubject = (templateString: string): string => {
         if (!templateString) return '';
         try {
-            const compiled = Handlebars.compile(templateString, { noEscape: true });
+            const compiled = Handlebars.compile(cleanTemplate(templateString), { noEscape: true });
             return compiled(finalContext);
         } catch (e) {
             console.error("Subject rendering error:", e);
@@ -747,5 +747,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
-    
