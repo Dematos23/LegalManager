@@ -18,8 +18,8 @@ function getTemplateType(templateBody: string): TemplateType {
     const hasOwnersLoop = /\{\{#each owners\}\}/.test(bodyAsText);
     const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(bodyAsText);
     // This regex looks for single trademark fields that are NOT part of a 'trademarks' loop.
-    const hasSingleTrademarkFields = /\{\{(?!\/?each)(denomination|class|certificate|expiration|products|type)\}\}/.test(bodyAsText);
-    
+    const hasSingleTrademarkFields = /\{\{\s*(?!\/?each)(?:owner\.)?(denomination|class|certificate|expiration|products|type)\s*\}\}/.test(bodyAsText);
+
     if (hasOwnersLoop) {
         return 'multi-owner';
     }
@@ -208,8 +208,6 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
         }))
     }));
 
-    // For multi-trademark-no-owner, trademarks are grouped under a single owner in the context
-    // For single-trademark, allTrademarks will just have one.
     const trademarksContextData = allTrademarks.map(tm => ({
         denomination: tm.denomination,
         class: String(tm.class),
@@ -229,9 +227,13 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
     };
     
     // For convenience in 'multi-trademark-no-owner' and 'single-trademark' templates
-    // where there's logically only one owner in the context.
+    // where there's logically only one owner in the context, or no owner context at all.
     if (owners.length === 1) {
         handlebarsContext.owner = ownersContext[0];
+    }
+    
+    // Always provide the trademarks list for templates that need it.
+    if (allTrademarks.length > 0) {
         handlebarsContext.trademarks = trademarksContextData;
     }
     
@@ -245,6 +247,7 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
     
     return handlebarsContext;
 }
+
 
 function compileAndRender(templateString: string, context: any): string {
     const cleanTemplate = (templateString || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
