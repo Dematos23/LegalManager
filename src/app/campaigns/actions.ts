@@ -12,9 +12,13 @@ type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 
 
 // Helper to analyze the template body
 function getTemplateType(templateBody: string): TemplateType {
-    const hasOwnersLoop = /\{\{#each owners\}\}/.test(body);
-    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(body);
-    const hasSingleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/.test(body);
+    // Strip HTML tags to analyze only the text content and handlebars expressions
+    const bodyAsText = templateBody.replace(/<[^>]*>/g, '');
+    
+    const hasOwnersLoop = /\{\{#each owners\}\}/.test(bodyAsText);
+    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(bodyAsText);
+    // This regex looks for single trademark fields that are NOT part of a 'trademarks' loop.
+    const hasSingleTrademarkFields = /\{\{(?!\/?each)(denomination|class|certificate|expiration|products|type)\}\}/.test(bodyAsText);
     
     if (hasOwnersLoop) {
         return 'multi-owner';
