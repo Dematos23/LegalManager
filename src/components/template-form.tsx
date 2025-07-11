@@ -143,39 +143,39 @@ const QuillEditor = React.forwardRef<
   }));
 
   React.useEffect(() => {
-    if (quillInstanceRef.current) return; // Initialize only once
-
-    if (editorRef.current && toolbarRef.current) {
+    if (editorRef.current && !quillInstanceRef.current) {
       const quill = new Quill(editorRef.current, {
         theme: "snow",
         modules: {
           toolbar: toolbarRef.current,
         },
       });
-
       quillInstanceRef.current = quill;
 
+      const handler = (delta: any, oldDelta: any, source: string) => {
+        if (source === 'user') {
+          const currentContent = quill.root.innerHTML;
+          onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+        }
+      };
+
+      quill.on('text-change', handler);
+      
       if (value) {
         const delta = quill.clipboard.convert({ html: value });
-        quill.setContents(delta, "silent");
+        quill.setContents(delta, 'silent');
       }
-
-      quill.on("text-change", (delta, oldDelta, source) => {
-        if (source === "user") {
-          const currentContent = quill.root.innerHTML;
-          onChange(currentContent === "<p><br></p>" ? "" : currentContent);
-        }
-      });
     }
-
+    
+    // Cleanup
     return () => {
       if (quillInstanceRef.current) {
-        quillInstanceRef.current.off("text-change");
+        quillInstanceRef.current.off('text-change');
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  }, [onChange]);
+  
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
     if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
@@ -252,7 +252,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   React.useEffect(() => {
     if (template) {
-      form.reset({
+       form.reset({
         name: template.name,
         subject: template.subject,
         body: template.body,
@@ -750,3 +750,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
