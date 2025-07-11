@@ -152,14 +152,12 @@ const QuillEditor = React.forwardRef<
       });
       quillInstanceRef.current = quill;
 
-      const handler = (delta: any, oldDelta: any, source: string) => {
+      quill.on('text-change', (delta, oldDelta, source) => {
         if (source === 'user') {
           const currentContent = quill.root.innerHTML;
           onChange(currentContent === '<p><br></p>' ? '' : currentContent);
         }
-      };
-
-      quill.on('text-change', handler);
+      });
       
       if (value) {
         const delta = quill.clipboard.convert({ html: value });
@@ -167,14 +165,13 @@ const QuillEditor = React.forwardRef<
       }
     }
     
-    // Cleanup
     return () => {
-      if (quillInstanceRef.current) {
+      if (quillInstanceRef.current?.off) {
         quillInstanceRef.current.off('text-change');
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChange]);
+  }, []);
   
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
@@ -751,3 +748,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
   );
 }
 
+    
