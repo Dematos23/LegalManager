@@ -252,7 +252,11 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
   React.useEffect(() => {
     if (template) {
-      form.reset(template);
+      form.reset({
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+      });
     }
   }, [template, form]);
 
@@ -746,5 +750,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
-    
