@@ -46,14 +46,19 @@ type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 
 
 // Helper to analyze the template body
 function getTemplateType(templateBody: string): TemplateType {
-    const hasOwnersLoop = /\{\{#each owners\}\}/.test(templateBody);
-    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(templateBody);
-    const hasSingleTrademarkFields = /\{\{(denomination|class|certificate|expiration|products|type)\}\}/.test(templateBody);
+    // Strip HTML tags to analyze only the text content and handlebars expressions
+    const bodyAsText = templateBody.replace(/<[^>]*>/g, '');
+    
+    const hasOwnersLoop = /\{\{#each owners\}\}/.test(bodyAsText);
+    const hasTrademarksLoop = /\{\{#each trademarks\}\}/.test(bodyAsText);
+    // This regex looks for single trademark fields that are NOT part of a 'trademarks' loop.
+    const hasSingleTrademarkFields = /\{\{(?!\/?each)(denomination|class|certificate|expiration|products|type)\}\}/.test(bodyAsText);
     
     if (hasOwnersLoop) {
         return 'multi-owner';
     }
     if (hasTrademarksLoop) {
+        // Doesn't have owner loop, but has trademark loop
         return 'multi-trademark-no-owner';
     }
     if (hasSingleTrademarkFields && !hasTrademarksLoop && !hasOwnersLoop) {
@@ -61,6 +66,7 @@ function getTemplateType(templateBody: string): TemplateType {
     }
     return 'plain';
 }
+
 
 type TemplateSendClientProps = {
   template: EmailTemplate;
@@ -74,23 +80,32 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const initialSendMode = React.useMemo(() => {
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(() => {
     switch (templateType) {
-      case 'plain':
-      case 'multi-owner':
-        return 'contact';
-      case 'single-trademark':
-      case 'multi-trademark-no-owner':
-      default:
-        return 'trademark';
+        case 'plain':
+        case 'multi-owner':
+            return 'contact';
+        case 'single-trademark':
+        case 'multi-trademark-no-owner':
+        default:
+            return 'trademark';
     }
-  }, [templateType]);
-  
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
+  });
 
   React.useEffect(() => {
-    setSendMode(initialSendMode);
-  }, [initialSendMode]);
+    const newSendMode = (() => {
+        switch (templateType) {
+            case 'plain':
+            case 'multi-owner':
+                return 'contact';
+            case 'single-trademark':
+            case 'multi-trademark-no-owner':
+            default:
+                return 'trademark';
+        }
+    })();
+    setSendMode(newSendMode);
+  }, [templateType]);
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
