@@ -108,7 +108,13 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
       expiration: trademark?.expiration ? new Date(trademark.expiration) : undefined,
       products: trademark?.products ?? '',
       ownerId: '',
+      ownerName: '',
+      ownerCountry: undefined,
       contactId: '',
+      contactFirstName: '',
+      contactLastName: '',
+      contactEmail: '',
+      agentId: '',
     },
   });
 
