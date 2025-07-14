@@ -96,9 +96,18 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             }
         }
         
-        const campaign = await prisma.campaign.create({
-            data: { name: campaignName, emailTemplateId: template.id },
-        });
+        let campaignId;
+        if (payload.campaignId && payload.campaignId !== 'new') {
+            const existingCampaign = await prisma.campaign.findUnique({ where: { id: Number(payload.campaignId) } });
+            if (!existingCampaign) return { error: 'Selected campaign not found.' };
+            campaignId = existingCampaign.id;
+        } else {
+             const campaign = await prisma.campaign.create({
+                data: { name: campaignName, emailTemplateId: template.id },
+            });
+            campaignId = campaign.id;
+        }
+
 
         const emailJobs = new Map<string, { contact: any, context: any }>();
         
@@ -178,7 +187,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 subject: emailSubject,
                 html: emailBody,
                 tags: [
-                    { name: 'campaign_id', value: String(campaign.id) },
+                    { name: 'campaign_id', value: String(campaignId) },
                     { name: 'template_id', value: String(template.id) },
                 ]
             });
@@ -191,14 +200,14 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             await prisma.sentEmail.create({
                 data: {
                     resendId: data.id,
-                    campaignId: campaign.id,
+                    campaignId: campaignId,
                     contactId: contact.id,
                 },
             });
         }
 
         revalidatePath('/tracking');
-        return { success: `Campaign "${campaign.name}" sent successfully to ${emailJobs.size} recipients.` };
+        return { success: `Campaign "${campaignName}" sent successfully to ${emailJobs.size} recipients.` };
 
     } catch (error) {
         console.error('Failed to send campaign:', error);
@@ -372,6 +381,26 @@ export async function getCampaignDetails(campaignId: number) {
             },
         },
     });
+}
+
+export async function getContactDataForPreview(contactId: number) {
+    if (isNaN(contactId)) return null;
+    const contact = await prisma.contact.findUnique({
+        where: { id: contactId },
+        include: {
+            agent: true,
+            owners: {
+                include: {
+                    trademarks: { orderBy: { expiration: 'asc' } }
+                }
+            }
+        }
+    });
+    if (!contact) return null;
+
+    const allOwners = contact.owners;
+    const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+    return createHandlebarsContext(contact, allOwners, allTrademarks);
 }
 
 export async function syncCampaignStatusAction(campaignId: number) {

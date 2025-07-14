@@ -11,11 +11,15 @@ import { getEmailTemplates } from '../templates/actions';
 import type { EmailTemplate, Campaign } from '@prisma/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { sendCampaignAction, getCampaigns } from '../campaigns/actions';
+import { sendCampaignAction, getCampaigns, getContactDataForPreview } from '../campaigns/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import * as Handlebars from 'handlebars';
+import { format } from 'date-fns';
+
+type PreviewDataContext = any;
 
 export default function SendEmailPage() {
   const searchParams = useSearchParams();
@@ -34,20 +38,26 @@ export default function SendEmailPage() {
   const [campaignName, setCampaignName] = React.useState('');
   const [customSubject, setCustomSubject] = React.useState('');
   const [customBody, setCustomBody] = React.useState('');
-  
+
+  const [previewContext, setPreviewContext] = React.useState<PreviewDataContext | null>(null);
+
   React.useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
-      const [fetchedTemplates, fetchedCampaigns] = await Promise.all([
+      const [fetchedTemplates, fetchedCampaigns, previewData] = await Promise.all([
         getEmailTemplates(),
-        getCampaigns()
+        getCampaigns(),
+        contactId ? getContactDataForPreview(Number(contactId)) : Promise.resolve(null),
       ]);
       setTemplates(fetchedTemplates);
       setCampaigns(fetchedCampaigns as Campaign[]);
+      if (previewData) {
+        setPreviewContext(previewData);
+      }
       setIsLoading(false);
     }
     fetchData();
-  }, []);
+  }, [contactId]);
 
   React.useEffect(() => {
     if (contactName) {
@@ -63,7 +73,7 @@ export default function SendEmailPage() {
         templateId: Number(selectedTemplateId),
         campaignName: campaignName,
         contactIds: [Number(contactId)],
-        campaignId: selectedCampaignId,
+        campaignId: selectedCampaignId !== 'new' ? selectedCampaignId : undefined,
     };
 
     startSendingTransition(async () => {
@@ -122,6 +132,25 @@ export default function SendEmailPage() {
   const isSendTemplateDisabled = !selectedTemplateId || !contactId || isSending || (selectedCampaignId === 'new' && campaignName.trim().length < 10);
   const isSendCustomDisabled = isSending || !contactId || customSubject.trim() === '' || customBody.trim() === '';
   
+  const renderedPreview = React.useMemo(() => {
+    if (!selectedTemplate || !previewContext) {
+      return { subject: '', body: '' };
+    }
+    try {
+        const cleanTemplate = (str: string) => (str || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+        const compiledSubject = Handlebars.compile(cleanTemplate(selectedTemplate.subject), { noEscape: true });
+        const compiledBody = Handlebars.compile(cleanTemplate(selectedTemplate.body), { noEscape: true });
+        return {
+            subject: compiledSubject(previewContext),
+            body: compiledBody(previewContext)
+        };
+    } catch (e) {
+        console.error("Preview rendering error:", e);
+        return { subject: "Error rendering subject", body: "Error rendering body. Check template syntax." };
+    }
+  }, [selectedTemplate, previewContext]);
+
+
   if (!contactId || !contactName) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -208,13 +237,13 @@ export default function SendEmailPage() {
                         <div className="space-y-4 rounded-md border p-4">
                             <div>
                                 <p className="text-sm font-semibold text-muted-foreground">{dictionary.templates.table.subject}</p>
-                                <p>{selectedTemplate.subject}</p>
+                                <p>{renderedPreview.subject}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-muted-foreground">{dictionary.templateForm.bodyLabel}</p>
                                 <div 
                                     className="mt-2 w-full max-h-60 overflow-y-auto rounded-md border p-4 bg-white text-black"
-                                    dangerouslySetInnerHTML={{ __html: selectedTemplate.body }}
+                                    dangerouslySetInnerHTML={{ __html: renderedPreview.body }}
                                 />
                             </div>
                         </div>
