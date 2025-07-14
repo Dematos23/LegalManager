@@ -9,7 +9,7 @@ import { LanguageProvider } from '@/context/language-context';
 import { MobileHeader } from '@/components/mobile-header';
 
 export const metadata: Metadata = {
-  title: 'LegalIntel CRM',
+  title: 'Legal CRM',
   description: 'Manage your legal trademarks with ease and intelligence.',
 };
 
