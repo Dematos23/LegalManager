@@ -43,7 +43,7 @@ export const es: Dictionary = {
       next: 'Siguiente',
     },
      actions: {
-        generateEmail: 'Generar Correo'
+        sendEmail: 'Enviar Correo'
     },
   },
   import: {
@@ -116,15 +116,6 @@ export const es: Dictionary = {
     renderedSubject: 'Asunto Renderizado',
     renderedPreview: 'Vista Previa Renderizada',
   },
-  emailModal: {
-    title: 'Borrador de Correo Generado',
-    description: 'Revise y edite el correo generado por IA a continuación.',
-    close: 'Cerrar',
-    copy: 'Copiar HTML',
-    send: 'Enviar Correo',
-    sentToast: 'Correo Enviado (Simulado)',
-    sentToastDesc: 'Se ha enviado un correo a'
-  },
   contact: {
     title: 'Perfil de Contacto',
     contactDetails: 'Detalles de Contacto',
@@ -196,6 +187,16 @@ export const es: Dictionary = {
             }
         }
     }
+  },
+  sendEmail: {
+    title: 'Enviar Correo',
+    description: 'Estás enviando un correo a',
+    selectTemplate: 'Seleccionar una Plantilla',
+    selectTemplatePlaceholder: 'Elija una plantilla para usar...',
+    loadingTemplates: 'Cargando plantillas...',
+    sendButton: 'Enviar Correo',
+    errorTitle: 'Error',
+    errorNoContact: 'No se especificó ningún contacto. Por favor, vuelva a la lista de marcas e inténtelo de nuevo.',
   },
   tracking: {
     title: 'Seguimiento de Campañas',

@@ -30,8 +30,8 @@ import {
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { EmailModal } from '@/components/email-modal';
 import { TrademarkFilters } from '@/components/trademark-filters';
+import { useRouter } from 'next/navigation';
 
 const globalFilterFn: FilterFn<TrademarkWithDetails> = (row: Row<TrademarkWithDetails>, columnId: string, value: string) => {
     const trademark = row.original;
@@ -91,18 +91,19 @@ type DashboardClientProps = {
 export function DashboardClient({ trademarks }: DashboardClientProps) {
   const { dictionary } = useLanguage();
   const { toast } = useToast();
+  const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'expiration', desc: false },
   ]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
-  const [isEmailModalOpen, setIsEmailModalOpen] = React.useState(false);
-  const [selectedContactEmail, setSelectedContactEmail] = React.useState('');
 
-  const handleGenerateEmail = React.useCallback((email: string) => {
-    setSelectedContactEmail(email);
-    setIsEmailModalOpen(true);
-  }, []);
+  const handleSendEmail = React.useCallback((contact: TrademarkWithDetails['owner']['contacts'][0]) => {
+    const params = new URLSearchParams();
+    params.set('contactId', String(contact.id));
+    params.set('contactName', `${contact.firstName} ${contact.lastName}`);
+    router.push(`/send-email?${params.toString()}`);
+  }, [router]);
 
   const columns: ColumnDef<TrademarkWithDetails>[] = React.useMemo(() => [
     {
@@ -214,10 +215,10 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
                 <DropdownMenuLabel>{dictionary.dashboard.table.actions}</DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={!contact}
-                  onClick={() => contact && handleGenerateEmail(contact.email)}
+                  onClick={() => contact && handleSendEmail(contact)}
                 >
                   <Mail className="mr-2 h-4 w-4" />
-                  {dictionary.dashboard.actions.generateEmail}
+                  {dictionary.dashboard.actions.sendEmail}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -232,7 +233,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         cell: () => null,
         enableHiding: true,
     }
-  ], [dictionary, handleGenerateEmail]);
+  ], [dictionary, handleSendEmail]);
 
   const table = useReactTable({
     data: trademarks,
@@ -269,7 +270,6 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <EmailModal isOpen={isEmailModalOpen} onClose={() => setIsEmailModalOpen(false)} contactEmail={selectedContactEmail} />
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <h1 className="text-3xl font-bold tracking-tight text-primary">
           {dictionary.dashboard.title}

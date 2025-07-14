@@ -41,7 +41,7 @@ export const en = {
       next: 'Next',
     },
     actions: {
-        generateEmail: 'Generate Email'
+        sendEmail: 'Send Email'
     },
   },
   import: {
@@ -114,15 +114,6 @@ export const en = {
     renderedSubject: 'Rendered Subject',
     renderedPreview: 'Rendered Preview',
   },
-  emailModal: {
-    title: 'Generated Email Draft',
-    description: 'Review and edit the AI-generated email below.',
-    close: 'Close',
-    copy: 'Copy HTML',
-    send: 'Send Email',
-    sentToast: 'Email Sent (Simulated)',
-    sentToastDesc: 'An email has been sent to'
-  },
   contact: {
     title: 'Contact Profile',
     contactDetails: 'Contact Details',
@@ -194,6 +185,16 @@ export const en = {
             }
         }
     }
+  },
+  sendEmail: {
+    title: 'Send Email',
+    description: 'You are sending an email to',
+    selectTemplate: 'Select a Template',
+    selectTemplatePlaceholder: 'Choose a template to use...',
+    loadingTemplates: 'Loading templates...',
+    sendButton: 'Send Email',
+    errorTitle: 'Error',
+    errorNoContact: 'No contact was specified. Please go back to the trademark list and try again.',
   },
   tracking: {
     title: 'Campaign Tracking',
