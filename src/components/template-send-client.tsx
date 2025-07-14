@@ -159,46 +159,19 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   }
 
   const renderGuidance = () => {
-    let title = "Guidance";
-    let description = "Select a sending method below.";
+    const guidance = dictionary.sendTemplate.guidance;
+    let title = guidance.default.title;
+    let description = guidance.default.description;
 
     if (sendMode === 'trademark') {
-        switch(templateType) {
-            case 'plain':
-                title = "Invalid: Plain Template";
-                description = "This plain text template must be sent by contact.";
-                break;
-            case 'multi-owner':
-                 title = "Invalid: Multi-Owner Template";
-                 description = "This template lists all data for a contact and must be sent by contact.";
-                 break;
-            case 'single-trademark':
-                 title = "Mode: Single Trademark";
-                 description = "One email will be sent for each selected trademark-contact pair.";
-                 break;
-            case 'multi-trademark-no-owner':
-                title = "Mode: Multi-Trademark (Grouped by Contact)";
-                description = "One email will be sent per contact, containing a list of their selected trademarks.";
-                break;
+        if (guidance.byTrademark[templateType]) {
+            title = guidance.byTrademark[templateType].title;
+            description = guidance.byTrademark[templateType].description;
         }
     } else { // sendMode === 'contact'
-         switch(templateType) {
-            case 'single-trademark':
-                title = "Invalid: Single Trademark Template";
-                description = "This template requires a specific trademark and must be sent by trademark.";
-                break;
-            case 'multi-trademark-no-owner':
-                 title = "Mode: Multi-Trademark Summary";
-                 description = "One email will be sent per contact, containing all trademarks associated with them.";
-                 break;
-            case 'plain':
-                 title = "Mode: Plain Email";
-                 description = "One email will be sent to each selected contact.";
-                 break;
-            case 'multi-owner':
-                 title = "Mode: Multi-Owner Summary";
-                 description = "One email will be sent per contact, containing all trademarks for all their associated owners.";
-                 break;
+        if (guidance.byContact[templateType]) {
+            title = guidance.byContact[templateType].title;
+            description = guidance.byContact[templateType].description;
         }
     }
 
@@ -208,7 +181,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
             <AlertTitle>{title}</AlertTitle>
             <AlertDescription>{description}</AlertDescription>
         </Alert>
-    )
+    );
   }
 
   const isTrademarkSendDisabled = templateType === 'plain' || templateType === 'multi-owner';

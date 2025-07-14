@@ -152,6 +152,48 @@ export const en = {
     campaignSentTitle: 'Campaign Sent',
     campaignErrorTitle: 'Campaign Failed',
     recipients: 'recipients',
+    guidance: {
+        default: {
+            title: 'Guidance',
+            description: 'Select a sending method below.'
+        },
+        byTrademark: {
+            plain: {
+                title: 'Invalid: Plain Template',
+                description: 'This plain text template must be sent by contact.'
+            },
+            'multi-owner': {
+                title: 'Invalid: Multi-Owner Template',
+                description: 'This template lists all data for a contact and must be sent by contact.'
+            },
+            'single-trademark': {
+                title: 'Mode: Single Trademark',
+                description: 'One email will be sent for each selected trademark-contact pair.'
+            },
+            'multi-trademark-no-owner': {
+                title: 'Mode: Multi-Trademark (Grouped by Contact)',
+                description: 'One email will be sent per contact, containing a list of their selected trademarks.'
+            }
+        },
+        byContact: {
+            'single-trademark': {
+                title: 'Invalid: Single Trademark Template',
+                description: 'This template requires a specific trademark and must be sent by trademark.'
+            },
+            'multi-trademark-no-owner': {
+                title: 'Mode: Multi-Trademark Summary',
+                description: 'One email will be sent per contact, containing all trademarks associated with them.'
+            },
+            plain: {
+                title: 'Mode: Plain Email',
+                description: 'One email will be sent to each selected contact.'
+            },
+            'multi-owner': {
+                title: 'Mode: Multi-Owner Summary',
+                description: 'One email will be sent per contact, containing all trademarks for all their associated owners.'
+            }
+        }
+    }
   },
   tracking: {
     title: 'Campaign Tracking',

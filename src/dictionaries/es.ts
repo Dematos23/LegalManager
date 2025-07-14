@@ -152,9 +152,50 @@ export const es: Dictionary = {
     noSelectionTitle: 'No se seleccionaron destinatarios',
     noSelectionDesc: 'Por favor, seleccione al menos un destinatario para enviar la campaña.',
     campaignSentTitle: 'Campaña Enviada',
-    campaignSentDesc: 'Su campaña de correo ha sido puesta en cola para ser enviada a',
     campaignErrorTitle: 'Falló la Campaña',
     recipients: 'destinatarios',
+    guidance: {
+        default: {
+            title: 'Guía',
+            description: 'Seleccione un método de envío a continuación.'
+        },
+        byTrademark: {
+            plain: {
+                title: 'Inválido: Plantilla de Texto Plano',
+                description: 'Esta plantilla de texto plano debe enviarse por contacto.'
+            },
+            'multi-owner': {
+                title: 'Inválido: Plantilla Multi-titular',
+                description: 'Esta plantilla enumera todos los datos de un contacto y debe enviarse por contacto.'
+            },
+            'single-trademark': {
+                title: 'Modo: Marca Única',
+                description: 'Se enviará un correo electrónico por cada par de marca-contacto seleccionado.'
+            },
+            'multi-trademark-no-owner': {
+                title: 'Modo: Multi-marca (Agrupado por Contacto)',
+                description: 'Se enviará un correo por contacto, conteniendo una lista de sus marcas seleccionadas.'
+            }
+        },
+        byContact: {
+            'single-trademark': {
+                title: 'Inválido: Plantilla de Marca Única',
+                description: 'Esta plantilla requiere una marca específica y debe enviarse por marca.'
+            },
+            'multi-trademark-no-owner': {
+                title: 'Modo: Resumen Multi-marca',
+                description: 'Se enviará un correo por contacto, conteniendo todas las marcas asociadas a ellos.'
+            },
+            plain: {
+                title: 'Modo: Correo de Texto Plano',
+                description: 'Se enviará un correo a cada contacto seleccionado.'
+            },
+            'multi-owner': {
+                title: 'Modo: Resumen Multi-titular',
+                description: 'Se enviará un correo por contacto, conteniendo todas las marcas de todos sus titulares asociados.'
+            }
+        }
+    }
   },
   tracking: {
     title: 'Seguimiento de Campañas',
