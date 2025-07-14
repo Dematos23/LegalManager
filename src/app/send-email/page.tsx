@@ -147,7 +147,7 @@ export default function SendEmailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-            <Tabs defaultValue="template" className="w-full">
+            <Tabs defaultValue="custom" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="template">{dictionary.sendEmail.useTemplateTab}</TabsTrigger>
                     <TabsTrigger value="custom">{dictionary.sendEmail.writeCustomTab}</TabsTrigger>
