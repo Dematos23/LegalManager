@@ -221,6 +221,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                   <FormField control={form.control} name="ownerId" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Owner</FormLabel>
+                      <FormDescription>This contact will be associated with the owner.</FormDescription>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select or create an owner..." /></SelectTrigger></FormControl>
                         <SelectContent>
