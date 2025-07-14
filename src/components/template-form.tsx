@@ -61,61 +61,62 @@ type AgentWithNestedData = Awaited<
 >[0];
 
 const MERGE_FIELDS = [
-    {
-      group: "Agent",
-      fields: [
-        { name: "Agent Name", value: "{{agent.name}}" },
-        { name: "Agent Country", value: "{{agent.country}}" },
-        { name: "Agent Area", value: "{{agent.area}}" },
-      ],
-    },
-    {
-      group: "Contact",
-      fields: [
-        { name: "Contact Name", value: "{{contact.name}}" },
-        { name: "Contact Email", value: "{{contact.email}}" },
-      ],
-    },
-    {
-      group: "Owners (Loop)",
-      fields: [
-          { name: "Start Owners Loop", value: "{{#each owners}}" },
-          { name: "Owner Name", value: "{{name}}" },
-          { name: "Owner Country", value: "{{country}}" },
-          { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
-          { name: "Denomination", value: "{{denomination}}" },
-          { name: "Class", value: "{{class}}" },
-          { name: "Expiration", value: "{{expiration}}" },
-          { name: "End Trademarks Loop", value: "{{/each}}" },
-          { name: "End Owners Loop", value: "{{/each}}" },
-      ],
-    },
-    {
-      group: "Trademarks (Loop - Single Owner)",
-      fields: [
-        { name: "Owner Name", value: "{{owner.name}}" },
-        { name: "Owner Country", value: "{{owner.country}}" },
-        { name: "Start Loop", value: "{{#each trademarks}}" },
-        { name: "Denomination", value: "{{denomination}}" },
-        { name: "Class", value: "{{class}}" },
-        { name: "Certificate", value: "{{certificate}}" },
-        { name: "Expiration Date", value: "{{expiration}}" },
-        { name: "Products", value: "{{products}}" },
-        { name: "End Loop", value: "{{/each}}" },
-      ],
-    },
-     {
-      group: "Single Trademark",
-      fields: [
-        { name: "Denomination", value: "{{denomination}}" },
-        { name: "Class", value: "{{class}}" },
-        { name: "Certificate", value: "{{certificate}}" },
-        { name: "Expiration Date", value: "{{expiration}}" },
-        { name: "Products", value: "{{products}}" },
-        { name: "Type", value: "{{type}}" },
-      ]
-    }
-  ];
+  {
+    group: "Agent",
+    fields: [
+      { name: "Agent Name", value: "{{agent.name}}" },
+      { name: "Agent Country", value: "{{agent.country}}" },
+      { name: "Agent Area", value: "{{agent.area}}" },
+    ],
+  },
+  {
+    group: "Contact",
+    fields: [
+      { name: "Contact First Name", value: "{{contact.firstName}}" },
+      { name: "Contact Last Name", value: "{{contact.lastName}}" },
+      { name: "Contact Email", value: "{{contact.email}}" },
+    ],
+  },
+  {
+    group: "Owners (Loop)",
+    fields: [
+      { name: "Start Owners Loop", value: "{{#each owners}}" },
+      { name: "Owner Name", value: "{{name}}" },
+      { name: "Owner Country", value: "{{country}}" },
+      { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
+      { name: "Denomination", value: "{{denomination}}" },
+      { name: "Class", value: "{{class}}" },
+      { name: "Expiration", value: "{{expiration}}" },
+      { name: "End Trademarks Loop", value: "{{/each}}" },
+      { name: "End Owners Loop", value: "{{/each}}" },
+    ],
+  },
+  {
+    group: "Trademarks (Loop - Single Owner)",
+    fields: [
+      { name: "Owner Name", value: "{{owner.name}}" },
+      { name: "Owner Country", value: "{{owner.country}}" },
+      { name: "Start Loop", value: "{{#each trademarks}}" },
+      { name: "Denomination", value: "{{denomination}}" },
+      { name: "Class", value: "{{class}}" },
+      { name: "Certificate", value: "{{certificate}}" },
+      { name: "Expiration Date", value: "{{expiration}}" },
+      { name: "Products", value: "{{products}}" },
+      { name: "End Loop", value: "{{/each}}" },
+    ],
+  },
+  {
+    group: "Single Trademark",
+    fields: [
+      { name: "Denomination", value: "{{denomination}}" },
+      { name: "Class", value: "{{class}}" },
+      { name: "Certificate", value: "{{certificate}}" },
+      { name: "Expiration Date", value: "{{expiration}}" },
+      { name: "Products", value: "{{products}}" },
+      { name: "Type", value: "{{type}}" },
+    ],
+  },
+];
 
 type QuillEditorHandle = {
   insert: (html: string) => void;
@@ -143,33 +144,36 @@ const QuillEditor = React.forwardRef<
   }));
 
   React.useEffect(() => {
-    if (isInitialized.current) return;
-    if (editorRef.current && toolbarRef.current) {
-      const quill = new Quill(editorRef.current, {
+    if (isInitialized.current || !editorRef.current || !toolbarRef.current) {
+        return;
+    }
+
+    const quill = new Quill(editorRef.current, {
         theme: "snow",
         modules: {
-          toolbar: toolbarRef.current,
+            toolbar: toolbarRef.current,
         },
-      });
-      quillInstanceRef.current = quill;
-      
-      const setInitialContent = () => {
-        if (value) {
-          const delta = quill.clipboard.convert({ html: value });
-          quill.setContents(delta, 'silent');
-        }
-      };
-      setInitialContent();
-
-      quill.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
-          const currentContent = quill.root.innerHTML;
-          onChange(currentContent === '<p><br></p>' ? '' : currentContent);
-        }
-      });
-
-      isInitialized.current = true;
+    });
+    quillInstanceRef.current = quill;
+    isInitialized.current = true;
+    
+    if (value) {
+      const delta = quill.clipboard.convert({ html: value });
+      quill.setContents(delta, 'silent');
     }
+
+    const handleTextChange = (delta: any, oldDelta: any, source: string) => {
+        if (source === 'user') {
+            const currentContent = quill.root.innerHTML;
+            onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+        }
+    };
+    
+    quill.on('text-change', handleTextChange);
+    
+    return () => {
+        quill.off('text-change', handleTextChange);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -350,6 +354,8 @@ export function TemplateForm({ template }: TemplateFormProps) {
       },
       contact: {
         name: `${selectedContact.firstName || ""} ${selectedContact.lastName || ""}`.trim(),
+        firstName: selectedContact.firstName || "",
+        lastName: selectedContact.lastName || "",
         email: selectedContact.email,
       },
       owners: ownersContext,
@@ -747,3 +753,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+

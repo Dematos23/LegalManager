@@ -16,8 +16,8 @@ async function main() {
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
 
-Contact name: {{contact.name}}
-Contact name: {{contact.email}}
+Contact name: {{contact.firstName}} {{contact.lastName}}
+Contact email: {{contact.email}}
 
 {{#each owners}}
 
@@ -51,8 +51,8 @@ Trademark products: {{products}}
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
 
-Contact name: {{contact.name}}
-Contact name: {{contact.email}}
+Contact name: {{contact.firstName}} {{contact.lastName}}
+Contact email: {{contact.email}}
 
 {{#each trademarks}}
 Trademark denomination: {{denomination}}
@@ -76,8 +76,8 @@ Trademark products: {{products}}
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
 
-Contact name: {{contact.name}}
-Contact name: {{contact.email}}
+Contact name: {{contact.firstName}} {{contact.lastName}}
+Contact email: {{contact.email}}
 
 Owner name: {{owner.name}}
 Owner country: {{owner.country}}

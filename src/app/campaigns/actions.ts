@@ -221,6 +221,8 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
         agent: contact.agent,
         contact: {
             name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+            firstName: contact.firstName || '',
+            lastName: contact.lastName || '',
             email: contact.email,
         },
         owners: ownersContext,
