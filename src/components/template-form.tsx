@@ -129,6 +129,7 @@ const QuillEditor = React.forwardRef<
   const editorRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
   const quillInstanceRef = React.useRef<Quill | null>(null);
+  const isInitialized = React.useRef(false);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
@@ -144,7 +145,7 @@ const QuillEditor = React.forwardRef<
   }));
 
   React.useEffect(() => {
-    if (quillInstanceRef.current) return; // Initialize only once
+    if (isInitialized.current) return;
 
     if (editorRef.current && toolbarRef.current) {
       const quill = new Quill(editorRef.current, {
@@ -155,12 +156,8 @@ const QuillEditor = React.forwardRef<
       });
 
       quillInstanceRef.current = quill;
-
-      if (value) {
-        const delta = quill.clipboard.convert({ html: value });
-        quill.setContents(delta, "silent");
-      }
-
+      isInitialized.current = true;
+      
       quill.on("text-change", (delta, oldDelta, source) => {
         if (source === "user") {
           const currentContent = quill.root.innerHTML;
@@ -168,20 +165,15 @@ const QuillEditor = React.forwardRef<
         }
       });
     }
-    
-    return () => {
-        if(quillInstanceRef.current) {
-            quillInstanceRef.current.off('text-change');
-        }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [onChange]); 
 
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
-      const delta = quill.clipboard.convert({ html: value || "" });
-      quill.setContents(delta, "silent");
+    if (quill) {
+        if (quill.root.innerHTML !== value) {
+            const delta = quill.clipboard.convert({ html: value || "" });
+            quill.setContents(delta, "silent");
+        }
     }
   }, [value]);
 
@@ -353,7 +345,6 @@ export function TemplateForm({ template }: TemplateFormProps) {
         area: selectedAgent.area,
       },
       contact: {
-        name: `${selectedContact.firstName || ""} ${selectedContact.lastName || ""}`.trim(),
         firstName: selectedContact.firstName || "",
         lastName: selectedContact.lastName || "",
         email: selectedContact.email,
@@ -374,7 +365,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     }
     
     const isMultiOwnerTemplate = (body: string) => /\{\{#each\s+owners\}\}/.test(body);
-    const cleanTemplate = (str: string) => str.replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
+    const cleanTemplate = (str: string) => (str || '').replace(/<span class="merge-tag" contenteditable="false">({{[^}]+}})<\/span>/g, '$1');
 
     const renderMultiOwnerPreview = (templateString: string, context: any) => {
         if (!templateString || typeof window === 'undefined') return '';
@@ -753,3 +744,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
+
