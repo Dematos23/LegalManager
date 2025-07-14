@@ -126,62 +126,62 @@ const QuillEditor = React.forwardRef<
   QuillEditorHandle,
   { value: string; onChange: (value: string) => void }
 >(({ value, onChange }, ref) => {
-  const quillInstanceRef = React.useRef<Quill | null>(null);
   const editorRef = React.useRef<HTMLDivElement>(null);
   const toolbarRef = React.useRef<HTMLDivElement>(null);
-  const isInitialized = React.useRef(false);
+  const quillInstanceRef = React.useRef<Quill | null>(null);
 
   React.useImperativeHandle(ref, () => ({
     insert: (html: string) => {
       const quill = quillInstanceRef.current;
       if (quill) {
         quill.focus();
-        let range = quill.getSelection(true);
-        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
-        quill.setSelection(range.index + html.length, 0);
+        let range = quill.getSelection();
+        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
+        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
+        quill.setSelection(index + html.length, 0);
       }
     },
   }));
 
   React.useEffect(() => {
-    if (isInitialized.current || !editorRef.current || !toolbarRef.current) {
-        return;
-    }
+    if (quillInstanceRef.current) return; // Initialize only once
 
-    const quill = new Quill(editorRef.current, {
+    if (editorRef.current && toolbarRef.current) {
+      const quill = new Quill(editorRef.current, {
         theme: "snow",
         modules: {
-            toolbar: toolbarRef.current,
+          toolbar: toolbarRef.current,
         },
-    });
-    quillInstanceRef.current = quill;
-    isInitialized.current = true;
-    
-    if (value) {
-      const delta = quill.clipboard.convert({ html: value });
-      quill.setContents(delta, 'silent');
-    }
+      });
 
-    const handleTextChange = (delta: any, oldDelta: any, source: string) => {
-        if (source === 'user') {
-            const currentContent = quill.root.innerHTML;
-            onChange(currentContent === '<p><br></p>' ? '' : currentContent);
+      quillInstanceRef.current = quill;
+
+      if (value) {
+        const delta = quill.clipboard.convert({ html: value });
+        quill.setContents(delta, "silent");
+      }
+
+      quill.on("text-change", (delta, oldDelta, source) => {
+        if (source === "user") {
+          const currentContent = quill.root.innerHTML;
+          onChange(currentContent === "<p><br></p>" ? "" : currentContent);
         }
-    };
-    
-    quill.on('text-change', handleTextChange);
+      });
+    }
     
     return () => {
-        quill.off('text-change', handleTextChange);
-    };
+        if(quillInstanceRef.current) {
+            quillInstanceRef.current.off('text-change');
+        }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); 
 
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill && !quill.hasFocus() && quill.root.innerHTML !== value) {
+    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
       const delta = quill.clipboard.convert({ html: value || "" });
-      quill.setContents(delta, 'silent');
+      quill.setContents(delta, "silent");
     }
   }, [value]);
 
@@ -753,4 +753,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
