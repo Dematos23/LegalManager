@@ -98,10 +98,11 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
 
-  const handleSendEmail = React.useCallback((contact: TrademarkWithDetails['owner']['contacts'][0]) => {
+  const handleSendEmail = React.useCallback((trademark: TrademarkWithDetails, contact: TrademarkWithDetails['owner']['contacts'][0]) => {
     const params = new URLSearchParams();
     params.set('contactId', String(contact.id));
     params.set('contactName', `${contact.firstName} ${contact.lastName}`);
+    params.set('trademarkId', String(trademark.id));
     router.push(`/send-email?${params.toString()}`);
   }, [router]);
 
@@ -201,7 +202,8 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     {
         id: 'actions',
         cell: ({ row }) => {
-          const contact = row.original.owner.contacts?.[0];
+          const trademark = row.original;
+          const contact = trademark.owner.contacts?.[0];
   
           return (
             <DropdownMenu>
@@ -215,7 +217,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
                 <DropdownMenuLabel>{dictionary.dashboard.table.actions}</DropdownMenuLabel>
                 <DropdownMenuItem
                   disabled={!contact}
-                  onClick={() => contact && handleSendEmail(contact)}
+                  onClick={() => contact && handleSendEmail(trademark, contact)}
                 >
                   <Mail className="mr-2 h-4 w-4" />
                   {dictionary.dashboard.actions.sendEmail}

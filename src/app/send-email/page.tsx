@@ -17,13 +17,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as Handlebars from 'handlebars';
-import { format } from 'date-fns';
 
 type PreviewDataContext = any;
 
 export default function SendEmailPage() {
   const searchParams = useSearchParams();
   const contactId = searchParams.get('contactId');
+  const trademarkId = searchParams.get('trademarkId');
   const contactName = searchParams.get('contactName');
   
   const { dictionary } = useLanguage();
@@ -43,11 +43,12 @@ export default function SendEmailPage() {
 
   React.useEffect(() => {
     async function fetchData() {
+      if (!contactId) return;
       setIsLoading(true);
       const [fetchedTemplates, fetchedCampaigns, previewData] = await Promise.all([
         getEmailTemplates(),
         getCampaigns(),
-        contactId ? getContactDataForPreview(Number(contactId)) : Promise.resolve(null),
+        getContactDataForPreview(Number(contactId), trademarkId ? Number(trademarkId) : undefined),
       ]);
       setTemplates(fetchedTemplates);
       setCampaigns(fetchedCampaigns as Campaign[]);
@@ -57,7 +58,7 @@ export default function SendEmailPage() {
       setIsLoading(false);
     }
     fetchData();
-  }, [contactId]);
+  }, [contactId, trademarkId]);
 
   React.useEffect(() => {
     if (contactName) {
@@ -73,6 +74,7 @@ export default function SendEmailPage() {
         templateId: Number(selectedTemplateId),
         campaignName: campaignName,
         contactIds: [Number(contactId)],
+        trademarkId: trademarkId ? Number(trademarkId) : undefined,
         campaignId: selectedCampaignId !== 'new' ? selectedCampaignId : undefined,
     };
 

@@ -46,6 +46,7 @@ interface SendCampaignByContactPayload {
     templateId: number;
     campaignName: string;
     contactIds: number[];
+    trademarkId?: number; // Optional trademarkId for single sends
 }
 
 interface SendCustomEmailPayload {
@@ -91,7 +92,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 return { error: "This multi-owner template includes all of a contact's data and must be sent by contact." };
             }
         } else if (payload.sendMode === 'contact') {
-            if (templateType === 'single-trademark') {
+            if (templateType === 'single-trademark' && !payload.trademarkId) {
                 return { error: "This template is for a single trademark, but no specific trademark was selected. It must be sent by trademark." };
             }
         }
@@ -126,8 +127,18 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             });
 
             for (const contact of contacts) {
-                const allOwners = contact.owners;
-                const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+                let allOwners = contact.owners;
+                let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+
+                // For single-trademark templates sent via contact (e.g., from dashboard action)
+                // filter down to the specific trademark.
+                if (templateType === 'single-trademark' && payload.trademarkId) {
+                    allTrademarks = allTrademarks.filter(tm => tm.id === payload.trademarkId);
+                    if (allTrademarks.length > 0) {
+                        const ownerId = allTrademarks[0].ownerId;
+                        allOwners = allOwners.filter(owner => owner.id === ownerId);
+                    }
+                }
 
                 // For 'plain', 'multi-owner', and 'multi-trademark-no-owner' templates sent by contact
                 const context = createHandlebarsContext(contact, allOwners, allTrademarks);
@@ -383,7 +394,7 @@ export async function getCampaignDetails(campaignId: number) {
     });
 }
 
-export async function getContactDataForPreview(contactId: number) {
+export async function getContactDataForPreview(contactId: number, trademarkId?: number) {
     if (isNaN(contactId)) return null;
     const contact = await prisma.contact.findUnique({
         where: { id: contactId },
@@ -398,8 +409,18 @@ export async function getContactDataForPreview(contactId: number) {
     });
     if (!contact) return null;
 
-    const allOwners = contact.owners;
-    const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+    let allOwners = contact.owners;
+    let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+
+    // If a specific trademarkId is provided, filter the context for that single trademark
+    if (trademarkId) {
+        allTrademarks = allTrademarks.filter(tm => tm.id === trademarkId);
+        if (allTrademarks.length > 0) {
+            const singleOwnerId = allTrademarks[0].ownerId;
+            allOwners = allOwners.filter(owner => owner.id === singleOwnerId);
+        }
+    }
+    
     return createHandlebarsContext(contact, allOwners, allTrademarks);
 }
 
