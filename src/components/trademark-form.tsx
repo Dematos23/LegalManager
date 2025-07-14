@@ -144,8 +144,8 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
         });
       });
       toast({
-        title: "Error",
-        description: "Please correct the errors in the form.",
+        title: dictionary.trademarkForm.errorTitle,
+        description: dictionary.trademarkForm.errorDescription,
         variant: "destructive",
       });
     }
@@ -156,26 +156,26 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Create New Trademark</CardTitle>
-            <CardDescription>Fill in the details for the new trademark.</CardDescription>
+            <CardTitle>{dictionary.trademarkForm.title}</CardTitle>
+            <CardDescription>{dictionary.trademarkForm.description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Trademark Details */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Trademark Details</h3>
+              <h3 className="text-lg font-medium">{dictionary.trademarkForm.trademarkDetailsTitle}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="denomination" render={({ field }) => (
-                    <FormItem><FormLabel>Denomination</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>{dictionary.trademarkForm.denomination}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="certificate" render={({ field }) => (
-                    <FormItem><FormLabel>Certificate</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>{dictionary.trademarkForm.certificate}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                  <FormField control={form.control} name="class" render={({ field }) => (
-                    <FormItem><FormLabel>Class</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>{dictionary.trademarkForm.class}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel>{dictionary.trademarkForm.type}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -189,12 +189,12 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                 )} />
                 <FormField control={form.control} name="expiration" render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Expiration Date</FormLabel>
+                    <FormLabel>{dictionary.trademarkForm.expirationDate}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button variant="outline" className={cn(!field.value && 'text-muted-foreground')}>
-                            {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
+                            {field.value ? format(field.value, 'PPP') : <span>{dictionary.trademarkForm.pickDate}</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -208,24 +208,24 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                 )} />
               </div>
               <FormField control={form.control} name="products" render={({ field }) => (
-                <FormItem><FormLabel>Products</FormLabel><FormControl><Textarea {...field} /></FormControl><FormDescription>Optional: list of products or services.</FormDescription><FormMessage /></FormItem>
+                <FormItem><FormLabel>{dictionary.trademarkForm.products}</FormLabel><FormControl><Textarea {...field} /></FormControl><FormDescription>{dictionary.trademarkForm.productsDescription}</FormDescription><FormMessage /></FormItem>
               )} />
             </div>
 
             {/* Owner and Contact */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Owner & Contact</h3>
+              <h3 className="text-lg font-medium">{dictionary.trademarkForm.ownerAndContactTitle}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Owner Section */}
                 <div className="space-y-4 rounded-md border p-4">
                   <FormField control={form.control} name="ownerId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Owner</FormLabel>
-                      <FormDescription>This contact will be associated with the owner.</FormDescription>
+                      <FormLabel>{dictionary.trademarkForm.owner}</FormLabel>
+                      <FormDescription>{dictionary.trademarkForm.contactAssociationDescription}</FormDescription>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select or create an owner..." /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.ownerPlaceholder} /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="new">-- Create New Owner --</SelectItem>
+                          <SelectItem value="new">{dictionary.trademarkForm.createNewOwner}</SelectItem>
                           {owners.map(o => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -235,13 +235,13 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                   {ownerId === 'new' && (
                     <>
                       <FormField control={form.control} name="ownerName" render={({ field }) => (
-                        <FormItem><FormLabel>New Owner Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{dictionary.trademarkForm.newOwnerName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="ownerCountry" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>New Owner Country</FormLabel>
+                            <FormLabel>{dictionary.trademarkForm.newOwnerCountry}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select country..." /></SelectTrigger></FormControl>
+                                <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.countryPlaceholder} /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {Object.values(Country).map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}
                                 </SelectContent>
@@ -257,12 +257,12 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                 <div className="space-y-4 rounded-md border p-4">
                    <FormField control={form.control} name="contactId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact</FormLabel>
-                       <FormDescription>This contact will be associated with the owner.</FormDescription>
+                      <FormLabel>{dictionary.trademarkForm.contact}</FormLabel>
+                       <FormDescription>{dictionary.trademarkForm.contactAssociationDescription}</FormDescription>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select or create a contact..." /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.contactPlaceholder} /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="new">-- Create New Contact --</SelectItem>
+                          <SelectItem value="new">{dictionary.trademarkForm.createNewContact}</SelectItem>
                           {contacts.map(c => <SelectItem key={c.id} value={String(c.id)}>{`${c.firstName} ${c.lastName}`}</SelectItem>)}
                         </SelectContent>
                       </Select>
@@ -272,19 +272,19 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                   {contactId === 'new' && (
                     <>
                       <FormField control={form.control} name="contactFirstName" render={({ field }) => (
-                        <FormItem><FormLabel>New Contact First Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactFirstName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="contactLastName" render={({ field }) => (
-                        <FormItem><FormLabel>New Contact Last Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactLastName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                        <FormItem><FormLabel>New Contact Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactEmail}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="agentId" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Agent for New Contact</FormLabel>
+                            <FormLabel>{dictionary.trademarkForm.agentForNewContact}</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select agent..." /></SelectTrigger></FormControl>
+                                <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.agentPlaceholder} /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {agents.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
                                 </SelectContent>
@@ -302,7 +302,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : 'Create Trademark'}
+          ) : dictionary.trademarkForm.submitButton }
         </Button>
       </form>
     </Form>

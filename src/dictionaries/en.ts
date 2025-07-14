@@ -203,6 +203,38 @@ export const en = {
         opened: 'Opened',
       }
     }
+  },
+  trademarkForm: {
+    title: 'Create New Trademark',
+    description: 'Fill in the details for the new trademark.',
+    trademarkDetailsTitle: 'Trademark Details',
+    denomination: 'Denomination',
+    certificate: 'Certificate',
+    class: 'Class',
+    type: 'Type',
+    expirationDate: 'Expiration Date',
+    pickDate: 'Pick a date',
+    products: 'Products',
+    productsDescription: 'Optional: list of products or services.',
+    ownerAndContactTitle: 'Owner & Contact',
+    owner: 'Owner',
+    contactAssociationDescription: 'This contact will be associated with the owner.',
+    ownerPlaceholder: 'Select or create an owner...',
+    createNewOwner: '-- Create New Owner --',
+    newOwnerName: 'New Owner Name',
+    newOwnerCountry: 'New Owner Country',
+    countryPlaceholder: 'Select country...',
+    contact: 'Contact',
+    contactPlaceholder: 'Select or create a contact...',
+    createNewContact: '-- Create New Contact --',
+    newContactFirstName: 'New Contact First Name',
+    newContactLastName: 'New Contact Last Name',
+    newContactEmail: 'New Contact Email',
+    agentForNewContact: 'Agent for New Contact',
+    agentPlaceholder: 'Select agent...',
+    submitButton: 'Create Trademark',
+    errorTitle: "Error",
+    errorDescription: "Please correct the errors in the form.",
   }
 };
 
