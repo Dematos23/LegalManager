@@ -266,22 +266,22 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>{dictionary.dashboard.filtersTitle}</CardTitle>
+          <CardTitle>{dictionary.tracking.filtersTitle}</CardTitle>
           <CardDescription>{dictionary.tracking.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input 
-                    placeholder="Search by campaign name..."
+                    placeholder={dictionary.tracking.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <Select value={templateFilter} onValueChange={setTemplateFilter}>
                     <SelectTrigger>
-                        <SelectValue placeholder="Filter by template..." />
+                        <SelectValue placeholder={dictionary.tracking.templateFilterPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Templates</SelectItem>
+                        <SelectItem value="all">{dictionary.tracking.allTemplates}</SelectItem>
                         {templates.map(template => (
                             <SelectItem key={template.id} value={String(template.id)}>{template.name}</SelectItem>
                         ))}
@@ -308,7 +308,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
                             format(dateRange.from, "LLL dd, y")
                         )
                         ) : (
-                        <span>Pick a date range</span>
+                        <span>{dictionary.tracking.dateRangePlaceholder}</span>
                         )}
                     </Button>
                     </PopoverTrigger>
@@ -327,14 +327,14 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
              <div className="flex justify-end">
                 <Button variant="ghost" onClick={clearFilters}>
                     <X className="mr-2 h-4 w-4" />
-                    Clear Filters
+                    {dictionary.tracking.clearFilters}
                 </Button>
             </div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Campaign List</CardTitle>
+          <CardTitle>{dictionary.tracking.campaignListTitle}</CardTitle>
         </CardHeader>
         <CardContent>
             <Table>

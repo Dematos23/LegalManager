@@ -200,6 +200,13 @@ export const es: Dictionary = {
   tracking: {
     title: 'Seguimiento de Campañas',
     description: 'Vea el estado y el historial de sus campañas de correo electrónico.',
+    filtersTitle: 'Filtros',
+    searchPlaceholder: 'Buscar por nombre de campaña...',
+    templateFilterPlaceholder: 'Filtrar por plantilla...',
+    dateRangePlaceholder: 'Seleccione un rango de fechas',
+    allTemplates: 'Todas las Plantillas',
+    clearFilters: 'Limpiar Filtros',
+    campaignListTitle: 'Lista de Campañas',
     noCampaigns: 'Aún no se han enviado campañas.',
     table: {
       campaignName: 'Nombre de Campaña',

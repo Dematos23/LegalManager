@@ -198,6 +198,13 @@ export const en = {
   tracking: {
     title: 'Campaign Tracking',
     description: 'View the status and history of your email campaigns.',
+    filtersTitle: 'Filters',
+    searchPlaceholder: 'Search by campaign name...',
+    templateFilterPlaceholder: 'Filter by template...',
+    dateRangePlaceholder: 'Pick a date range',
+    allTemplates: 'All Templates',
+    clearFilters: 'Clear Filters',
+    campaignListTitle: 'Campaign List',
     noCampaigns: 'No campaigns have been sent yet.',
     table: {
       campaignName: 'Campaign Name',
