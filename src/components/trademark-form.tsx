@@ -40,7 +40,10 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { TrademarkType, Country } from '@prisma/client';
-import type { Agent, Owner, Contact, Trademark } from '@/types';
+import type { Agent, Owner, Contact as PrismaContact, Trademark } from '@/types';
+
+// The page passes contacts with agents included
+type ContactWithAgent = PrismaContact & { agent: Agent };
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
@@ -91,7 +94,7 @@ interface TrademarkFormProps {
   trademark?: Trademark;
   agents: Agent[];
   owners: Owner[];
-  contacts: Contact[];
+  contacts: ContactWithAgent[];
 }
 
 export function TrademarkForm({ trademark, agents, owners, contacts }: TrademarkFormProps) {
@@ -263,7 +266,11 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                         <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.contactPlaceholder} /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="new">{dictionary.trademarkForm.createNewContact}</SelectItem>
-                          {contacts.map(c => <SelectItem key={c.id} value={String(c.id)}>{`${c.firstName} ${c.lastName}`}</SelectItem>)}
+                          {contacts.map(c => (
+                              <SelectItem key={c.id} value={String(c.id)}>
+                                {`${c.firstName} ${c.lastName} (${c.agent.name})`}
+                              </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />

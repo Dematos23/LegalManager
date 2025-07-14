@@ -1,6 +1,7 @@
 
 import { TrademarkForm } from '@/components/trademark-form';
-import { getAgents, getContacts, getOwners } from '@/app/trademarks/actions';
+import { getAgents, getOwners } from '@/app/trademarks/actions';
+import { getContacts } from '@/lib/data';
 
 export default async function NewTrademarkPage() {
   const [agents, owners, contacts] = await Promise.all([
