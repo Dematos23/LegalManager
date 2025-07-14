@@ -3,7 +3,7 @@ import { Dictionary } from './en';
 
 export const es: Dictionary = {
   sidebar: {
-    dashboard: 'Tablero',
+    dashboard: 'Marcas',
     import: 'Importar',
     templates: 'Plantillas',
     tracking: 'Seguimiento',

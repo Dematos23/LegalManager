@@ -1,7 +1,7 @@
 
 export const en = {
   sidebar: {
-    dashboard: 'Dashboard',
+    dashboard: 'Trademarks',
     import: 'Import',
     templates: 'Templates',
     tracking: 'Tracking',
