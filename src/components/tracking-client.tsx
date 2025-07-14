@@ -22,7 +22,7 @@ import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button, buttonVariants } from './ui/button';
-import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2 } from 'lucide-react';
+import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2, MoreHorizontal } from 'lucide-react';
 import { Badge } from './ui/badge';
 import React, { useState, useMemo, useTransition } from 'react';
 import { Input } from './ui/input';
@@ -52,13 +52,19 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Label } from './ui/label';
 
 type TrackingClientProps = {
   campaigns: CampaignWithDetails[];
 };
 
-function DeleteCampaignDialog({ campaign, onCampaignDeleted }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void }) {
+function DeleteCampaignDialog({ campaign, onCampaignDeleted, children }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, children: React.ReactNode }) {
     const { dictionary } = useLanguage();
     const { toast } = useToast();
     const [isDeleting, startDeleteTransition] = useTransition();
@@ -89,10 +95,7 @@ function DeleteCampaignDialog({ campaign, onCampaignDeleted }: { campaign: Campa
     return (
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
             <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                   <Trash2 className="mr-2 h-4 w-4" />
-                   {dictionary.tracking.table.delete}
-                </Button>
+                {children}
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -216,11 +219,26 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
                         {dictionary.tracking.table.view}
                     </Link>
                 </Button>
-                 <DeleteCampaignDialog campaign={row.original} onCampaignDeleted={handleCampaignDeleted} />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                         <DeleteCampaignDialog campaign={row.original} onCampaignDeleted={handleCampaignDeleted}>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {dictionary.tracking.table.delete}
+                            </DropdownMenuItem>
+                         </DeleteCampaignDialog>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         ),
     }
-  ], [dictionary, formatDate]);
+  ], [dictionary, formatDate, handleCampaignDeleted]);
 
   const table = useReactTable({
     data: filteredCampaigns,
