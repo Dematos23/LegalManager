@@ -160,10 +160,10 @@ const QuillEditor = React.forwardRef<
       isInitialized.current = true;
 
       // Set initial content
-      if (value) {
-        const delta = quill.clipboard.convert({ html: value });
-        quill.setContents(delta, "silent");
-      }
+      // if (value) {
+      //   const delta = quill.clipboard.convert({ html: value });
+      //   quill.setContents(delta, "silent");
+      // }
       
       quill.on("text-change", (delta, oldDelta, source) => {
         if (source === "user") {
@@ -174,12 +174,13 @@ const QuillEditor = React.forwardRef<
     }
 
     // Cleanup
-    return () => {
-        if (quillInstanceRef.current) {
-            quillInstanceRef.current.off('text-change');
-        }
-    };
-  }, []); 
+    // return () => {
+    //     if (quillInstanceRef.current) {
+    //         quillInstanceRef.current.off('text-change');
+    //     }
+    // };
+  // }, []); 
+  }, [value]); 
 
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
