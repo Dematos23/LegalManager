@@ -27,6 +27,7 @@ export const en = {
     allYears: 'All Years',
     clearFilters: 'Clear Filters',
     searchPlaceholder: 'Search by trademark, owner, contact, agent...',
+    newTrademarkButton: 'New Trademark',
     table: {
       trademark: 'Denomination',
       owner: 'Owner',

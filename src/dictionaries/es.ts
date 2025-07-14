@@ -29,6 +29,7 @@ export const es: Dictionary = {
     allYears: 'Todos los Años',
     clearFilters: 'Limpiar Filtros',
     searchPlaceholder: 'Buscar por marca, titular, contacto, agente...',
+    newTrademarkButton: 'Nueva Marca',
     table: {
       trademark: 'Denominación',
       owner: 'Titular',

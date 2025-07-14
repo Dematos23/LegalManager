@@ -6,7 +6,7 @@ import { TrademarkTable } from "@/components/trademark-table";
 import { useLanguage } from "@/context/language-context";
 import type { TrademarkWithDetails } from "@/types";
 import { Button } from '@/components/ui/button';
-import { Mail, MoreHorizontal, ArrowUpDown } from 'lucide-react';
+import { Mail, MoreHorizontal, ArrowUpDown, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     ColumnDef,
@@ -274,6 +274,12 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         <h1 className="text-3xl font-bold tracking-tight text-primary">
           {dictionary.dashboard.title}
         </h1>
+        <Link href="/trademarks/new">
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {dictionary.dashboard.newTrademarkButton}
+          </Button>
+        </Link>
       </div>
        {trademarks.length === 0 ? (
          <p className="text-muted-foreground">
