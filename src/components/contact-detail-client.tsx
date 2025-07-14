@@ -5,8 +5,7 @@ import type { ContactWithDetails } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Briefcase, Building, Globe, Network } from 'lucide-react';
+import { Mail, Briefcase, Building, Globe, Network, Contact as ContactIcon } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +16,6 @@ type ContactDetailClientProps = {
 
 export function ContactDetailClient({ contact }: ContactDetailClientProps) {
   const { dictionary } = useLanguage();
-  const initials = `${contact.firstName[0]}${contact.lastName[0]}`.toUpperCase();
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -32,10 +30,9 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
         <Card className="md:col-span-1">
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={`https://placehold.co/100x100.png`} data-ai-hint="profile person" />
-                <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-              </Avatar>
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                  <ContactIcon className="h-8 w-8 text-muted-foreground" />
+              </div>
               <div>
                 <CardTitle className="text-2xl">{`${contact.firstName} ${contact.lastName}`}</CardTitle>
                 <CardDescription>{dictionary.contact.contactDetails}</CardDescription>
