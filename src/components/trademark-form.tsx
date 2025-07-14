@@ -35,11 +35,12 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { useLanguage } from '@/context/language-context';
-import type { Agent, Owner, Contact, Trademark, Country, TrademarkType } from '@/types';
 import { createTrademark } from '@/app/trademarks/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { TrademarkType, Country } from '@prisma/client';
+import type { Agent, Owner, Contact, Trademark } from '@/types';
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
