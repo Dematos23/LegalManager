@@ -48,13 +48,28 @@ interface SendCampaignByContactPayload {
     contactIds: number[];
 }
 
-type SendCampaignPayload = SendCampaignByTrademarkPayload | SendCampaignByContactPayload;
+interface SendCustomEmailPayload {
+    sendMode: 'custom';
+    subject: string;
+    body: string;
+    contactIds: number[];
+    campaignName?: string;
+    campaignId?: string;
+}
 
-export async function sendCampaignAction(payload: SendCampaignPayload) {
-    const { templateId, campaignName } = payload;
+
+type SendCampaignPayload = (SendCampaignByTrademarkPayload | SendCampaignByContactPayload) & { campaignId?: string };
+
+
+export async function sendCampaignAction(payload: SendCampaignPayload | SendCustomEmailPayload) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
+        if (payload.sendMode === 'custom') {
+            return handleSendCustomEmail(payload);
+        }
+
+        const { templateId, campaignName } = payload;
         // --- Basic Validation ---
         if (!campaignName || campaignName.trim().length < 10) {
             return { error: 'Campaign name must be at least 10 characters long.' };
@@ -80,7 +95,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
                 return { error: "This template is for a single trademark, but no specific trademark was selected. It must be sent by trademark." };
             }
         }
-
+        
         const campaign = await prisma.campaign.create({
             data: { name: campaignName, emailTemplateId: template.id },
         });
@@ -190,6 +205,79 @@ export async function sendCampaignAction(payload: SendCampaignPayload) {
         return { error: 'An unexpected error occurred while sending the campaign.' };
     }
 }
+
+
+async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    let campaignId: number;
+    let campaignName: string;
+
+    const contact = await prisma.contact.findUnique({
+        where: { id: payload.contactIds[0] },
+        include: {
+            agent: true,
+            owners: { include: { trademarks: { orderBy: { expiration: 'asc' } } } }
+        }
+    });
+    if (!contact) {
+        return { error: 'Contact not found.' };
+    }
+
+    if (payload.campaignId && payload.campaignId !== 'new') {
+        const existingCampaign = await prisma.campaign.findUnique({ where: { id: Number(payload.campaignId) } });
+        if (!existingCampaign) return { error: 'Selected campaign not found.' };
+        campaignId = existingCampaign.id;
+        campaignName = existingCampaign.name;
+    } else {
+        if (!payload.campaignName) {
+            return { error: 'Campaign name is required for new campaigns.' };
+        }
+        campaignName = payload.campaignName;
+        const newCampaign = await prisma.campaign.create({
+            data: {
+                name: campaignName,
+                // Custom emails don't have a persistent template
+            }
+        });
+        campaignId = newCampaign.id;
+    }
+
+    const allOwners = contact.owners;
+    const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+    const context = createHandlebarsContext(contact, allOwners, allTrademarks);
+
+    const emailSubject = compileAndRender(payload.subject, context);
+    const emailBody = compileAndRender(payload.body, context);
+
+    const { data, error } = await resend.emails.send({
+        from: 'LegalIntel CRM <notifications@updates.artecasa.com.pe>',
+        to: [contact.email],
+        subject: emailSubject,
+        html: emailBody,
+        tags: [
+            { name: 'campaign_id', value: String(campaignId) },
+            { name: 'email_type', value: 'custom' },
+        ]
+    });
+
+    if (error || !data) {
+        console.error(`Failed to send custom email to ${contact.email}:`, error);
+        return { error: 'Failed to send custom email.' };
+    }
+
+    await prisma.sentEmail.create({
+        data: {
+            resendId: data.id,
+            campaignId: campaignId,
+            contactId: contact.id,
+        },
+    });
+
+    revalidatePath('/tracking');
+    return { success: `Email successfully sent to ${contact.email} as part of campaign "${campaignName}".` };
+}
+
 
 type FullOwner = Owner & { trademarks: Trademark[] };
 type FullContact = Contact & { agent: Agent };
