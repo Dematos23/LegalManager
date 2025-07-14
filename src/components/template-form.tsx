@@ -136,10 +136,9 @@ const QuillEditor = React.forwardRef<
       const quill = quillInstanceRef.current;
       if (quill) {
         quill.focus();
-        let range = quill.getSelection();
-        let index = range ? range.index : quill.getLength(); // Insert at cursor or at the end
-        quill.clipboard.dangerouslyPasteHTML(index, html, "user");
-        quill.setSelection(index + html.length, 0);
+        const range = quill.getSelection(true); // Get cursor position
+        quill.clipboard.dangerouslyPasteHTML(range.index, html, "user");
+        quill.setSelection(range.index + 1, 0); // Move cursor after the inserted content
       }
     },
   }));
@@ -157,6 +156,12 @@ const QuillEditor = React.forwardRef<
 
       quillInstanceRef.current = quill;
       isInitialized.current = true;
+
+      // Set initial content
+      if (value) {
+        const delta = quill.clipboard.convert({ html: value });
+        quill.setContents(delta, "silent");
+      }
       
       quill.on("text-change", (delta, oldDelta, source) => {
         if (source === "user") {
@@ -165,15 +170,20 @@ const QuillEditor = React.forwardRef<
         }
       });
     }
-  }, [onChange]); 
+
+    // Cleanup
+    return () => {
+        if (quillInstanceRef.current) {
+            quillInstanceRef.current.off('text-change');
+        }
+    };
+  }, []); 
 
   React.useEffect(() => {
     const quill = quillInstanceRef.current;
-    if (quill) {
-        if (quill.root.innerHTML !== value) {
-            const delta = quill.clipboard.convert({ html: value || "" });
-            quill.setContents(delta, "silent");
-        }
+    if (quill && quill.root.innerHTML !== value && !quill.hasFocus()) {
+        const delta = quill.clipboard.convert({ html: value || "" });
+        quill.setContents(delta, "silent");
     }
   }, [value]);
 
@@ -745,3 +755,4 @@ export function TemplateForm({ template }: TemplateFormProps) {
   );
 }
 
+    
