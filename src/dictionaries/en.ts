@@ -73,6 +73,18 @@ export const en = {
     errorReason: 'Error',
     errorValue: 'Value',
     devErrorSectionTitle: 'For Developers: View Raw Error Data',
+    importErrors: {
+      "Required": "Field is required and cannot be empty.",
+      "Invalid number": "Value must be a valid number.",
+      "Number must be an integer": "Value must be a whole number.",
+      "Number must be greater than or equal to 1": "Class must be at least 1.",
+      "Number must be less than or equal to 45": "Class must be 45 or less.",
+      "Invalid enum value": "Invalid value. Please check allowed options.",
+      "Invalid type": "Invalid trademark type. Must be NOMINATIVE, FIGURATIVE, or MIXED.",
+      "Invalid date": "Date format is invalid.",
+      "Agent required for contact": "An agent must be assigned to create a contact.",
+      "Invalid country": "The provided country is not valid."
+    }
   },
   templates: {
     title: 'Email Templates',

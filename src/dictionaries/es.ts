@@ -75,6 +75,18 @@ export const es: Dictionary = {
     errorReason: 'Error',
     errorValue: 'Valor',
     devErrorSectionTitle: 'Para Desarrolladores: Ver Datos de Error sin Procesar',
+    importErrors: {
+      "Required": "El campo es obligatorio y no puede estar vacío.",
+      "Invalid number": "El valor debe ser un número válido.",
+      "Number must be an integer": "El valor debe ser un número entero.",
+      "Number must be greater than or equal to 1": "La clase debe ser al menos 1.",
+      "Number must be less than or equal to 45": "La clase debe ser 45 o menos.",
+      "Invalid enum value": "Valor inválido. Por favor, revise las opciones permitidas.",
+      "Invalid type": "Tipo de marca inválido. Debe ser NOMINATIVE, FIGURATIVE, o MIXED.",
+      "Invalid date": "El formato de la fecha es inválido.",
+      "Agent required for contact": "Se debe asignar un agente para crear un contacto.",
+      "Invalid country": "El país proporcionado no es válido."
+    }
   },
   templates: {
     title: 'Plantillas de Correo',

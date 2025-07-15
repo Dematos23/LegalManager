@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, FileSpreadsheet, Loader2, Copy, ShieldCheck, ChevronDown, Code } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { importDataAction, verifyDataAction } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -222,6 +222,17 @@ export default function ImportPage() {
       }
   }
 
+  const translateErrorMessage = useCallback((message: string): string => {
+    const errorMap = dictionary.import.importErrors;
+    for (const [key, value] of Object.entries(errorMap)) {
+      if (message.includes(key)) {
+        return value;
+      }
+    }
+    // Fallback for untranslated messages
+    return message;
+  }, [dictionary.import.importErrors]);
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
@@ -318,7 +329,7 @@ export default function ImportPage() {
                                                     <TableRow key={`${errorItem.row}-${field}-${index}`}>
                                                         <TableCell>{errorItem.row}</TableCell>
                                                         <TableCell>{MODEL_TO_FRIENDLY_NAME[field] || field}</TableCell>
-                                                        <TableCell>{message}</TableCell>
+                                                        <TableCell>{translateErrorMessage(message)}</TableCell>
                                                         <TableCell><code className="text-xs bg-red-100 p-1 rounded-sm">{String(originalValue)}</code></TableCell>
                                                     </TableRow>
                                                 )

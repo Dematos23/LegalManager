@@ -8,31 +8,31 @@ import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
-  denomination: z.string().min(1, "Denomination is required."),
-  class: z.coerce.number().int().min(1, "Class must be between 1 and 45.").max(45, "Class must be between 1 and 45."),
+  denomination: z.string().min(1),
+  class: z.coerce.number().int().min(1).max(45),
   type: z.preprocess(
     (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
     z.nativeEnum(TrademarkType)
   ).optional().nullable(),
-  certificate: z.coerce.string().min(1, "Certificate is required."),
-  expiration: z.coerce.date({ required_error: 'Expiration date is required and must be a valid date format.' }),
+  certificate: z.coerce.string().min(1),
+  expiration: z.coerce.date(),
   products: z.string().optional().nullable(),
 });
 
 const OwnerSchema = z.object({
-  name: z.string().min(1, "Owner name is required."),
-  country: z.nativeEnum(Country, { errorMap: () => ({ message: 'A valid country is required.' }) }),
+  name: z.string().min(1),
+  country: z.nativeEnum(Country),
 });
 
 const ContactSchema = z.object({
-  firstName: z.string().min(1, 'First name is required.'),
-  lastName: z.string().min(1, 'Last name is required.'),
-  email: z.string().trim().email("A valid email is required."),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().trim().email(),
 });
 
 const AgentSchema = z.object({
-  name: z.string().min(1, "Agent name is required."),
-  country: z.nativeEnum(Country, { errorMap: () => ({ message: 'A valid country is required for the agent.' }) }),
+  name: z.string().min(1),
+  country: z.nativeEnum(Country),
   area: z.string().optional().nullable(),
 });
 
@@ -80,7 +80,6 @@ async function parseAndValidateRows(formData: FormData) {
         return value;
     };
     
-    // Create a comprehensive schema for one-time validation
     const RowSchema = z.object({
         agentName: z.string().optional().nullable(),
         agentCountry: z.string().optional().nullable(),
@@ -88,23 +87,23 @@ async function parseAndValidateRows(formData: FormData) {
         contactFirstName: z.string().optional().nullable(),
         contactLastName: z.string().optional().nullable(),
         contactEmail: z.string().email().optional().nullable(),
-        ownerName: z.string().min(1, "Owner name is required."),
-        ownerCountry: z.string().min(1, "Owner country is required."),
-        trademarkDenomination: z.string().min(1, "Denomination is required."),
-        trademarkClass: z.coerce.number().int().min(1, "Class must be between 1 and 45.").max(45, "Class must be between 1 and 45."),
+        ownerName: z.string().min(1, "Required"),
+        ownerCountry: z.string().min(1, "Required"),
+        trademarkDenomination: z.string().min(1, "Required"),
+        trademarkClass: z.coerce.number({invalid_type_error: "Invalid number"}).int().min(1).max(45),
         trademarkType: z.preprocess(
             (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim().toUpperCase() : null),
-            z.nativeEnum(TrademarkType).nullable()
+            z.nativeEnum(TrademarkType, {invalid_type_error: "Invalid type"}).nullable()
         ),
-        trademarkCertificate: z.coerce.string().min(1, "Certificate is required."),
-        trademarkExpiration: z.coerce.date({ required_error: 'Expiration date is required and must be a valid date format.' }),
+        trademarkCertificate: z.coerce.string().min(1, "Required"),
+        trademarkExpiration: z.coerce.date({required_error: "Required", invalid_type_error: "Invalid date"}),
         trademarkProducts: z.string().optional().nullable(),
     }).superRefine((data, ctx) => {
         if (data.contactEmail && !data.agentName) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ['contactEmail'],
-                message: 'Contact email provided without a mapped Agent. An agent is required to create a contact.',
+                message: 'Agent required for contact',
             });
         }
         if (data.agentName) {
@@ -113,7 +112,7 @@ async function parseAndValidateRows(formData: FormData) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ['agentCountry'],
-                    message: `Invalid or missing country for agent. Got: '${agentCountry}'`,
+                    message: "Invalid country",
                  });
              }
         }
@@ -121,7 +120,7 @@ async function parseAndValidateRows(formData: FormData) {
              ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ['ownerCountry'],
-                message: `Invalid country for owner. Got: '${data.ownerCountry}'`,
+                message: "Invalid country",
              });
         }
     });
@@ -154,9 +153,9 @@ async function parseAndValidateRows(formData: FormData) {
             results.errors++;
             results.errorDetails.push({ 
                 row: index + 2, 
-                data: JSON.parse(JSON.stringify(row)), // for raw view
-                fieldErrors: validationResult.error.flatten().fieldErrors, // for user-friendly view
-                formErrors: validationResult.error.flatten().formErrors, // for user-friendly view
+                data: JSON.parse(JSON.stringify(row)),
+                fieldErrors: validationResult.error.flatten().fieldErrors,
+                formErrors: validationResult.error.flatten().formErrors,
             });
         }
     }
@@ -298,7 +297,7 @@ export async function importDataAction(formData: FormData) {
               class: getValue('trademark.class'),
               type: getValue('trademark.type'),
               certificate: String(getValue('trademark.certificate')),
-              expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
+              expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : new Date(expirationValue),
               products: getValue('trademark.products'),
           });
 
