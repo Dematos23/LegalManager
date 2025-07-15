@@ -68,6 +68,11 @@ export const en = {
     copyErrors: 'Copy Errors',
     errorsCopiedTitle: 'Copied',
     errorsCopiedDescription: 'Error details have been copied to your clipboard.',
+    errorRow: 'Row',
+    errorField: 'Field',
+    errorReason: 'Error',
+    errorValue: 'Value',
+    devErrorSectionTitle: 'For Developers: View Raw Error Data',
   },
   templates: {
     title: 'Email Templates',

@@ -301,10 +301,10 @@ export default function ImportPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Row</TableHead>
-                                        <TableHead>Field</TableHead>
-                                        <TableHead>Error</TableHead>
-                                        <TableHead>Value</TableHead>
+                                        <TableHead>{dictionary.import.errorRow}</TableHead>
+                                        <TableHead>{dictionary.import.errorField}</TableHead>
+                                        <TableHead>{dictionary.import.errorReason}</TableHead>
+                                        <TableHead>{dictionary.import.errorValue}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -330,7 +330,7 @@ export default function ImportPage() {
                             <Collapsible>
                                 <CollapsibleTrigger asChild>
                                     <Button variant="ghost" className="text-xs w-full">
-                                        For Developers: View Raw Error Data
+                                        {dictionary.import.devErrorSectionTitle}
                                         <ChevronDown className="h-4 w-4" />
                                     </Button>
                                 </CollapsibleTrigger>

@@ -70,6 +70,11 @@ export const es: Dictionary = {
     copyErrors: 'Copiar Errores',
     errorsCopiedTitle: 'Copiado',
     errorsCopiedDescription: 'Los detalles de los errores han sido copiados a su portapapeles.',
+    errorRow: 'Fila',
+    errorField: 'Campo',
+    errorReason: 'Error',
+    errorValue: 'Valor',
+    devErrorSectionTitle: 'Para Desarrolladores: Ver Datos de Error sin Procesar',
   },
   templates: {
     title: 'Plantillas de Correo',
