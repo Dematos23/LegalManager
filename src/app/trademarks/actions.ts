@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
-  class: z.coerce.number().int().min(1).max(45),
+  class: z.coerce.number().int().min(1, 'Class must be between 1 and 45.').max(45, 'Class must be between 1 and 45.'),
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1, 'Certificate is required.'),
   expiration: z.coerce.date({ required_error: 'Expiration date is required.' }),
