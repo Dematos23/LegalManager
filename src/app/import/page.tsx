@@ -7,18 +7,33 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, FileSpreadsheet, Loader2, Copy, ShieldCheck } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, Loader2, Copy, ShieldCheck, ChevronDown, Code } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import * as XLSX from 'xlsx';
 import { importDataAction, verifyDataAction } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useLanguage } from '@/context/language-context';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+
+type FieldError = {
+    fieldErrors: Record<string, string[] | undefined>;
+    formErrors: string[];
+}
 
 type VerificationResult = {
     status: 'success' | 'error';
     message: string;
-    errorDetails?: any[];
+    errorDetails?: ({
+        row: number;
+        data: any;
+    } & FieldError)[];
 };
+
+type ImportResult = {
+    message: string;
+    errorDetails?: any[];
+}
+
 
 const MAPPABLE_FIELD_GROUPS = [
   {
@@ -64,6 +79,23 @@ const MAPPABLE_FIELDS = MAPPABLE_FIELD_GROUPS.flatMap(group =>
   }))
 );
 
+const MODEL_TO_FRIENDLY_NAME: Record<string, string> = {
+    'agentName': 'Agent Name',
+    'agentCountry': 'Agent Country',
+    'agentArea': 'Agent Area',
+    'contactFirstName': 'Contact First Name',
+    'contactLastName': 'Contact Last Name',
+    'contactEmail': 'Contact Email',
+    'ownerName': 'Owner Name',
+    'ownerCountry': 'Owner Country',
+    'trademarkDenomination': 'Denomination',
+    'trademarkClass': 'Class',
+    'trademarkType': 'Type',
+    'trademarkCertificate': 'Certificate',
+    'trademarkExpiration': 'Expiration Date',
+    'trademarkProducts': 'Products',
+};
+
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -75,7 +107,7 @@ export default function ImportPage() {
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
 
   const [isImporting, startImportTransition] = useTransition();
-  const [importResult, setImportResult] = useState<{ message: string; errorDetails?: any[] } | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
 
   const { toast } = useToast();
   const { dictionary } = useLanguage();
@@ -103,8 +135,12 @@ export default function ImportPage() {
         setHeaders(fileHeaders);
         const initialMappings: Record<string, string> = {};
         fileHeaders.forEach(header => {
-            const modelFieldEquivalent = header.replace('_', '.');
-            const foundField = MAPPABLE_FIELDS.find(field => field.value === modelFieldEquivalent);
+            const modelFieldEquivalent = header.replace(/[\s_]+/g, '.').toLowerCase()
+                .replace('trademark.', '') 
+                .replace(/([A-Z])/g, '.$1')
+                .toLowerCase();
+            
+            const foundField = MAPPABLE_FIELDS.find(field => field.value.toLowerCase().includes(modelFieldEquivalent));
             
             if (foundField) {
                 initialMappings[header] = foundField.value;
@@ -141,7 +177,7 @@ export default function ImportPage() {
       formData.append('file', file);
       formData.append('mappings', JSON.stringify(mappings));
       
-      const result = await verifyDataAction(formData);
+      const result = await verifyDataAction(formData) as VerificationResult;
 
       if (result.error) {
         toast({ title: "Verification Failed", description: result.error, variant: "destructive" });
@@ -178,6 +214,13 @@ export default function ImportPage() {
   };
 
   const isBusy = isParsing || isVerifying || isImporting;
+
+  const reverseMappings: Record<string, string> = {};
+  for (const header in mappings) {
+      if (mappings[header] && mappings[header] !== 'ignore') {
+          reverseMappings[mappings[header]] = header;
+      }
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -253,18 +296,57 @@ export default function ImportPage() {
                 <AlertTitle>{importResult ? dictionary.import.importResultTitle : dictionary.import.verificationResultTitle}</AlertTitle>
                 <AlertDescription>
                    {importResult?.message || verificationResult?.message}
-                   {(importResult?.errorDetails || verificationResult?.errorDetails) && (
+                   {(verificationResult?.errorDetails) && (
                        <div className="space-y-2 mt-4">
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => {
-                                const errors = importResult?.errorDetails || verificationResult?.errorDetails;
-                                navigator.clipboard.writeText(JSON.stringify(errors, null, 2));
-                                toast({ title: dictionary.import.errorsCopiedTitle, description: dictionary.import.errorsCopiedDescription });
-                            }}>
-                            <Copy className="mr-2 h-4 w-4" />{dictionary.import.copyErrors}
-                          </Button>
-                          <pre className="w-full overflow-x-auto rounded-md bg-slate-950 p-4 max-h-60">
-                              <code className="text-white">{JSON.stringify(importResult?.errorDetails || verificationResult?.errorDetails, null, 2)}</code>
-                          </pre>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Row</TableHead>
+                                        <TableHead>Field</TableHead>
+                                        <TableHead>Error</TableHead>
+                                        <TableHead>Value</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {verificationResult.errorDetails.flatMap(errorItem => 
+                                        Object.entries(errorItem.fieldErrors).map(([field, messages]) => 
+                                            messages?.map((message, index) => {
+                                                const originalHeader = reverseMappings[field.replace(/([A-Z])/g, (match, p1) => `.${p1.toLowerCase()}`)] || field;
+                                                const originalValue = errorItem.data[originalHeader];
+
+                                                return (
+                                                    <TableRow key={`${errorItem.row}-${field}-${index}`}>
+                                                        <TableCell>{errorItem.row}</TableCell>
+                                                        <TableCell>{MODEL_TO_FRIENDLY_NAME[field] || field}</TableCell>
+                                                        <TableCell>{message}</TableCell>
+                                                        <TableCell><code className="text-xs bg-red-100 p-1 rounded-sm">{String(originalValue)}</code></TableCell>
+                                                    </TableRow>
+                                                )
+                                            })
+                                        )
+                                    )}
+                                </TableBody>
+                            </Table>
+                            <Collapsible>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" className="text-xs w-full">
+                                        For Developers: View Raw Error Data
+                                        <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => {
+                                        const errors = importResult?.errorDetails || verificationResult?.errorDetails;
+                                        navigator.clipboard.writeText(JSON.stringify(errors, null, 2));
+                                        toast({ title: dictionary.import.errorsCopiedTitle, description: dictionary.import.errorsCopiedDescription });
+                                    }}>
+                                        <Copy className="mr-2 h-4 w-4" />{dictionary.import.copyErrors}
+                                    </Button>
+                                    <pre className="w-full overflow-x-auto rounded-md bg-slate-950 p-4 max-h-60 mt-2">
+                                        <code className="text-white">{JSON.stringify(importResult?.errorDetails || verificationResult?.errorDetails, null, 2)}</code>
+                                    </pre>
+                                </CollapsibleContent>
+                            </Collapsible>
                        </div>
                    )}
                 </AlertDescription>

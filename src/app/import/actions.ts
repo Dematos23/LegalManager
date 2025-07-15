@@ -79,54 +79,85 @@ async function parseAndValidateRows(formData: FormData) {
         }
         return value;
     };
+    
+    // Create a comprehensive schema for one-time validation
+    const RowSchema = z.object({
+        agentName: z.string().optional().nullable(),
+        agentCountry: z.string().optional().nullable(),
+        agentArea: z.string().optional().nullable(),
+        contactFirstName: z.string().optional().nullable(),
+        contactLastName: z.string().optional().nullable(),
+        contactEmail: z.string().email().optional().nullable(),
+        ownerName: z.string().min(1, "Owner name is required."),
+        ownerCountry: z.string().min(1, "Owner country is required."),
+        trademarkDenomination: z.string().min(1, "Denomination is required."),
+        trademarkClass: z.coerce.number().int().min(1, "Class must be between 1 and 45.").max(45, "Class must be between 1 and 45."),
+        trademarkType: z.preprocess(
+            (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim().toUpperCase() : null),
+            z.nativeEnum(TrademarkType).nullable()
+        ),
+        trademarkCertificate: z.coerce.string().min(1, "Certificate is required."),
+        trademarkExpiration: z.coerce.date({ required_error: 'Expiration date is required and must be a valid date format.' }),
+        trademarkProducts: z.string().optional().nullable(),
+    }).superRefine((data, ctx) => {
+        if (data.contactEmail && !data.agentName) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['contactEmail'],
+                message: 'Contact email provided without a mapped Agent. An agent is required to create a contact.',
+            });
+        }
+        if (data.agentName) {
+             const agentCountry = data.agentCountry || data.ownerCountry;
+             if (!agentCountry || Object.values(Country).indexOf(getCountryEnumValue(agentCountry)) === -1) {
+                 ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['agentCountry'],
+                    message: `Invalid or missing country for agent. Got: '${agentCountry}'`,
+                 });
+             }
+        }
+        if (Object.values(Country).indexOf(getCountryEnumValue(data.ownerCountry)) === -1) {
+             ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['ownerCountry'],
+                message: `Invalid country for owner. Got: '${data.ownerCountry}'`,
+             });
+        }
+    });
+
 
     for (const [index, row] of jsonData.entries()) {
-        try {
-            const agentName = getValue(row, 'agent.name');
-            const ownerCountryValue = getValue(row, 'owner.country');
+        const expirationValue = getValue(row, 'trademark.expiration');
+        const dataToValidate = {
+            agentName: getValue(row, 'agent.name'),
+            agentCountry: getValue(row, 'agent.country'),
+            agentArea: getValue(row, 'agent.area'),
+            contactFirstName: getValue(row, 'contact.firstName'),
+            contactLastName: getValue(row, 'contact.lastName'),
+            contactEmail: getValue(row, 'contact.email'),
+            ownerName: getValue(row, 'owner.name'),
+            ownerCountry: getValue(row, 'owner.country'),
+            trademarkDenomination: getValue(row, 'trademark.denomination'),
+            trademarkClass: getValue(row, 'trademark.class'),
+            trademarkType: getValue(row, 'trademark.type'),
+            trademarkCertificate: getValue(row, 'trademark.certificate'),
+            trademarkExpiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
+            trademarkProducts: getValue(row, 'trademark.products'),
+        };
 
-            if (agentName) {
-                const agentCountryForDb = getValue(row, 'agent.country') || ownerCountryValue;
-                AgentSchema.parse({
-                    name: agentName,
-                    country: getCountryEnumValue(agentCountryForDb),
-                    area: getValue(row, 'agent.area'),
-                });
-            }
+        const validationResult = RowSchema.safeParse(dataToValidate);
 
-            const contactEmail = getValue(row, 'contact.email');
-            if (contactEmail) {
-                if (!agentName) {
-                    throw new Error(`Contact email provided without a mapped Agent. An agent is required to create a contact.`);
-                }
-                ContactSchema.parse({
-                    firstName: getValue(row, 'contact.firstName'),
-                    lastName: getValue(row, 'contact.lastName'),
-                    email: contactEmail,
-                });
-            }
-
-            OwnerSchema.parse({
-                name: getValue(row, 'owner.name'),
-                country: getCountryEnumValue(ownerCountryValue),
-            });
-
-            const expirationValue = getValue(row, 'trademark.expiration');
-            TrademarkSchema.parse({
-                denomination: getValue(row, 'trademark.denomination'),
-                class: getValue(row, 'trademark.class'),
-                type: getValue(row, 'trademark.type'),
-                certificate: String(getValue(row, 'trademark.certificate')),
-                // Handle Excel's numeric date format
-                expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
-                products: getValue(row, 'trademark.products'),
-            });
-
+        if (validationResult.success) {
             results.validRows++;
-        } catch (e) {
+        } else {
             results.errors++;
-            const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.flatten().fieldErrors) : e instanceof Error ? e.message : String(e);
-            results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
+            results.errorDetails.push({ 
+                row: index + 2, 
+                data: JSON.parse(JSON.stringify(row)), // for raw view
+                fieldErrors: validationResult.error.flatten().fieldErrors, // for user-friendly view
+                formErrors: validationResult.error.flatten().formErrors, // for user-friendly view
+            });
         }
     }
 
@@ -141,7 +172,6 @@ export async function verifyDataAction(formData: FormData) {
         }
         
         if (validationResult.errors > 0) {
-            console.error("Verification errors:", JSON.stringify(validationResult.errorDetails, null, 2));
             return {
                 status: 'error' as const,
                 message: `Verification complete. Found ${validationResult.errors} error(s) in ${validationResult.validRows + validationResult.errors} rows. Please fix them and try again.`,
