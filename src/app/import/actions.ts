@@ -9,7 +9,7 @@ import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
   denomination: z.string().min(1),
-  class: z.coerce.number().int().min(1).max(45),
+  class: z.coerce.number().int().min(1, "Class must be between 1 and 45").max(45, "Class must be between 1 and 45"),
   type: z.preprocess(
     (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
     z.nativeEnum(TrademarkType)
@@ -27,7 +27,7 @@ const OwnerSchema = z.object({
 const ContactSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
-  email: z.string().email(),
+  email: z.string().trim().email(),
 });
 
 const AgentSchema = z.object({
@@ -36,9 +36,132 @@ const AgentSchema = z.object({
   area: z.string().optional().nullable(),
 });
 
+async function parseAndValidateRows(formData: FormData) {
+    const file = formData.get('file') as File;
+    const mappings = JSON.parse(formData.get('mappings') as string);
+
+    if (!file) {
+        return { error: 'No file uploaded.' };
+    }
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+
+    const results = {
+        validRows: 0,
+        errors: 0,
+        errorDetails: [] as any[],
+    };
+
+    const reverseMappings: Record<string, string> = {};
+    for (const header in mappings) {
+        if (mappings[header] && mappings[header] !== 'ignore') {
+            reverseMappings[mappings[header]] = header;
+        }
+    }
+
+    const getValue = (row: any, modelPropertyPath: string) => {
+        const header = reverseMappings[modelPropertyPath];
+        let value = header ? row[header] : undefined;
+        if (typeof value === 'string') {
+            value = value.trim();
+        }
+        return value;
+    };
+
+    const getCountryEnumValue = (value: any) => {
+        if (typeof value === 'string') {
+            return value.trim().toUpperCase().replace(/\s/g, '_');
+        }
+        return value;
+    };
+
+    for (const [index, row] of jsonData.entries()) {
+        try {
+            const agentName = getValue(row, 'agent.name');
+            const ownerCountryValue = getValue(row, 'owner.country');
+
+            if (agentName) {
+                const agentCountryForDb = getValue(row, 'agent.country') || ownerCountryValue;
+                AgentSchema.parse({
+                    name: agentName,
+                    country: getCountryEnumValue(agentCountryForDb),
+                    area: getValue(row, 'agent.area'),
+                });
+            }
+
+            const contactEmail = getValue(row, 'contact.email');
+            if (contactEmail) {
+                if (!agentName) {
+                    throw new Error(`Contact email provided without a mapped Agent. An agent is required to create a contact.`);
+                }
+                ContactSchema.parse({
+                    firstName: getValue(row, 'contact.firstName'),
+                    lastName: getValue(row, 'contact.lastName'),
+                    email: contactEmail,
+                });
+            }
+
+            OwnerSchema.parse({
+                name: getValue(row, 'owner.name'),
+                country: getCountryEnumValue(ownerCountryValue),
+            });
+
+            const expirationValue = getValue(row, 'trademark.expiration');
+            TrademarkSchema.parse({
+                denomination: getValue(row, 'trademark.denomination'),
+                class: getValue(row, 'trademark.class'),
+                type: getValue(row, 'trademark.type'),
+                certificate: String(getValue(row, 'trademark.certificate')),
+                expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
+                products: getValue(row, 'trademark.products'),
+            });
+
+            results.validRows++;
+        } catch (e) {
+            results.errors++;
+            const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.errors) : e instanceof Error ? e.message : String(e);
+            results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
+        }
+    }
+
+    return results;
+}
+
+export async function verifyDataAction(formData: FormData) {
+    try {
+        const validationResult = await parseAndValidateRows(formData);
+        if ('error' in validationResult) {
+            return { error: validationResult.error };
+        }
+        
+        if (validationResult.errors > 0) {
+            console.error("Verification errors:", JSON.stringify(validationResult.errorDetails, null, 2));
+            return {
+                status: 'error' as const,
+                message: `Verification complete. Found ${validationResult.errors} error(s) in ${validationResult.validRows + validationResult.errors} rows. Please fix them and try again.`,
+                errorDetails: validationResult.errorDetails,
+            };
+        }
+
+        return {
+            status: 'success' as const,
+            message: `Verification successful! All ${validationResult.validRows} rows are valid and ready for import.`
+        };
+
+    } catch (error) {
+        console.error('Verification failed:', error);
+        return { error: 'An unexpected error occurred during verification.' };
+    }
+}
+
+
 export async function importDataAction(formData: FormData) {
   const file = formData.get('file') as File;
-  const mappings = JSON.parse(formData.get('mappings') as string); // { "File Header": "model.field" }
+  const mappings = JSON.parse(formData.get('mappings') as string);
   
   if (!file) {
     return { error: 'No file uploaded.' };
@@ -57,7 +180,6 @@ export async function importDataAction(formData: FormData) {
       errorDetails: [] as any[],
     };
 
-    // Create a reverse mapping for easier lookup: { "model.field": "File Header" }
     const reverseMappings: Record<string, string> = {};
     for (const header in mappings) {
       if (mappings[header] && mappings[header] !== 'ignore') {
@@ -67,13 +189,15 @@ export async function importDataAction(formData: FormData) {
 
     for (const [index, row] of jsonData.entries()) {
       try {
-        // Helper to get a value from the row using the model property path (e.g., 'agent.name')
         const getValue = (modelPropertyPath: string) => {
           const header = reverseMappings[modelPropertyPath];
-          return header ? row[header] : undefined;
+          let value = header ? row[header] : undefined;
+          if (typeof value === 'string') {
+              value = value.trim();
+          }
+          return value;
         };
 
-        // Helper to sanitize country strings to match the Enum
         const getCountryEnumValue = (value: any) => {
           if (typeof value === 'string') {
             return value.trim().toUpperCase().replace(/\s/g, '_');
@@ -85,11 +209,9 @@ export async function importDataAction(formData: FormData) {
           let agent: Agent | null = null;
           const agentName = getValue('agent.name');
           
-          // Get owner country first as it might be needed for the agent.
           const ownerCountryValue = getValue('owner.country');
 
           if (agentName) {
-            // Use agent.country if available, otherwise fallback to owner.country
             const agentCountryForDb = getValue('agent.country') || ownerCountryValue;
 
             const agentData = AgentSchema.parse({
