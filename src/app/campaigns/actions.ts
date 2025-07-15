@@ -193,7 +193,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             const emailBody = compileAndRender(template.body, context);
 
             const { data, error } = await resend.emails.send({
-                from: 'LegalIntel CRM <notifications@updates.artecasa.com.pe>',
+                from: 'Legal CRM <notifications@updates.artecasa.com.pe>',
                 to: [contact.email],
                 subject: emailSubject,
                 html: emailBody,
@@ -271,7 +271,7 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
     const emailBody = compileAndRender(payload.body, context);
 
     const { data, error } = await resend.emails.send({
-        from: 'LegalIntel CRM <notifications@updates.artecasa.com.pe>',
+        from: 'Legal CRM <notifications@updates.artecasa.com.pe>',
         to: [contact.email],
         subject: emailSubject,
         html: emailBody,

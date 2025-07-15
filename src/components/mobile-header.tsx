@@ -10,10 +10,10 @@ export function MobileHeader() {
       <SidebarTrigger />
       <div className="flex items-center gap-2">
         <div className="bg-transparent p-1">
-          <Image src="/logo.png" alt="LegalIntel CRM Logo" width={32} height={32} />
+          <Image src="/logo.png" alt="Legal CRM Logo" width={32} height={32} />
         </div>
         <h2 className="text-lg font-semibold tracking-tighter text-foreground">
-          LegalIntel CRM
+          Legal CRM
         </h2>
       </div>
     </header>
