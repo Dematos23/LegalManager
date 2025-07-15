@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/context/language-context';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 type TrademarkFiltersProps = {
   table: TanstackTable<TrademarkWithDetails>;
@@ -57,23 +58,25 @@ export function TrademarkFilters({ table, agentAreas, expirationYears, onMobileS
               <SelectItem value="over_180">{dictionary.dashboard.expiringOver180}</SelectItem>
             </SelectContent>
           </Select>
-           <Select
-            value={mobileSortValue}
-            onValueChange={onMobileSortChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={dictionary.dashboard.sortBy} />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="expiration-asc">{dictionary.dashboard.table.expiration} (Asc)</SelectItem>
-                <SelectItem value="expiration-desc">{dictionary.dashboard.table.expiration} (Desc)</SelectItem>
-                <SelectItem value="denomination-asc">{dictionary.dashboard.table.trademark} (A-Z)</SelectItem>
-                <SelectItem value="denomination-desc">{dictionary.dashboard.table.trademark} (Z-A)</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="ghost" onClick={handleClearFilters} className="w-full">
-              {dictionary.dashboard.clearFilters}
-          </Button>
+          <div className="flex gap-2">
+            <Select
+              value={mobileSortValue}
+              onValueChange={onMobileSortChange}
+            >
+              <SelectTrigger className={cn(buttonVariants({ variant: "ghost" }), "w-1/2 justify-between")}>
+                <SelectValue placeholder={dictionary.dashboard.sortBy} />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="expiration-asc">{dictionary.dashboard.table.expiration} (Asc)</SelectItem>
+                  <SelectItem value="expiration-desc">{dictionary.dashboard.table.expiration} (Desc)</SelectItem>
+                  <SelectItem value="denomination-asc">{dictionary.dashboard.table.trademark} (A-Z)</SelectItem>
+                  <SelectItem value="denomination-desc">{dictionary.dashboard.table.trademark} (Z-A)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" onClick={handleClearFilters} className="w-1/2">
+                {dictionary.dashboard.clearFilters}
+            </Button>
+          </div>
         </CardContent>
        </Card>
     );
