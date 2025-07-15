@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -22,7 +23,7 @@ import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button, buttonVariants } from './ui/button';
-import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2, MoreHorizontal } from 'lucide-react';
+import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2, MoreHorizontal, Users, LayoutTemplate, CalendarClock } from 'lucide-react';
 import { Badge } from './ui/badge';
 import React, { useState, useMemo, useTransition } from 'react';
 import { Input } from './ui/input';
@@ -50,7 +51,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
@@ -59,12 +59,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from './ui/label';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-type TrackingClientProps = {
-  campaigns: CampaignWithDetails[];
-};
 
-function DeleteCampaignDialog({ campaign, onCampaignDeleted, children }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, children: React.ReactNode }) {
+function DeleteCampaignDialog({ campaign, onCampaignDeleted, children, isMenuItem = true }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, children: React.ReactNode, isMenuItem?: boolean }) {
     const { dictionary } = useLanguage();
     const { toast } = useToast();
     const [isDeleting, startDeleteTransition] = useTransition();
@@ -92,10 +90,20 @@ function DeleteCampaignDialog({ campaign, onCampaignDeleted, children }: { campa
         });
     };
 
+    const trigger = isMenuItem ? (
+        <DropdownMenuItem onSelect={(e) => {e.preventDefault(); setIsOpen(true)}}>
+            {children}
+        </DropdownMenuItem>
+    ) : (
+        <Button variant="destructive" size="sm" onClick={() => setIsOpen(true)}>
+            {children}
+        </Button>
+    )
+
     return (
         <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
             <AlertDialogTrigger asChild>
-                {children}
+                {trigger}
             </AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
@@ -134,6 +142,45 @@ function DeleteCampaignDialog({ campaign, onCampaignDeleted, children }: { campa
     );
 }
 
+function CampaignCard({ campaign, onCampaignDeleted, formatDate, dictionary }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, formatDate: (date: Date) => string, dictionary: any }) {
+    return (
+        <Card>
+            <CardHeader>
+                 <CardTitle className="text-lg">{campaign.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center gap-2">
+                    <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">{dictionary.tracking.table.template}: </span>
+                    <span>{campaign.emailTemplate.name}</span>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">{dictionary.tracking.table.recipients}: </span>
+                    <Badge variant="outline">{campaign._count.sentEmails}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">{dictionary.tracking.table.sentAt}: </span>
+                    <span>{formatDate(new Date(campaign.createdAt))}</span>
+                </div>
+            </CardContent>
+            <CardFooter className="flex justify-end gap-2">
+                <DeleteCampaignDialog campaign={campaign} onCampaignDeleted={onCampaignDeleted} isMenuItem={false}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {dictionary.tracking.table.delete}
+                </DeleteCampaignDialog>
+                <Button asChild size="sm">
+                    <Link href={`/tracking/${campaign.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        {dictionary.tracking.table.view}
+                    </Link>
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 
 export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientProps) {
   const { language, dictionary } = useLanguage();
@@ -142,6 +189,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
   const [templateFilter, setTemplateFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const isMobile = useIsMobile();
   
   const formatDate = (date: Date) => {
     return format(date, 'MMM dd, yyyy, h:mm a', {
@@ -152,20 +200,42 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
   const templates = useMemo(() => {
     const uniqueTemplates = new Map<number, EmailTemplate>();
     initialCampaigns.forEach(campaign => {
-        uniqueTemplates.set(campaign.emailTemplate.id, campaign.emailTemplate);
+        if (campaign.emailTemplate) {
+            uniqueTemplates.set(campaign.emailTemplate.id, campaign.emailTemplate);
+        }
     });
     return Array.from(uniqueTemplates.values());
   }, [initialCampaigns]);
 
   const filteredCampaigns = useMemo(() => {
-    return campaigns.filter(campaign => {
-        const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesTemplate = templateFilter === 'all' || campaign.emailTemplateId === Number(templateFilter);
-        const campaignDate = new Date(campaign.createdAt);
-        const matchesDate = !dateRange || (dateRange.from && isWithinInterval(campaignDate, { start: dateRange.from, end: dateRange.to || dateRange.from }));
-        return matchesSearch && matchesTemplate && matchesDate;
-    })
-  }, [campaigns, searchTerm, templateFilter, dateRange]);
+    return campaigns
+        .filter(campaign => {
+            const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesTemplate = templateFilter === 'all' || !campaign.emailTemplate || campaign.emailTemplateId === Number(templateFilter);
+            const campaignDate = new Date(campaign.createdAt);
+            const matchesDate = !dateRange || (dateRange.from && isWithinInterval(campaignDate, { start: dateRange.from, end: dateRange.to || dateRange.from }));
+            return matchesSearch && matchesTemplate && matchesDate;
+        })
+        .sort((a, b) => {
+            if (sorting.length === 0) return 0;
+            const sortConfig = sorting[0];
+            const key = sortConfig.id as keyof CampaignWithDetails;
+            
+            let valA: any = a[key];
+            let valB: any = b[key];
+
+            if (key === 'emailTemplate.name') {
+                valA = a.emailTemplate?.name || '';
+                valB = b.emailTemplate?.name || '';
+            }
+
+            let result = 0;
+            if (valA < valB) result = -1;
+            if (valA > valB) result = 1;
+
+            return sortConfig.desc ? -result : result;
+        });
+  }, [campaigns, searchTerm, templateFilter, dateRange, sorting]);
 
   const handleCampaignDeleted = (campaignId: number) => {
       setCampaigns(prev => prev.filter(c => c.id !== campaignId));
@@ -190,7 +260,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
                 <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => row.original.emailTemplate.name,
+        cell: ({ row }) => row.original.emailTemplate?.name || 'Custom Email',
     },
     {
         accessorKey: '_count.sentEmails',
@@ -228,10 +298,8 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                          <DeleteCampaignDialog campaign={row.original} onCampaignDeleted={handleCampaignDeleted}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {dictionary.tracking.table.delete}
-                            </DropdownMenuItem>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {dictionary.tracking.table.delete}
                          </DeleteCampaignDialog>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -332,47 +400,70 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
             </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{dictionary.tracking.campaignListTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                        <TableHead key={header.id}>
-                        {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </TableHead>
-                    ))}
-                    </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                            {row.getVisibleCells().map((cell) => (
-                                <TableCell key={cell.id}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </TableCell>
-                            ))}
+
+      {isMobile ? (
+        <div className="space-y-4">
+            {filteredCampaigns.length > 0 ? (
+                filteredCampaigns.map(campaign => (
+                    <CampaignCard 
+                        key={campaign.id} 
+                        campaign={campaign}
+                        onCampaignDeleted={handleCampaignDeleted}
+                        formatDate={formatDate}
+                        dictionary={dictionary}
+                    />
+                ))
+            ) : (
+                <Card>
+                    <CardContent className="h-40 text-center flex items-center justify-center">
+                        {dictionary.dashboard.table.noResults}
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+      ) : (
+        <Card>
+            <CardHeader>
+            <CardTitle>{dictionary.tracking.campaignListTitle}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                            <TableHead key={header.id}>
+                            {header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())}
+                            </TableHead>
+                        ))}
                         </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={columns.length} className="h-40 text-center">
-                            {dictionary.dashboard.table.noResults}
-                        </TableCell>
-                    </TableRow>
-                )}
-              </TableBody>
-            </Table>
-        </CardContent>
-      </Card>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow key={row.id}>
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="h-40 text-center">
+                                {dictionary.dashboard.table.noResults}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
