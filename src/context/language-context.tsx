@@ -36,6 +36,12 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
         setDictionary(lang === 'es' ? es : en);
     };
 
+    useEffect(() => {
+        if (isMounted) {
+            document.documentElement.setAttribute('data-lang', language);
+        }
+    }, [language, isMounted]);
+
     const value = { language, dictionary, switchLanguage };
 
     if (!isMounted) {

@@ -164,3 +164,31 @@
 .merge-tag {
   @apply bg-primary/10 text-primary font-medium rounded-sm px-1 py-0.5 mx-0.5 font-code;
 }
+
+/* --- Print Styles --- */
+html[data-lang="es"] {
+  --print-message: "Esta página no está disponible para impresión.";
+}
+
+html[data-lang="en"] {
+  --print-message: "This page is not available for printing.";
+}
+
+@media print {
+  * {
+    display: none !important;
+  }
+
+  html {
+    background-color: white !important;
+  }
+
+  body::before {
+    content: var(--print-message);
+    display: block !important;
+    text-align: center;
+    font-size: 20px;
+    padding: 100px;
+    color: black !important;
+  }
+}
