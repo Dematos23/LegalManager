@@ -25,9 +25,9 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
         </h1>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6">
         {/* Contact Info Card */}
-        <Card className="md:col-span-1">
+        <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -58,7 +58,7 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
         </Card>
 
         {/* Associated Owners & Trademarks */}
-        <div className="md:col-span-2 space-y-6">
+        <div className="space-y-6">
           {contact.owners.length === 0 ? (
             <Card>
               <CardHeader>
