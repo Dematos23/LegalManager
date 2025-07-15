@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
@@ -315,6 +316,10 @@ export async function importDataAction(formData: FormData) {
         const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.flatten().fieldErrors) : e instanceof Error ? e.message : String(e);
         results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
       }
+    }
+    
+    if (results.success > 0) {
+      revalidatePath('/');
     }
 
     if (results.errors > 0) {
