@@ -28,8 +28,9 @@ export const es: Dictionary = {
     yearFilterLabel: 'Año de Vencimiento',
     allYears: 'Todos los Años',
     clearFilters: 'Limpiar Filtros',
-    searchPlaceholder: 'Buscar por marca, titular, contacto, agente...',
+    searchPlaceholder: 'Buscar por marca, titular, contacto...',
     newTrademarkButton: 'Nueva Marca',
+    sortBy: 'Ordenar por...',
     table: {
       trademark: 'Denominación',
       owner: 'Titular',

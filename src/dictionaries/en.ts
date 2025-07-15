@@ -26,8 +26,9 @@ export const en = {
     yearFilterLabel: 'Expiration Year',
     allYears: 'All Years',
     clearFilters: 'Clear Filters',
-    searchPlaceholder: 'Search by trademark, owner, contact, agent...',
+    searchPlaceholder: 'Search by trademark, owner, contact...',
     newTrademarkButton: 'New Trademark',
+    sortBy: 'Sort by...',
     table: {
       trademark: 'Denomination',
       owner: 'Owner',

@@ -6,8 +6,7 @@ import { TrademarkTable } from "@/components/trademark-table";
 import { useLanguage } from "@/context/language-context";
 import type { TrademarkWithDetails } from "@/types";
 import { Button } from '@/components/ui/button';
-import { Mail, MoreHorizontal, ArrowUpDown, PlusCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Mail, MoreHorizontal, ArrowUpDown, PlusCircle, Users, FileText, CalendarClock } from 'lucide-react';
 import {
     ColumnDef,
     getCoreRowModel,
@@ -32,6 +31,10 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { TrademarkFilters } from '@/components/trademark-filters';
 import { useRouter } from 'next/navigation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Card, CardContent, CardHeader, CardFooter, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const globalFilterFn: FilterFn<TrademarkWithDetails> = (row: Row<TrademarkWithDetails>, columnId: string, value: string) => {
     const trademark = row.original;
@@ -88,9 +91,91 @@ type DashboardClientProps = {
     trademarks: TrademarkWithDetails[];
 }
 
+
+// A new component for the mobile card view
+function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: TrademarkWithDetails, onSendEmail: (trademark: TrademarkWithDetails, contact: TrademarkWithDetails['owner']['contacts'][0]) => void, dictionary: any }) {
+    const contact = trademark.owner.contacts?.[0];
+
+    const expirationDate = new Date(trademark.expiration);
+    const daysUntilExpiration = differenceInDays(expirationDate, new Date());
+    const hasExpired = isPast(expirationDate);
+    
+    const colorClass = hasExpired
+      ? 'text-destructive font-semibold'
+      : daysUntilExpiration <= 30
+      ? 'text-destructive'
+      : daysUntilExpiration <= 90
+      ? 'text-warning'
+      : '';
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>{dictionary.dashboard.table.actions}</DropdownMenuLabel>
+                        <DropdownMenuItem
+                          disabled={!contact}
+                          onClick={() => contact && onSendEmail(trademark, contact)}
+                        >
+                          <Mail className="mr-2 h-4 w-4" />
+                          {dictionary.dashboard.actions.sendEmail}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                    <span>Class {trademark.class}</span>
+                    <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                        <span className="font-semibold">{dictionary.dashboard.table.owner}: </span>
+                        {trademark.owner.name}
+                    </div>
+                </div>
+                {contact && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                           <span className="font-semibold">{dictionary.dashboard.table.contact}: </span>
+                           <Link href={`/contacts/${contact.id}`} className="hover:underline text-primary">
+                               {`${contact.firstName} ${contact.lastName}`}
+                           </Link>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                 <div className={cn('flex items-center gap-2 text-sm font-medium w-full', colorClass)}>
+                    <CalendarClock className="h-4 w-4" />
+                    <div>
+                        <span>{format(expirationDate, 'MMM dd, yyyy')}</span>
+                        <span className="ml-2 text-xs font-normal">
+                          ({hasExpired ? `${dictionary.contact.expired} ${-daysUntilExpiration} ${dictionary.contact.daysAgo}` : `${dictionary.contact.in} ${daysUntilExpiration} ${dictionary.contact.days}`})
+                        </span>
+                    </div>
+                </div>
+            </CardFooter>
+        </Card>
+    )
+}
+
 export function DashboardClient({ trademarks }: DashboardClientProps) {
   const { dictionary } = useLanguage();
-  const { toast } = useToast();
+  const isMobile = useIsMobile();
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'expiration', desc: false },
@@ -269,6 +354,11 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         expirationYears: Array.from(years).sort((a, b) => b - a) 
     };
   }, [trademarks]);
+  
+  const handleMobileSortChange = (value: string) => {
+    const [id, dir] = value.split('-');
+    setSorting([{ id, desc: dir === 'desc' }]);
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -289,9 +379,37 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         </p>
        ) : (
         <>
-            <TrademarkFilters table={table} agentAreas={agentAreas} expirationYears={expirationYears} />
-            <TrademarkTable table={table} />
+            <TrademarkFilters 
+                table={table} 
+                agentAreas={agentAreas} 
+                expirationYears={expirationYears}
+                onMobileSortChange={handleMobileSortChange}
+                mobileSortValue={`${sorting[0]?.id}-${sorting[0]?.desc ? 'desc' : 'asc'}`}
+            />
+            {isMobile ? (
+                 <div className="space-y-4">
+                    {table.getRowModel().rows.map(row => (
+                        <TrademarkCard 
+                            key={row.original.id} 
+                            trademark={row.original} 
+                            onSendEmail={handleSendEmail} 
+                            dictionary={dictionary}
+                        />
+                    ))}
+                    {table.getRowModel().rows.length === 0 && (
+                        <div className="text-center text-muted-foreground py-10">
+                            {dictionary.dashboard.table.noResults}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <TrademarkTable table={table} />
+            )}
+            
             <div className="flex items-center justify-end space-x-2 py-4">
+                <span className="text-sm text-muted-foreground">
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                </span>
                 <Button
                 variant="outline"
                 size="sm"
