@@ -5,7 +5,7 @@ import * as React from 'react';
 import { Table as TanstackTable } from '@tanstack/react-table';
 import type { TrademarkWithDetails } from '@/types';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/context/language-context';
