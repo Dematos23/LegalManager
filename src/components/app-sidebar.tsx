@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   FileUp,
   Settings,
-  Gavel,
   LayoutTemplate,
   Languages,
   History,
@@ -29,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/context/language-context';
+import Image from 'next/image';
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -45,11 +45,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2">
-          <div className="bg-primary p-2 rounded-lg">
-            <Gavel className="text-primary-foreground" />
+          <div className="bg-white p-1 rounded-lg">
+            <Image src="/logo.png" alt="LegalIntel CRM Logo" width={32} height={32} />
           </div>
           <h2 className="text-lg font-semibold tracking-tighter text-sidebar-foreground">
-            Legal CRM
+            LegalIntel CRM
           </h2>
         </div>
       </SidebarHeader>
