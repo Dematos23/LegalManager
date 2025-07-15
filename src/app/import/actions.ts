@@ -8,31 +8,31 @@ import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
 
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
-  denomination: z.string().min(1),
-  class: z.coerce.number().int().min(1, "Class must be between 1 and 45").max(45, "Class must be between 1 and 45"),
+  denomination: z.string().min(1, "Denomination is required."),
+  class: z.coerce.number().int().min(1, "Class must be between 1 and 45.").max(45, "Class must be between 1 and 45."),
   type: z.preprocess(
     (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
     z.nativeEnum(TrademarkType)
   ).optional().nullable(),
-  certificate: z.coerce.string().min(1),
-  expiration: z.coerce.date(),
+  certificate: z.coerce.string().min(1, "Certificate is required."),
+  expiration: z.coerce.date({ required_error: 'Expiration date is required and must be a valid date format.' }),
   products: z.string().optional().nullable(),
 });
 
 const OwnerSchema = z.object({
-  name: z.string().min(1),
-  country: z.nativeEnum(Country),
+  name: z.string().min(1, "Owner name is required."),
+  country: z.nativeEnum(Country, { errorMap: () => ({ message: 'A valid country is required.' }) }),
 });
 
 const ContactSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
-  email: z.string().trim().email(),
+  email: z.string().trim().email("A valid email is required."),
 });
 
 const AgentSchema = z.object({
-  name: z.string().min(1),
-  country: z.nativeEnum(Country),
+  name: z.string().min(1, "Agent name is required."),
+  country: z.nativeEnum(Country, { errorMap: () => ({ message: 'A valid country is required for the agent.' }) }),
   area: z.string().optional().nullable(),
 });
 
@@ -66,6 +66,7 @@ async function parseAndValidateRows(formData: FormData) {
     const getValue = (row: any, modelPropertyPath: string) => {
         const header = reverseMappings[modelPropertyPath];
         let value = header ? row[header] : undefined;
+        // Trim strings, but leave other types alone.
         if (typeof value === 'string') {
             value = value.trim();
         }
@@ -116,6 +117,7 @@ async function parseAndValidateRows(formData: FormData) {
                 class: getValue(row, 'trademark.class'),
                 type: getValue(row, 'trademark.type'),
                 certificate: String(getValue(row, 'trademark.certificate')),
+                // Handle Excel's numeric date format
                 expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : expirationValue,
                 products: getValue(row, 'trademark.products'),
             });
@@ -123,7 +125,7 @@ async function parseAndValidateRows(formData: FormData) {
             results.validRows++;
         } catch (e) {
             results.errors++;
-            const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.errors) : e instanceof Error ? e.message : String(e);
+            const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.flatten().fieldErrors) : e instanceof Error ? e.message : String(e);
             results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
         }
     }
@@ -212,11 +214,11 @@ export async function importDataAction(formData: FormData) {
           const ownerCountryValue = getValue('owner.country');
 
           if (agentName) {
-            const agentCountryForDb = getValue('agent.country') || ownerCountryValue;
+            const agentCountryForDb = getCountryEnumValue(getValue('agent.country') || ownerCountryValue);
 
             const agentData = AgentSchema.parse({
               name: agentName,
-              country: getCountryEnumValue(agentCountryForDb),
+              country: agentCountryForDb,
               area: getValue('agent.area'),
             });
             agent = await tx.agent.upsert({
@@ -281,7 +283,7 @@ export async function importDataAction(formData: FormData) {
         results.success++;
       } catch (e) {
         results.errors++;
-        const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.errors) : e instanceof Error ? e.message : String(e);
+        const errorMessage = e instanceof z.ZodError ? JSON.stringify(e.flatten().fieldErrors) : e instanceof Error ? e.message : String(e);
         results.errorDetails.push({ row: index + 2, data: JSON.parse(JSON.stringify(row)), error: errorMessage });
       }
     }
