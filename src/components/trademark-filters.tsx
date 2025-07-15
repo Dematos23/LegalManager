@@ -63,7 +63,7 @@ export function TrademarkFilters({ table, agentAreas, expirationYears, onMobileS
               value={mobileSortValue}
               onValueChange={onMobileSortChange}
             >
-              <SelectTrigger className={cn(buttonVariants({ variant: "ghost" }), "w-1/2 justify-between")}>
+              <SelectTrigger className={cn(buttonVariants({ variant: "ghost" }), "w-1/2 justify-between border-none")}>
                 <SelectValue placeholder={dictionary.dashboard.sortBy} />
               </SelectTrigger>
               <SelectContent>
