@@ -104,4 +104,35 @@ export async function getContactDetails(id: number) {
   }
 }
 
-    
+export async function getAgentDetails(id: number) {
+    try {
+        const agent = await prisma.agent.findUnique({
+            where: { id },
+            include: {
+                contacts: {
+                    include: {
+                        owners: {
+                            include: {
+                                trademarks: {
+                                    orderBy: {
+                                        expiration: 'asc',
+                                    },
+                                },
+                            },
+                            orderBy: {
+                                name: 'asc',
+                            },
+                        },
+                    },
+                    orderBy: {
+                        firstName: 'asc',
+                    },
+                },
+            },
+        });
+        return agent;
+    } catch (error) {
+        console.error('Database Error:', error);
+        return null;
+    }
+}

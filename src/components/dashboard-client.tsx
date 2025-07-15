@@ -95,6 +95,7 @@ type DashboardClientProps = {
 // A new component for the mobile card view
 function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: TrademarkWithDetails, onSendEmail: (trademark: TrademarkWithDetails, contact: TrademarkWithDetails['owner']['contacts'][0]) => void, dictionary: any }) {
     const contact = trademark.owner.contacts?.[0];
+    const agent = contact?.agent;
 
     const expirationDate = new Date(trademark.expiration);
     const daysUntilExpiration = differenceInDays(expirationDate, new Date());
@@ -153,6 +154,17 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
                            <span className="font-semibold">{dictionary.dashboard.table.contact}: </span>
                            <Link href={`/contacts/${contact.id}`} className="hover:underline text-primary">
                                {`${contact.firstName} ${contact.lastName}`}
+                           </Link>
+                        </div>
+                    </div>
+                )}
+                 {agent && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                           <span className="font-semibold">{dictionary.dashboard.table.agent}: </span>
+                           <Link href={`/agents/${agent.id}`} className="hover:underline text-primary">
+                                {agent.name}
                            </Link>
                         </div>
                     </div>
@@ -277,7 +289,9 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
             if (!agent) return 'N/A';
             return (
                 <div className="flex flex-col">
-                    <span>{agent.name}</span>
+                    <Link href={`/agents/${agent.id}`} className="font-medium hover:underline text-primary">
+                      {agent.name}
+                    </Link>
                     {agent.area && <span className="text-xs text-muted-foreground">{agent.area}</span>}
                 </div>
             );
