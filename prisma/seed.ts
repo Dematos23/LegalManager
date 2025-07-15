@@ -107,6 +107,58 @@ Sed aliquam ante sit amet nisi rhoncus iaculis. Phasellus laoreet, dui non imper
   });
   console.log('Created "Plain Text Example" template.');
 
+  // Template 5: Six-Month Expiration Notice
+  await prisma.emailTemplate.upsert({
+    where: { name: 'Six-Month Expiration Notice' },
+    update: {},
+    create: {
+      name: 'Six-Month Expiration Notice',
+      subject: 'Upcoming Trademark Expiration',
+      body: `Dear {{contact.firstName}} {{contact.lastName}},
+
+Our records indicate that the following trademark registration(s) are set to expire in less than six months. Please be aware that once a trademark exceeds six months past its expiration date, it becomes susceptible to actions from third parties. To maintain your rights and avoid potential risks, we strongly recommend renewing the listed trademark(s) at your earliest convenience.
+
+{{#each trademarks}}
+Trademark: {{denomination}}
+Class: {{class}}
+Registration Number: {{certificate}}
+Expiration Date: {{expiration}}
+---------------------------------------------------
+{{/each}}
+
+Please be aware that once a trademark exceeds six months past its expiration date, it becomes susceptible to actions from third parties. To maintain your rights and avoid potential risks, we strongly recommend renewing the listed trademark(s) at your earliest convenience.
+
+Should you require any assistance with the renewal process, we are here to help.
+
+We look forward to your confirmation.
+
+Best regards,`,
+    },
+  });
+  console.log('Created "Six-Month Expiration Notice" template.');
+  
+  // Template 6: Holiday Office Closure
+  await prisma.emailTemplate.upsert({
+    where: { name: 'Holiday Office Closure' },
+    update: {},
+    create: {
+      name: 'Holiday Office Closure',
+      subject: 'Office Closure Notification',
+      body: `Dear {{contact.firstName}},
+
+We hope this message finds you well.
+
+We would like to inform you that our offices will be closed from July 27th to July 29th due to the celebration of Peruvian Independence Holidays. During this period, our team will not be available to respond to emails or process requests.
+
+Regular operations will resume on Tuesday, July 30th.
+
+We appreciate your understanding and wish you a great week.
+
+Warm regards,`,
+    },
+  });
+  console.log('Created "Holiday Office Closure" template.');
+
   console.log('Seeding finished.');
 }
 
