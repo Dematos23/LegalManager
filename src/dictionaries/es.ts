@@ -77,6 +77,7 @@ export const es: Dictionary = {
     devErrorSectionTitle: 'Para Desarrolladores: Ver Datos de Error sin Procesar',
     importErrors: {
       "Required": "El campo es obligatorio y no puede estar vacío.",
+      "Invalid email": "Correo inválido.",
       "Invalid number": "El valor debe ser un número válido.",
       "Number must be an integer": "El valor debe ser un número entero.",
       "Number must be greater than or equal to 1": "La clase debe ser al menos 1.",

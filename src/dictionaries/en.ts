@@ -75,6 +75,7 @@ export const en = {
     devErrorSectionTitle: 'For Developers: View Raw Error Data',
     importErrors: {
       "Required": "Field is required and cannot be empty.",
+      "Invalid email": "Invalid email.",
       "Invalid number": "Value must be a valid number.",
       "Number must be an integer": "Value must be a whole number.",
       "Number must be greater than or equal to 1": "Class must be at least 1.",
