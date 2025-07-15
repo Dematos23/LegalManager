@@ -80,20 +80,10 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(() => {
-    switch (templateType) {
-        case 'plain':
-        case 'multi-owner':
-            return 'contact';
-        case 'single-trademark':
-        case 'multi-trademark-no-owner':
-        default:
-            return 'trademark';
-    }
-  });
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>('trademark');
 
   React.useEffect(() => {
-    const newSendMode = (() => {
+    const defaultMode = (() => {
         switch (templateType) {
             case 'plain':
             case 'multi-owner':
@@ -104,7 +94,7 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
                 return 'trademark';
         }
     })();
-    setSendMode(newSendMode);
+    setSendMode(defaultMode);
   }, [templateType]);
 
   const { dictionary } = useLanguage();
