@@ -56,10 +56,16 @@ const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
     if (!value) return true;
 
     const now = new Date();
+    // Set time to 00:00:00 to compare dates only
+    now.setHours(0, 0, 0, 0);
     const expirationDate = new Date(expiration);
+    expirationDate.setHours(0, 0, 0, 0);
     
     switch(value) {
+        case 'expired':
+            return expirationDate < subDays(now, 180);
         case 'grace_period':
+            // Expired, but within the last 180 days.
             return expirationDate < now && expirationDate >= subDays(now, 180);
         case '30':
             return expirationDate >= now && expirationDate <= addDays(now, 30);
