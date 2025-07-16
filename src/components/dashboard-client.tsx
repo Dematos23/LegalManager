@@ -133,9 +133,17 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
                       </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        <span>Class {trademark.class}</span>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <span>•</span>
+                        <span>{dictionary.dashboard.table.certificate}: {trademark.certificate}</span>
+                    </div>
+                </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span>Class {trademark.class}</span>
                     <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>
                 </div>
             </CardHeader>
@@ -225,6 +233,10 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     {
       accessorKey: 'class',
       header: dictionary.dashboard.table.class,
+    },
+    {
+      accessorKey: 'certificate',
+      header: dictionary.dashboard.table.certificate,
     },
     {
       accessorKey: 'expiration',

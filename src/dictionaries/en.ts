@@ -33,6 +33,7 @@ export const en = {
       trademark: 'Denomination',
       owner: 'Owner',
       class: 'Class',
+      certificate: 'Certificate',
       expiration: 'Expiration',
       contact: 'Contact',
       agent: 'Agent',

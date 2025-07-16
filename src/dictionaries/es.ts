@@ -35,6 +35,7 @@ export const es: Dictionary = {
       trademark: 'Denominación',
       owner: 'Titular',
       class: 'Clase',
+      certificate: 'Certificado',
       expiration: 'Vencimiento',
       contact: 'Contacto',
       agent: 'Agente',
