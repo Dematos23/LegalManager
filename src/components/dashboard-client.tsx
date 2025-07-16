@@ -160,7 +160,9 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <div>
                         <span className="font-semibold">{dictionary.dashboard.table.owner}: </span>
-                        {trademark.owner.name}
+                        <Link href={`/owners/${trademark.owner.id}`} className="hover:underline text-primary">
+                            {trademark.owner.name}
+                        </Link>
                     </div>
                 </div>
                 {contact && (
@@ -235,7 +237,11 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
       header: dictionary.dashboard.table.owner,
       cell: ({ row }) => {
         const owner = row.original.owner;
-        return owner ? owner.name : 'N/A';
+        return owner ? (
+            <Link href={`/owners/${owner.id}`} className="hover:underline text-primary">
+                {owner.name}
+            </Link>
+        ) : 'N/A';
       }
     },
     {

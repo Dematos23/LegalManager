@@ -136,3 +136,30 @@ export async function getAgentDetails(id: number) {
         return null;
     }
 }
+
+export async function getOwnerDetails(id: number) {
+    try {
+        const owner = await prisma.owner.findUnique({
+            where: { id },
+            include: {
+                trademarks: {
+                    orderBy: {
+                        expiration: 'asc'
+                    }
+                },
+                contacts: {
+                    include: {
+                        agent: true
+                    },
+                    orderBy: {
+                        firstName: 'asc'
+                    }
+                }
+            }
+        });
+        return owner;
+    } catch (error) {
+        console.error('Database Error:', error);
+        return null;
+    }
+}

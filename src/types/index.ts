@@ -31,6 +31,14 @@ export type AgentWithDetails = Agent & {
     })[];
 };
 
+// Define a composite type for the Owner detail view.
+export type OwnerWithDetails = Owner & {
+  trademarks: Trademark[];
+  contacts: (Contact & {
+    agent: Agent;
+  })[];
+};
+
 
 // New types for campaign tracking
 export type CampaignWithDetails = Campaign & {

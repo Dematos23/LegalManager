@@ -1,0 +1,226 @@
+
+'use client';
+
+import * as React from 'react';
+import type { OwnerWithDetails, Contact, Agent } from '@/types';
+import { useLanguage } from '@/context/language-context';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Building, Globe, FileText, CalendarClock, Contact as ContactIcon, Mail, Briefcase, PlusCircle, Edit, User, Trash2 } from 'lucide-react';
+import { format, differenceInDays, isPast } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { Button } from './ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Checkbox } from './ui/checkbox';
+import { updateOwnerContacts } from '@/app/owners/actions';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+
+type FullContact = Contact & { agent: Agent };
+
+function EditContactsDialog({ owner, allContacts }: { owner: OwnerWithDetails; allContacts: FullContact[] }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [selectedContactIds, setSelectedContactIds] = React.useState<number[]>(() => 
+        owner.contacts.map(c => c.id)
+    );
+    const [isSaving, startSavingTransition] = React.useTransition();
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleSave = async () => {
+        startSavingTransition(async () => {
+            const result = await updateOwnerContacts(owner.id, selectedContactIds);
+            if (result.success) {
+                toast({ title: "Contacts Updated", description: "The owner's contact list has been updated." });
+                setIsOpen(false);
+                router.refresh(); // Refresh the page to show the new data
+            } else {
+                toast({ title: "Error", description: result.error, variant: 'destructive' });
+            }
+        });
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Associated Contacts
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Edit Contacts for {owner.name}</DialogTitle>
+                    <DialogDescription>
+                        Select the contacts that should be associated with this owner.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 max-h-80 overflow-y-auto p-1">
+                    {allContacts.map(contact => (
+                        <div key={contact.id} className="flex items-center space-x-3 rounded-md border p-3">
+                            <Checkbox
+                                id={`contact-${contact.id}`}
+                                checked={selectedContactIds.includes(contact.id)}
+                                onCheckedChange={(checked) => {
+                                    setSelectedContactIds(prev => 
+                                        checked ? [...prev, contact.id] : prev.filter(id => id !== contact.id)
+                                    );
+                                }}
+                            />
+                            <label
+                                htmlFor={`contact-${contact.id}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                                <div className="flex flex-col">
+                                    <span>{contact.firstName} {contact.lastName}</span>
+                                    <span className="text-xs text-muted-foreground">{contact.email}</span>
+                                </div>
+                            </label>
+                        </div>
+                    ))}
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+type OwnerDetailClientProps = {
+  owner: OwnerWithDetails;
+  allContacts: FullContact[];
+};
+
+export function OwnerDetailClient({ owner, allContacts }: OwnerDetailClientProps) {
+  const { dictionary } = useLanguage();
+
+  return (
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-primary">
+          Owner Profile
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Building className="h-8 w-8 text-primary" />
+              <div>
+                <CardTitle className="text-2xl">{owner.name}</CardTitle>
+                <CardDescription className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" /> {owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Trademarks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {owner.trademarks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">This owner has no trademarks.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{dictionary.dashboard.table.trademark}</TableHead>
+                    <TableHead>{dictionary.dashboard.table.class}</TableHead>
+                    <TableHead>{dictionary.dashboard.table.certificate}</TableHead>
+                    <TableHead>{dictionary.dashboard.table.expiration}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {owner.trademarks.map(trademark => {
+                    const expirationDate = new Date(trademark.expiration);
+                    const daysUntilExpiration = differenceInDays(expirationDate, new Date());
+                    const hasExpired = isPast(expirationDate);
+                    const colorClass = hasExpired
+                      ? 'text-destructive font-semibold'
+                      : daysUntilExpiration <= 30
+                      ? 'text-destructive'
+                      : daysUntilExpiration <= 90
+                      ? 'text-warning'
+                      : '';
+                    return (
+                      <TableRow key={trademark.id}>
+                        <TableCell className="font-medium">{trademark.denomination}</TableCell>
+                        <TableCell>{trademark.class}</TableCell>
+                        <TableCell>{trademark.certificate}</TableCell>
+                        <TableCell className={cn(colorClass)}>
+                          {format(expirationDate, 'MMM dd, yyyy')}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-1">
+                    <CardTitle>Associated Contacts</CardTitle>
+                    <CardDescription>Contacts linked to this owner.</CardDescription>
+                </div>
+                <EditContactsDialog owner={owner} allContacts={allContacts} />
+            </CardHeader>
+            <CardContent>
+                {owner.contacts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">This owner has no associated contacts.</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {owner.contacts.map(contact => (
+                            <Card key={contact.id}>
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <ContactIcon className="h-6 w-6 text-primary" />
+                                        <div>
+                                            <CardTitle className="text-base">
+                                                <Link href={`/contacts/${contact.id}`} className="hover:underline">
+                                                    {contact.firstName} {contact.lastName}
+                                                </Link>
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">{contact.email}</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="text-sm space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                         <Link href={`/agents/${contact.agent.id}`} className="hover:underline">
+                                            {contact.agent.name}
+                                         </Link>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+
+      </div>
+    </div>
+  );
+}
