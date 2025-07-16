@@ -163,3 +163,16 @@ export async function getOwnerDetails(id: number) {
         return null;
     }
 }
+
+export async function getAgents() {
+  try {
+    return await prisma.agent.findMany({
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  } catch (error) {
+    console.error('Database Error:', error);
+    return [];
+  }
+}

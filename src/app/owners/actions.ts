@@ -18,6 +18,9 @@ export async function updateOwnerContacts(ownerId: number, contactIds: number[])
     return { success: true };
   } catch (error) {
     console.error('Failed to update owner contacts:', error);
-    return { error: 'An unexpected error occurred.' };
+    if (error instanceof Error) {
+        return { success: false, error: `An unexpected error occurred: ${error.message}` };
+    }
+    return { success: false, error: 'An unexpected error occurred while updating contacts.' };
   }
 }

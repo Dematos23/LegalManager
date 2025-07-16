@@ -25,30 +25,51 @@ import { Checkbox } from './ui/checkbox';
 import { updateOwnerContacts } from '@/app/owners/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
 
 type FullContact = Contact & { agent: Agent };
 
-function EditContactsDialog({ owner, allContacts }: { owner: OwnerWithDetails; allContacts: FullContact[] }) {
+function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWithDetails; allContacts: FullContact[], allAgents: Agent[] }) {
     const [isOpen, setIsOpen] = React.useState(false);
-    const [selectedContactIds, setSelectedContactIds] = React.useState<number[]>(() => 
-        owner.contacts.map(c => c.id)
-    );
     const [isSaving, startSavingTransition] = React.useTransition();
     const { toast } = useToast();
     const router = useRouter();
 
+    const initialAgentId = owner.contacts[0]?.agentId;
+    const [selectedAgentId, setSelectedAgentId] = React.useState<number | undefined>(initialAgentId);
+
+    const [selectedContactIds, setSelectedContactIds] = React.useState<number[]>(() =>
+        owner.contacts.map(c => c.id)
+    );
+
+    const handleAgentChange = (agentId: string) => {
+        const id = Number(agentId);
+        setSelectedAgentId(id);
+        setSelectedContactIds([]); // Clear selection when agent changes
+    };
+
     const handleSave = async () => {
+        if (owner.contacts.length > 0 && !selectedAgentId) {
+            toast({ title: "Agent Required", description: "Please select an agent before saving.", variant: 'destructive' });
+            return;
+        }
+
         startSavingTransition(async () => {
             const result = await updateOwnerContacts(owner.id, selectedContactIds);
             if (result.success) {
                 toast({ title: "Contacts Updated", description: "The owner's contact list has been updated." });
                 setIsOpen(false);
-                router.refresh(); // Refresh the page to show the new data
+                router.refresh();
             } else {
                 toast({ title: "Error", description: result.error, variant: 'destructive' });
             }
         });
     };
+    
+    const availableContacts = selectedAgentId
+        ? allContacts.filter(c => c.agentId === selectedAgentId)
+        : [];
 
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -62,17 +83,35 @@ function EditContactsDialog({ owner, allContacts }: { owner: OwnerWithDetails; a
                 <DialogHeader>
                     <DialogTitle>Edit Contacts for {owner.name}</DialogTitle>
                     <DialogDescription>
-                        Select the contacts that should be associated with this owner.
+                        Select an agent, then select the contacts to associate with this owner.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 max-h-80 overflow-y-auto p-1">
-                    {allContacts.map(contact => (
+                 <div className="space-y-2">
+                    <Label htmlFor="agent-select">Agent</Label>
+                    <Select
+                        value={selectedAgentId ? String(selectedAgentId) : ''}
+                        onValueChange={handleAgentChange}
+                    >
+                        <SelectTrigger id="agent-select">
+                            <SelectValue placeholder="Select an agent..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {allAgents.map(agent => (
+                                <SelectItem key={agent.id} value={String(agent.id)}>
+                                    {agent.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-4 max-h-60 overflow-y-auto p-1">
+                    {availableContacts.map(contact => (
                         <div key={contact.id} className="flex items-center space-x-3 rounded-md border p-3">
                             <Checkbox
                                 id={`contact-${contact.id}`}
                                 checked={selectedContactIds.includes(contact.id)}
                                 onCheckedChange={(checked) => {
-                                    setSelectedContactIds(prev => 
+                                    setSelectedContactIds(prev =>
                                         checked ? [...prev, contact.id] : prev.filter(id => id !== contact.id)
                                     );
                                 }}
@@ -88,6 +127,11 @@ function EditContactsDialog({ owner, allContacts }: { owner: OwnerWithDetails; a
                             </label>
                         </div>
                     ))}
+                    {selectedAgentId && availableContacts.length === 0 && (
+                        <p className="text-sm text-center text-muted-foreground p-4">
+                            This agent has no contacts.
+                        </p>
+                    )}
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
@@ -103,9 +147,10 @@ function EditContactsDialog({ owner, allContacts }: { owner: OwnerWithDetails; a
 type OwnerDetailClientProps = {
   owner: OwnerWithDetails;
   allContacts: FullContact[];
+  allAgents: Agent[];
 };
 
-export function OwnerDetailClient({ owner, allContacts }: OwnerDetailClientProps) {
+export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetailClientProps) {
   const { dictionary } = useLanguage();
 
   return (
@@ -183,7 +228,7 @@ export function OwnerDetailClient({ owner, allContacts }: OwnerDetailClientProps
                     <CardTitle>Associated Contacts</CardTitle>
                     <CardDescription>Contacts linked to this owner.</CardDescription>
                 </div>
-                <EditContactsDialog owner={owner} allContacts={allContacts} />
+                <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
             </CardHeader>
             <CardContent>
                 {owner.contacts.length === 0 ? (

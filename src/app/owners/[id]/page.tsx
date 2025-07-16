@@ -1,5 +1,5 @@
 
-import { getOwnerDetails, getContacts } from '@/lib/data';
+import { getOwnerDetails, getContacts, getAgents } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { OwnerDetailClient } from '@/components/owner-detail-client';
 
@@ -15,14 +15,15 @@ export default async function OwnerDetailPage({ params }: OwnerDetailPageProps) 
         notFound();
     }
 
-    const [owner, allContacts] = await Promise.all([
+    const [owner, allContacts, allAgents] = await Promise.all([
         getOwnerDetails(id),
         getContacts(),
+        getAgents(),
     ]);
 
     if (!owner) {
         notFound();
     }
     
-    return <OwnerDetailClient owner={owner} allContacts={allContacts} />;
+    return <OwnerDetailClient owner={owner} allContacts={allContacts} allAgents={allAgents} />;
 }
