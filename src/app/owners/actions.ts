@@ -6,14 +6,21 @@ import { revalidatePath } from 'next/cache';
 
 export async function updateOwnerContacts(ownerId: number, contactIds: number[]) {
   try {
-    await prisma.owner.update({
-      where: { id: ownerId },
-      data: {
-        contacts: {
-          set: contactIds.map(id => ({ id })),
-        },
-      },
-    });
+    // Use a transaction to ensure atomicity: delete old associations and create new ones.
+    await prisma.$transaction([
+      // 1. Delete all existing entries for this owner in the join table
+      prisma.ownerContact.deleteMany({
+        where: { ownerId: ownerId },
+      }),
+      // 2. Create new entries for the selected contacts
+      prisma.ownerContact.createMany({
+        data: contactIds.map(contactId => ({
+          ownerId: ownerId,
+          contactId: contactId,
+        })),
+      }),
+    ]);
+    
     revalidatePath(`/owners/${ownerId}`);
     return { success: true };
   } catch (error) {

@@ -280,17 +280,28 @@ export async function importDataAction(formData: FormData) {
               name: getValue('owner.name'),
               country: getCountryEnumValue(ownerCountryValue),
           });
+          
           const owner = await tx.owner.upsert({
             where: { name: ownerData.name },
-            update: {
-              ...ownerData,
-              ...(contact && { contacts: { connect: { id: contact.id } } })
-            },
-            create: {
-              ...ownerData,
-              ...(contact && { contacts: { connect: { id: contact.id } } })
-            },
+            update: ownerData,
+            create: ownerData,
           });
+
+          if (contact) {
+            await tx.ownerContact.upsert({
+              where: {
+                ownerId_contactId: {
+                  ownerId: owner.id,
+                  contactId: contact.id
+                }
+              },
+              create: {
+                ownerId: owner.id,
+                contactId: contact.id
+              },
+              update: {}
+            });
+          }
           
           const expirationValue = getValue('trademark.expiration');
           const trademarkData = TrademarkSchema.parse({
@@ -326,7 +337,7 @@ export async function importDataAction(formData: FormData) {
       console.error("Import errors:", JSON.stringify(results.errorDetails, null, 2));
     }
     return { 
-      message: `Import complete. ${results.success} rows successfully imported. ${results.errors} rows failed.`,
+      message: `Import complete. ${results.success} rows successfully imported. ${results.errors} failed.`,
       errorDetails: results.errors > 0 ? results.errorDetails : undefined,
     };
 

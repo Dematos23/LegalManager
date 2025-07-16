@@ -118,16 +118,20 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 where: { id: { in: payload.contactIds } },
                 include: {
                     agent: true,
-                    owners: { 
-                        include: { 
-                            trademarks: { orderBy: { expiration: 'asc' } } 
-                        } 
+                    ownerContacts: {
+                        include: {
+                            owner: {
+                                include: {
+                                    trademarks: { orderBy: { expiration: 'asc' } }
+                                }
+                            }
+                        }
                     }
                 }
             });
 
             for (const contact of contacts) {
-                let allOwners = contact.owners;
+                let allOwners = contact.ownerContacts.map(oc => oc.owner);
                 let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
 
                 // For single-trademark templates sent via contact (e.g., from dashboard action)
@@ -149,14 +153,29 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             // Processing for 'Send by Trademark'
             const selectedTrademarks = await prisma.trademark.findMany({
                 where: { id: { in: payload.trademarkIds } },
-                include: { owner: { include: { contacts: { include: { agent: true } } } } }
+                include: {
+                    owner: {
+                        include: {
+                            ownerContacts: {
+                                include: {
+                                    contact: {
+                                        include: {
+                                            agent: true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             });
             
             if (templateType === 'multi-trademark-no-owner') {
                 // Group trademarks by their contact. One email per contact with a list of their trademarks.
                 const trademarksByContact = new Map<number, { contact: any; trademarks: any[] }>();
                 for (const tm of selectedTrademarks) {
-                    for (const contact of tm.owner.contacts) {
+                    for (const ownerContact of tm.owner.ownerContacts) {
+                        const contact = ownerContact.contact;
                         if (!trademarksByContact.has(contact.id)) {
                             trademarksByContact.set(contact.id, { contact, trademarks: [] });
                         }
@@ -174,7 +193,8 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
 
             } else { // Single-trademark: Send one email per trademark, per contact
                 for (const tm of selectedTrademarks) {
-                     for (const contact of tm.owner.contacts) {
+                     for (const ownerContact of tm.owner.ownerContacts) {
+                        const contact = ownerContact.contact;
                         const context = createHandlebarsContext(contact, [tm.owner], [tm]);
                         const jobKey = `${contact.email}-${tm.id}`; // Unique key per contact-trademark pair
                         emailJobs.set(jobKey, { contact, context });
@@ -237,7 +257,15 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
         where: { id: payload.contactIds[0] },
         include: {
             agent: true,
-            owners: { include: { trademarks: { orderBy: { expiration: 'asc' } } } }
+            ownerContacts: {
+                include: {
+                    owner: {
+                        include: {
+                            trademarks: { orderBy: { expiration: 'asc' } }
+                        }
+                    }
+                }
+            }
         }
     });
     if (!contact) {
@@ -263,7 +291,7 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
         campaignId = newCampaign.id;
     }
 
-    const allOwners = contact.owners;
+    const allOwners = contact.ownerContacts.map(oc => oc.owner);
     const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
     const context = createHandlebarsContext(contact, allOwners, allTrademarks);
 
@@ -400,16 +428,20 @@ export async function getContactDataForPreview(contactId: number, trademarkId?: 
         where: { id: contactId },
         include: {
             agent: true,
-            owners: {
+            ownerContacts: {
                 include: {
-                    trademarks: { orderBy: { expiration: 'asc' } }
+                    owner: {
+                        include: {
+                           trademarks: { orderBy: { expiration: 'asc' } }
+                        }
+                    }
                 }
             }
         }
     });
     if (!contact) return null;
 
-    let allOwners = contact.owners;
+    let allOwners = contact.ownerContacts.map(oc => oc.owner);
     let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
 
     // If a specific trademarkId is provided, filter the context for that single trademark

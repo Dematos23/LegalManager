@@ -90,15 +90,21 @@ export async function createTrademark(formData: FormData) {
         finalContactId = parseInt(contactId, 10);
       }
 
-      // 3. Connect Contact to Owner (if not already connected)
-      await tx.owner.update({
-        where: { id: finalOwnerId },
-        data: {
-          contacts: {
-            connect: { id: finalContactId },
+      // 3. Connect Contact to Owner using the explicit join table
+      await tx.ownerContact.upsert({
+        where: {
+          ownerId_contactId: {
+            ownerId: finalOwnerId,
+            contactId: finalContactId,
           },
         },
+        update: {},
+        create: {
+          ownerId: finalOwnerId,
+          contactId: finalContactId,
+        },
       });
+      
 
       // 4. Create Trademark
       await tx.trademark.create({
