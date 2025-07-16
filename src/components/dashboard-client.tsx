@@ -26,7 +26,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuItem
 } from '@/components/ui/dropdown-menu';
-import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
+import { format, differenceInDays, isPast, addDays, getYear, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { TrademarkFilters } from '@/components/trademark-filters';
@@ -51,7 +51,7 @@ const globalFilterFn: FilterFn<TrademarkWithDetails> = (row: Row<TrademarkWithDe
     return flatString.includes(search);
 }
 
-const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
+const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
     const expiration = row.getValue(columnId) as Date;
     if (!value) return true;
 
@@ -59,6 +59,8 @@ const expirationFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     const expirationDate = new Date(expiration);
     
     switch(value) {
+        case 'grace_period':
+            return expirationDate < now && expirationDate >= subDays(now, 180);
         case '30':
             return expirationDate >= now && expirationDate <= addDays(now, 30);
         case '60':

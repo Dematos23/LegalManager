@@ -20,6 +20,7 @@ export const en = {
     expiring90: '61-90 days',
     expiring180: '91-180 days',
     expiringOver180: 'Over 180 days',
+    gracePeriod: 'Grace Period (Expired)',
     allExpirations: 'All Expirations',
     areaFilterLabel: 'Area',
     allAreas: 'All Areas',

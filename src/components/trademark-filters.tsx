@@ -51,6 +51,7 @@ export function TrademarkFilters({ table, agentAreas, expirationYears, onMobileS
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{dictionary.dashboard.allExpirations}</SelectItem>
+              <SelectItem value="grace_period">{dictionary.dashboard.gracePeriod}</SelectItem>
               <SelectItem value="30">{dictionary.dashboard.expiring30}</SelectItem>
               <SelectItem value="60">{dictionary.dashboard.expiring60}</SelectItem>
               <SelectItem value="90">{dictionary.dashboard.expiring90}</SelectItem>
@@ -109,6 +110,7 @@ export function TrademarkFilters({ table, agentAreas, expirationYears, onMobileS
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{dictionary.dashboard.allExpirations}</SelectItem>
+              <SelectItem value="grace_period">{dictionary.dashboard.gracePeriod}</SelectItem>
               <SelectItem value="30">{dictionary.dashboard.expiring30}</SelectItem>
               <SelectItem value="60">{dictionary.dashboard.expiring60}</SelectItem>
               <SelectItem value="90">{dictionary.dashboard.expiring90}</SelectItem>

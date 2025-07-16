@@ -22,6 +22,7 @@ export const es: Dictionary = {
     expiring90: '61-90 días',
     expiring180: '91-180 días',
     expiringOver180: 'Más de 180 días',
+    gracePeriod: 'Período de Gracia (Vencido)',
     allExpirations: 'Todos los vencimientos',
     areaFilterLabel: 'Área',
     allAreas: 'Todas las Áreas',
