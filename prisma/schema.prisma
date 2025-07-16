@@ -28,7 +28,7 @@ model Contact {
   updatedAt  DateTime    @updatedAt
   agent      Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
   agentId    Int
-  owners     Owner[]     @relation("OwnerContacts")
+  ownerContacts OwnerContact[]
   sentEmails SentEmail[]
 }
 
@@ -39,7 +39,7 @@ model Owner {
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
   trademarks Trademark[]
-  contacts   Contact[]   @relation("OwnerContacts")
+  ownerContacts OwnerContact[]
 }
 
 model Trademark {
@@ -85,6 +85,18 @@ model SentEmail {
   campaignId  Int
   contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   contactId   Int
+}
+
+model OwnerContact {
+  owner     Owner   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   Int
+
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId Int
+
+  createdAt DateTime @default(now())
+
+  @@id([ownerId, contactId]) // clave compuesta
 }
 
 enum TrademarkType {
@@ -302,3 +314,4 @@ enum Country {
   ZAMBIA
   ZIMBABWE
 }
+
