@@ -6,7 +6,7 @@ import type { OwnerWithDetails, ContactWithAgent, Agent } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, Globe, FileText, CalendarClock, Contact as ContactIcon, Mail, Briefcase, PlusCircle, Edit, User, Trash2 } from 'lucide-react';
+import { Building, Globe, FileText, CalendarClock, Contact as ContactIcon, Mail, Briefcase, Edit } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -246,17 +246,13 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                         const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
                         return (
                              <Card key={trademark.id}>
-                                <CardHeader>
+                                <CardHeader className="space-y-2">
                                     <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-2">
-                                            <FileText className="h-4 w-4" />
-                                            <span>Class {classes}</span>
-                                        </div>
-                                        <span>•</span>
-                                        <span>Cert: {trademark.certificate}</span>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                        <Badge variant="outline">Class: {classes}</Badge>
+                                        <Badge variant="outline">Cert: {trademark.certificate}</Badge>
+                                        {trademark.type && <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>}
                                     </div>
-                                    {trademark.type && <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>}
                                 </CardHeader>
                                 <CardFooter>
                                     <div className={cn('flex items-center gap-2 text-sm font-medium w-full', colorClass)}>
