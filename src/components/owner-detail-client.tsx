@@ -4,7 +4,7 @@
 import * as React from 'react';
 import type { OwnerWithDetails, ContactWithAgent, Agent } from '@/types';
 import { useLanguage } from '@/context/language-context';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Building, Globe, FileText, CalendarClock, Contact as ContactIcon, Mail, Briefcase, PlusCircle, Edit, User, Trash2 } from 'lucide-react';
 import { format, differenceInDays, isPast } from 'date-fns';
@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type FullContact = ContactWithAgent;
 
@@ -154,6 +155,7 @@ type OwnerDetailClientProps = {
 export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetailClientProps) {
   const { dictionary } = useLanguage();
   const contacts = owner.ownerContacts.map(oc => oc.contact);
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -228,6 +230,49 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
           <CardContent>
             {owner.trademarks.length === 0 ? (
               <p className="text-sm text-muted-foreground">This owner has no trademarks.</p>
+            ) : isMobile ? (
+                <div className="space-y-4">
+                    {owner.trademarks.map(trademark => {
+                        const expirationDate = new Date(trademark.expiration);
+                        const daysUntilExpiration = differenceInDays(expirationDate, new Date());
+                        const hasExpired = isPast(expirationDate);
+                        const colorClass = hasExpired
+                          ? 'text-destructive font-semibold'
+                          : daysUntilExpiration <= 30
+                          ? 'text-destructive'
+                          : daysUntilExpiration <= 90
+                          ? 'text-warning'
+                          : '';
+                        const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
+                        return (
+                             <Card key={trademark.id}>
+                                <CardHeader>
+                                    <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
+                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-4 w-4" />
+                                            <span>Class {classes}</span>
+                                        </div>
+                                        <span>•</span>
+                                        <span>Cert: {trademark.certificate}</span>
+                                    </div>
+                                    {trademark.type && <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>}
+                                </CardHeader>
+                                <CardFooter>
+                                    <div className={cn('flex items-center gap-2 text-sm font-medium w-full', colorClass)}>
+                                        <CalendarClock className="h-4 w-4" />
+                                        <div>
+                                            <span>{format(expirationDate, 'MMM dd, yyyy')}</span>
+                                            <span className="ml-2 text-xs font-normal">
+                                            ({hasExpired ? `${dictionary.contact.expired} ${-daysUntilExpiration} ${dictionary.contact.daysAgo}` : `${dictionary.contact.in} ${daysUntilExpiration} ${dictionary.contact.days}`})
+                                            </span>
+                                        </div>
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                        )
+                    })}
+                </div>
             ) : (
               <Table>
                 <TableHeader>
