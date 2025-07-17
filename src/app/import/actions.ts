@@ -319,7 +319,7 @@ export async function importDataAction(formData: FormData) {
           const expirationValue = getValue('trademark.expiration');
           const trademarkData = TrademarkSchema.parse({
               denomination: getValue('trademark.denomination'),
-              classIds: String(getValue('trademark.class')), // Changed 'class' to 'classIds' and ensured it's a string
+              classIds: String(getValue('trademark.class')),
               type: getValue('trademark.type'),
               certificate: String(getValue('trademark.certificate')),
               expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : new Date(expirationValue),
@@ -335,7 +335,6 @@ export async function importDataAction(formData: FormData) {
             },
           });
           
-          // Connect Trademark to Classes
           const parsedClassIds = classIds.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
           if (parsedClassIds.length > 0) {
             await tx.trademarkClass.createMany({
