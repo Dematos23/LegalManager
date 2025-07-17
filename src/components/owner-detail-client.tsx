@@ -179,6 +179,49 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
         </Card>
 
         <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-1">
+                    <CardTitle>Associated Contacts</CardTitle>
+                    <CardDescription>Contacts linked to this owner.</CardDescription>
+                </div>
+                <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
+            </CardHeader>
+            <CardContent>
+                {contacts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">This owner has no associated contacts.</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {contacts.map(contact => (
+                            <Card key={contact.id}>
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        <ContactIcon className="h-6 w-6 text-primary" />
+                                        <div>
+                                            <CardTitle className="text-base">
+                                                <Link href={`/contacts/${contact.id}`} className="hover:underline">
+                                                    {contact.firstName} {contact.lastName}
+                                                </Link>
+                                            </CardTitle>
+                                            <CardDescription className="text-xs">{contact.email}</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="text-sm space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                         <Link href={`/agents/${contact.agent.id}`} className="hover:underline">
+                                            {contact.agent.name}
+                                         </Link>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+        
+        <Card>
           <CardHeader>
             <CardTitle>Trademarks</CardTitle>
           </CardHeader>
@@ -223,49 +266,6 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
               </Table>
             )}
           </CardContent>
-        </Card>
-
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div className="space-y-1">
-                    <CardTitle>Associated Contacts</CardTitle>
-                    <CardDescription>Contacts linked to this owner.</CardDescription>
-                </div>
-                <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
-            </CardHeader>
-            <CardContent>
-                {contacts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">This owner has no associated contacts.</p>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {contacts.map(contact => (
-                            <Card key={contact.id}>
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <ContactIcon className="h-6 w-6 text-primary" />
-                                        <div>
-                                            <CardTitle className="text-base">
-                                                <Link href={`/contacts/${contact.id}`} className="hover:underline">
-                                                    {contact.firstName} {contact.lastName}
-                                                </Link>
-                                            </CardTitle>
-                                            <CardDescription className="text-xs">{contact.email}</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="text-sm space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                         <Link href={`/agents/${contact.agent.id}`} className="hover:underline">
-                                            {contact.agent.name}
-                                         </Link>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
-            </CardContent>
         </Card>
 
       </div>
