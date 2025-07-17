@@ -139,6 +139,40 @@ export const en = {
     selectDataForPreview: 'Select an owner to see a preview.',
     renderedSubject: 'Rendered Subject',
     renderedPreview: 'Rendered Preview',
+    mergeFields: {
+      agent: {
+        group: 'Agent',
+        name: 'Name',
+        country: 'Country',
+        area: 'Area',
+      },
+      contact: {
+        group: 'Contact',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        email: 'Email',
+      },
+      owner: {
+        group: 'Owner',
+        name: 'Name',
+        country: 'Country',
+      },
+      trademark: {
+        group: 'Trademark',
+        denomination: 'Denomination',
+        class: 'Class',
+        certificate: 'Certificate',
+        expiration: 'Expiration Date',
+        products: 'Products',
+        type: 'Type',
+      },
+      loops: {
+        group: 'Control / Loops',
+        ownersLoop: 'Start Owners Loop',
+        trademarksLoop: 'Start Trademarks Loop',
+        endLoop: 'End Loop',
+      },
+    },
   },
   contact: {
     title: 'Contact Profile',

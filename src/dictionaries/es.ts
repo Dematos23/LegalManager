@@ -141,6 +141,40 @@ export const es: Dictionary = {
     selectDataForPreview: 'Seleccione un titular para ver una vista previa.',
     renderedSubject: 'Asunto Renderizado',
     renderedPreview: 'Vista Previa Renderizada',
+    mergeFields: {
+      agent: {
+        group: 'Agente',
+        name: 'Nombre',
+        country: 'País',
+        area: 'Área',
+      },
+      contact: {
+        group: 'Contacto',
+        firstName: 'Nombre',
+        lastName: 'Apellido',
+        email: 'Correo Electrónico',
+      },
+      owner: {
+        group: 'Titular',
+        name: 'Nombre',
+        country: 'País',
+      },
+      trademark: {
+        group: 'Marca',
+        denomination: 'Denominación',
+        class: 'Clase',
+        certificate: 'Certificado',
+        expiration: 'Fecha de Vencimiento',
+        products: 'Productos',
+        type: 'Tipo',
+      },
+      loops: {
+        group: 'Control / Bucles',
+        ownersLoop: 'Iniciar Bucle de Titulares',
+        trademarksLoop: 'Iniciar Bucle de Marcas',
+        endLoop: 'Terminar Bucle',
+      },
+    },
   },
   contact: {
     title: 'Perfil de Contacto',

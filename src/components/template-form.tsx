@@ -60,62 +60,49 @@ type AgentWithNestedData = Awaited<
   ReturnType<typeof getTemplatePreviewData>
 >[0];
 
-const MERGE_FIELDS = [
-  {
-    group: "Agent",
-    fields: [
-      { name: "Agent Name", value: "{{agent.name}}" },
-      { name: "Agent Country", value: "{{agent.country}}" },
-      { name: "Agent Area", value: "{{agent.area}}" },
-    ],
-  },
-  {
-    group: "Contact",
-    fields: [
-      { name: "Contact First Name", value: "{{contact.firstName}}" },
-      { name: "Contact Last Name", value: "{{contact.lastName}}" },
-      { name: "Contact Email", value: "{{contact.email}}" },
-    ],
-  },
-  {
-    group: "Owners (Loop)",
-    fields: [
-      { name: "Start Owners Loop", value: "{{#each owners}}" },
-      { name: "Owner Name", value: "{{name}}" },
-      { name: "Owner Country", value: "{{country}}" },
-      { name: "Start Trademarks Loop", value: "{{#each trademarks}}" },
-      { name: "Denomination", value: "{{denomination}}" },
-      { name: "Class", value: "{{class}}" },
-      { name: "Expiration", value: "{{expiration}}" },
-      { name: "End Trademarks Loop", value: "{{/each}}" },
-      { name: "End Owners Loop", value: "{{/each}}" },
-    ],
-  },
-  {
-    group: "Trademarks (Loop - Single Owner)",
-    fields: [
-      { name: "Owner Name", value: "{{owner.name}}" },
-      { name: "Owner Country", value: "{{owner.country}}" },
-      { name: "Start Loop", value: "{{#each trademarks}}" },
-      { name: "Denomination", value: "{{denomination}}" },
-      { name: "Class", value: "{{class}}" },
-      { name: "Certificate", value: "{{certificate}}" },
-      { name: "Expiration Date", value: "{{expiration}}" },
-      { name: "Products", value: "{{products}}" },
-      { name: "End Loop", value: "{{/each}}" },
-    ],
-  },
-  {
-    group: "Single Trademark",
-    fields: [
-      { name: "Denomination", value: "{{denomination}}" },
-      { name: "Class", value: "{{class}}" },
-      { name: "Certificate", value: "{{certificate}}" },
-      { name: "Expiration Date", value: "{{expiration}}" },
-      { name: "Products", value: "{{products}}" },
-      { name: "Type", value: "{{type}}" },
-    ],
-  },
+const MERGE_FIELDS = (dictionary: any) => [
+    {
+        group: dictionary.templateForm.mergeFields.agent.group,
+        fields: [
+            { name: dictionary.templateForm.mergeFields.agent.name, value: "{{agent.name}}" },
+            { name: dictionary.templateForm.mergeFields.agent.country, value: "{{agent.country}}" },
+            { name: dictionary.templateForm.mergeFields.agent.area, value: "{{agent.area}}" },
+        ],
+    },
+    {
+        group: dictionary.templateForm.mergeFields.contact.group,
+        fields: [
+            { name: dictionary.templateForm.mergeFields.contact.firstName, value: "{{contact.firstName}}" },
+            { name: dictionary.templateForm.mergeFields.contact.lastName, value: "{{contact.lastName}}" },
+            { name: dictionary.templateForm.mergeFields.contact.email, value: "{{contact.email}}" },
+        ],
+    },
+    {
+        group: dictionary.templateForm.mergeFields.owner.group,
+        fields: [
+            { name: dictionary.templateForm.mergeFields.owner.name, value: "{{owner.name}}" },
+            { name: dictionary.templateForm.mergeFields.owner.country, value: "{{owner.country}}" },
+        ],
+    },
+    {
+        group: dictionary.templateForm.mergeFields.trademark.group,
+        fields: [
+            { name: dictionary.templateForm.mergeFields.trademark.denomination, value: "{{denomination}}" },
+            { name: dictionary.templateForm.mergeFields.trademark.class, value: "{{class}}" },
+            { name: dictionary.templateForm.mergeFields.trademark.certificate, value: "{{certificate}}" },
+            { name: dictionary.templateForm.mergeFields.trademark.expiration, value: "{{expiration}}" },
+            { name: dictionary.templateForm.mergeFields.trademark.products, value: "{{products}}" },
+            { name: dictionary.templateForm.mergeFields.trademark.type, value: "{{type}}" },
+        ],
+    },
+    {
+        group: dictionary.templateForm.mergeFields.loops.group,
+        fields: [
+            { name: dictionary.templateForm.mergeFields.loops.ownersLoop, value: "{{#each owners}}" },
+            { name: dictionary.templateForm.mergeFields.loops.trademarksLoop, value: "{{#each trademarks}}" },
+            { name: dictionary.templateForm.mergeFields.loops.endLoop, value: "{{/each}}" },
+        ],
+    },
 ];
 
 type QuillEditorHandle = {
@@ -293,7 +280,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
     (c) => c.id === Number(selectedContactId)
   );
   
-  const availableOwners = selectedContact?.owners || [];
+  const availableOwners = selectedContact?.ownerContacts.map(oc => oc.owner) || [];
   
   const ownersForPreview = selectedOwnerId !== "all"
     ? availableOwners.filter(o => o.id === Number(selectedOwnerId))
@@ -326,7 +313,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
         country: owner.country.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
         trademarks: owner.trademarks.map(tm => ({
             denomination: tm.denomination,
-            class: String(tm.class),
+            class: tm.trademarkClasses.map(tc => tc.class.id).join(', '),
             certificate: tm.certificate,
             expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
             products: tm.products,
@@ -336,7 +323,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
 
     const allTrademarksForContext = (selectedOwner?.trademarks || []).map(tm => ({
         denomination: tm.denomination,
-        class: String(tm.class),
+        class: tm.trademarkClasses.map(tc => tc.class.id).join(', '),
         certificate: tm.certificate,
         expiration: format(new Date(tm.expiration), "yyyy-MM-dd"),
         products: tm.products,
@@ -733,7 +720,7 @@ export function TemplateForm({ template }: TemplateFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {MERGE_FIELDS.map((group) => (
+            {MERGE_FIELDS(dictionary).map((group) => (
               <div key={group.group}>
                 <h4 className="font-semibold mb-2 text-sm">{group.group}</h4>
                 <div className="space-y-2">
@@ -757,4 +744,3 @@ export function TemplateForm({ template }: TemplateFormProps) {
     </div>
   );
 }
-
