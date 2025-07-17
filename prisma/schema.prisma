@@ -45,15 +45,17 @@ model Owner {
 model Trademark {
   id           Int           @id @default(autoincrement())
   denomination String
-  class        Int
   type         TrademarkType?
   certificate  String
   expiration   DateTime
   products     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+
   owner        Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId      Int
+  trademarkClasses TrademarkClass[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model EmailTemplate {
@@ -97,6 +99,22 @@ model OwnerContact {
   createdAt DateTime @default(now())
 
   @@id([ownerId, contactId]) // clave compuesta
+}
+
+model TrademarkClass {
+  trademark   Trademark @relation(fields: [trademarkId], references: [id], onDelete: Cascade)
+  trademarkId Int
+
+  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId     Int
+
+  @@id([trademarkId, classId])
+}
+
+model Class {
+  id               Int               @id
+  description      String?
+  trademarkClasses TrademarkClass[]
 }
 
 enum TrademarkType {
