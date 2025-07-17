@@ -1,9 +1,24 @@
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding...');
+
+  // Seed Classes 1 to 45
+  for (let i = 1; i <= 45; i++) {
+    await prisma.class.upsert({
+      where: { id: i },
+      update: {},
+      create: {
+        id: i,
+        description: `Class ${i}`, // Optional: Add a basic description
+      },
+    });
+  }
+  console.log('Seeded 45 trademark classes.');
+
 
   // Template 1: Multi-trademark and Multi-owner
   await prisma.emailTemplate.upsert({
@@ -38,7 +53,6 @@ Trademark products: {{products}}
 {{/each}}`,
     },
   });
-  console.log('Created "Multi-trademark and Multi-owner" template.');
 
   // Template 2: Multi-trademark with no owner
   await prisma.emailTemplate.upsert({
@@ -63,7 +77,6 @@ Trademark products: {{products}}
 {{/each}}`,
     },
   });
-  console.log('Created "Multi-trademark (No Owner)" template.');
 
   // Template 3: Single trademark
   await prisma.emailTemplate.upsert({
@@ -89,7 +102,6 @@ Trademark expiration: {{expiration}}
 Trademark products: {{products}}`,
     },
   });
-  console.log('Created "Single Trademark Notification" template.');
 
   // Template 4: Plain text
   await prisma.emailTemplate.upsert({
@@ -105,7 +117,6 @@ Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia
 Sed aliquam ante sit amet nisi rhoncus iaculis. Phasellus laoreet, dui non imperdiet ultrices, mauris diam rhoncus enim, ac feugiat augue orci a lorem. Morbi mattis efficitur tellus sit amet varius. In sem arcu, malesuada non tellus vel, congue tristique dolor. Morbi lacus nunc, finibus non dolor at, feugiat posuere purus. Ut accumsan metus purus, lobortis mollis nisl convallis nec. Sed nec odio quis sapien pharetra consectetur.`,
     },
   });
-  console.log('Created "Plain Text Example" template.');
 
   // Template 5: Six-Month Expiration Notice
   await prisma.emailTemplate.upsert({
@@ -135,7 +146,6 @@ We look forward to your confirmation.
 Best regards,`,
     },
   });
-  console.log('Created "Six-Month Expiration Notice" template.');
   
   // Template 6: Holiday Office Closure
   await prisma.emailTemplate.upsert({
@@ -157,7 +167,6 @@ We appreciate your understanding and wish you a great week.
 Warm regards,`,
     },
   });
-  console.log('Created "Holiday Office Closure" template.');
 
   console.log('Seeding finished.');
 }
