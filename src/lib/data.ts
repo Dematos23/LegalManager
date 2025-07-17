@@ -41,6 +41,11 @@ export async function getContacts() {
         const contacts = await prisma.contact.findMany({
             include: {
                 agent: true,
+                ownerContacts: {
+                    include: {
+                        owner: true
+                    }
+                }
             },
             orderBy: [
                 { firstName: 'asc' },
@@ -113,9 +118,6 @@ export async function getAgentDetails(id: number) {
                                                 expiration: 'asc',
                                             },
                                         },
-                                    },
-                                    orderBy: {
-                                        name: 'asc',
                                     },
                                 }
                             }
