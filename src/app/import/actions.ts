@@ -10,7 +10,7 @@ import { revalidatePath } from 'next/cache';
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
   denomination: z.string().min(1),
-  class: z.coerce.number().int().min(1).max(45),
+  classIds: z.string().min(1), // Changed 'class' to 'classIds'
   type: z.preprocess(
     (val) => (typeof val === 'string' ? val.trim().toUpperCase() : val),
     z.nativeEnum(TrademarkType)
@@ -91,7 +91,7 @@ async function parseAndValidateRows(formData: FormData) {
         ownerName: z.string().min(1, "Required"),
         ownerCountry: z.string().min(1, "Required"),
         trademarkDenomination: z.string().min(1, "Required"),
-        trademarkClass: z.coerce.number({invalid_type_error: "Invalid number"}).int().min(1).max(45),
+        trademarkClass: z.coerce.string().min(1, "Required"), // Now a string
         trademarkType: z.preprocess(
             (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim().toUpperCase() : null),
             z.nativeEnum(TrademarkType, {invalid_type_error: "Invalid type"}).nullable()
@@ -123,6 +123,19 @@ async function parseAndValidateRows(formData: FormData) {
                 path: ['ownerCountry'],
                 message: "Invalid country",
              });
+        }
+        // Validate trademark classes string
+        const classIds = data.trademarkClass.split(',').map(s => s.trim());
+        for (const id of classIds) {
+            const numId = Number(id);
+            if (isNaN(numId) || !Number.isInteger(numId) || numId < 1 || numId > 45) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['trademarkClass'],
+                    message: `Invalid class number: '${id}'. All classes must be integers between 1 and 45.`,
+                });
+                break; // Stop after first invalid class
+            }
         }
     });
 
@@ -306,19 +319,32 @@ export async function importDataAction(formData: FormData) {
           const expirationValue = getValue('trademark.expiration');
           const trademarkData = TrademarkSchema.parse({
               denomination: getValue('trademark.denomination'),
-              class: getValue('trademark.class'),
+              classIds: String(getValue('trademark.class')), // Changed 'class' to 'classIds' and ensured it's a string
               type: getValue('trademark.type'),
               certificate: String(getValue('trademark.certificate')),
               expiration: typeof expirationValue === 'number' ? new Date(Math.round((expirationValue - 25569) * 86400 * 1000)) : new Date(expirationValue),
               products: getValue('trademark.products'),
           });
 
-          await tx.trademark.create({
+          const { classIds, ...restOfTrademarkData } = trademarkData;
+
+          const newTrademark = await tx.trademark.create({
             data: {
-              ...trademarkData,
+              ...restOfTrademarkData,
               ownerId: owner.id,
             },
           });
+          
+          // Connect Trademark to Classes
+          const parsedClassIds = classIds.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+          if (parsedClassIds.length > 0) {
+            await tx.trademarkClass.createMany({
+              data: parsedClassIds.map(classId => ({
+                trademarkId: newTrademark.id,
+                classId: classId,
+              })),
+            });
+          }
         });
 
         results.success++;

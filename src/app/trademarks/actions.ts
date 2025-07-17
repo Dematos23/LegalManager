@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
-  class: z.coerce.number().int().min(1, 'Class must be between 1 and 45.').max(45, 'Class must be between 1 and 45.'),
+  classIds: z.string().min(1, 'At least one class is required.'), // Changed from 'class' to 'classIds'
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1, 'Certificate is required.'),
   expiration: z.coerce.date({ required_error: 'Expiration date is required.' }),
@@ -46,7 +46,7 @@ export async function createTrademark(formData: FormData) {
   }
 
   const {
-    denomination, class: trademarkClass, type, certificate, expiration, products,
+    denomination, classIds, type, certificate, expiration, products,
     ownerId, ownerName, ownerCountry,
     contactId, contactFirstName, contactLastName, contactEmail,
     agentId,
@@ -107,10 +107,9 @@ export async function createTrademark(formData: FormData) {
       
 
       // 4. Create Trademark
-      await tx.trademark.create({
+      const newTrademark = await tx.trademark.create({
         data: {
           denomination,
-          class: trademarkClass,
           type,
           certificate,
           expiration,
@@ -118,6 +117,17 @@ export async function createTrademark(formData: FormData) {
           ownerId: finalOwnerId,
         },
       });
+      
+      // 5. Connect Trademark to Classes
+      const parsedClassIds = classIds.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+      if (parsedClassIds.length > 0) {
+          await tx.trademarkClass.createMany({
+              data: parsedClassIds.map(classId => ({
+                  trademarkId: newTrademark.id,
+                  classId: classId
+              }))
+          });
+      }
     });
   } catch (error: any) {
     console.error('Failed to create trademark:', error);
@@ -141,5 +151,8 @@ export async function getOwners() {
 }
 
 export async function getContacts() {
-  return prisma.contact.findMany({ orderBy: { firstName: 'asc' } });
+  return prisma.contact.findMany({
+    include: { agent: true },
+    orderBy: { firstName: 'asc' } 
+  });
 }

@@ -122,7 +122,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                         include: {
                             owner: {
                                 include: {
-                                    trademarks: { orderBy: { expiration: 'asc' } }
+                                    trademarks: { 
+                                        include: { trademarkClasses: { include: { class: true } } },
+                                        orderBy: { expiration: 'asc' } 
+                                    }
                                 }
                             }
                         }
@@ -145,7 +148,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 }
 
                 // For 'plain', 'multi-owner', and 'multi-trademark-no-owner' templates sent by contact
-                const context = createHandlebarsContext(contact, allOwners, allTrademarks);
+                const context = await createHandlebarsContext(contact, allOwners, allTrademarks);
                 emailJobs.set(contact.email, { contact, context });
             }
 
@@ -166,7 +169,8 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                                 }
                             }
                         }
-                    }
+                    },
+                    trademarkClasses: { include: { class: true } }
                 }
             });
             
@@ -186,7 +190,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 for (const { contact, trademarks } of trademarksByContact.values()) {
                     // Context will have a list of trademarks for a single-owner (the one associated with the marks)
                     const owner = trademarks[0].owner;
-                    const context = createHandlebarsContext(contact, [owner], trademarks);
+                    const context = await createHandlebarsContext(contact, [owner], trademarks);
                     const jobKey = `${contact.email}`; // Unique key per contact
                     emailJobs.set(jobKey, { contact, context });
                 }
@@ -195,7 +199,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 for (const tm of selectedTrademarks) {
                      for (const ownerContact of tm.owner.ownerContacts) {
                         const contact = ownerContact.contact;
-                        const context = createHandlebarsContext(contact, [tm.owner], [tm]);
+                        const context = await createHandlebarsContext(contact, [tm.owner], [tm]);
                         const jobKey = `${contact.email}-${tm.id}`; // Unique key per contact-trademark pair
                         emailJobs.set(jobKey, { contact, context });
                     }
@@ -261,7 +265,10 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
                 include: {
                     owner: {
                         include: {
-                            trademarks: { orderBy: { expiration: 'asc' } }
+                            trademarks: { 
+                                include: { trademarkClasses: { include: { class: true } } },
+                                orderBy: { expiration: 'asc' }
+                            }
                         }
                     }
                 }
@@ -293,7 +300,7 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
 
     const allOwners = contact.ownerContacts.map(oc => oc.owner);
     const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
-    const context = createHandlebarsContext(contact, allOwners, allTrademarks);
+    const context = await createHandlebarsContext(contact, allOwners, allTrademarks);
 
     const emailSubject = compileAndRender(payload.subject, context);
     const emailBody = compileAndRender(payload.body, context);
@@ -327,16 +334,16 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
 }
 
 
-type FullOwner = Owner & { trademarks: Trademark[] };
+type FullOwner = Owner & { trademarks: (Trademark & { trademarkClasses: { class: { id: number } }[] })[] };
 type FullContact = Contact & { agent: Agent };
 
-function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allTrademarks: Trademark[]): any {
+async function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allTrademarks: any[]): Promise<any> {
     const ownersContext = owners.map(owner => ({
         name: owner.name,
         country: owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt: string) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()),
         trademarks: (owner.trademarks || []).map(tm => ({
             denomination: tm.denomination,
-            class: String(tm.class),
+            class: tm.trademarkClasses.map(tc => tc.class.id).join(', '),
             certificate: tm.certificate,
             expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
             products: tm.products,
@@ -346,7 +353,7 @@ function createHandlebarsContext(contact: FullContact, owners: FullOwner[], allT
 
     const trademarksContextData = allTrademarks.map(tm => ({
         denomination: tm.denomination,
-        class: String(tm.class),
+        class: tm.trademarkClasses.map((tc: any) => tc.class.id).join(', '),
         certificate: tm.certificate,
         expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
         products: tm.products,
@@ -432,7 +439,10 @@ export async function getContactDataForPreview(contactId: number, trademarkId?: 
                 include: {
                     owner: {
                         include: {
-                           trademarks: { orderBy: { expiration: 'asc' } }
+                           trademarks: { 
+                                include: { trademarkClasses: { include: { class: true } } },
+                                orderBy: { expiration: 'asc' } 
+                           }
                         }
                     }
                 }
