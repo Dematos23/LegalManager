@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import type { OwnerWithDetails, Contact, Agent } from '@/types';
+import type { OwnerWithDetails, ContactWithAgent, Agent } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,7 +28,7 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 
-type FullContact = Contact & { agent: Agent };
+type FullContact = ContactWithAgent;
 
 function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWithDetails; allContacts: FullContact[], allAgents: Agent[] }) {
     const [isOpen, setIsOpen] = React.useState(false);
@@ -36,11 +36,12 @@ function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWit
     const { toast } = useToast();
     const router = useRouter();
 
-    const initialAgentId = owner.contacts[0]?.agentId;
+    const ownerContacts = owner.ownerContacts.map(oc => oc.contact);
+    const initialAgentId = ownerContacts[0]?.agentId;
     const [selectedAgentId, setSelectedAgentId] = React.useState<number | undefined>(initialAgentId);
 
     const [selectedContactIds, setSelectedContactIds] = React.useState<number[]>(() =>
-        owner.contacts.map(c => c.id)
+        ownerContacts.map(c => c.id)
     );
 
     const handleAgentChange = (agentId: string) => {
@@ -50,7 +51,7 @@ function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWit
     };
 
     const handleSave = async () => {
-        if (owner.contacts.length > 0 && !selectedAgentId) {
+        if (ownerContacts.length > 0 && !selectedAgentId) {
             toast({ title: "Agent Required", description: "Please select an agent before saving.", variant: 'destructive' });
             return;
         }
@@ -152,6 +153,7 @@ type OwnerDetailClientProps = {
 
 export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetailClientProps) {
   const { dictionary } = useLanguage();
+  const contacts = owner.ownerContacts.map(oc => oc.contact);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -205,10 +207,11 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                       : daysUntilExpiration <= 90
                       ? 'text-warning'
                       : '';
+                    const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
                     return (
                       <TableRow key={trademark.id}>
                         <TableCell className="font-medium">{trademark.denomination}</TableCell>
-                        <TableCell>{trademark.class}</TableCell>
+                        <TableCell>{classes}</TableCell>
                         <TableCell>{trademark.certificate}</TableCell>
                         <TableCell className={cn(colorClass)}>
                           {format(expirationDate, 'MMM dd, yyyy')}
@@ -231,11 +234,11 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                 <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
             </CardHeader>
             <CardContent>
-                {owner.contacts.length === 0 ? (
+                {contacts.length === 0 ? (
                     <p className="text-sm text-muted-foreground">This owner has no associated contacts.</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {owner.contacts.map(contact => (
+                        {contacts.map(contact => (
                             <Card key={contact.id}>
                                 <CardHeader>
                                     <div className="flex items-center gap-3">

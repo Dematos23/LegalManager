@@ -26,7 +26,7 @@ import {
   GlobalFilterFn
 } from '@tanstack/react-table';
 import { format, differenceInDays, isPast, addDays, getYear } from 'date-fns';
-import type { TrademarkWithDetails, EmailTemplate, Contact } from '@/types';
+import type { TrademarkWithDetails, EmailTemplate, ContactWithAgent } from '@/types';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown, Send, Loader2, Info, X } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -71,7 +71,7 @@ function getTemplateType(templateBody: string): TemplateType {
 type TemplateSendClientProps = {
   template: EmailTemplate;
   trademarks: TrademarkWithDetails[];
-  contacts: (Contact & { agent: any })[];
+  contacts: ContactWithAgent[];
 };
 
 export function TemplateSendClient({ template, trademarks, contacts }: TemplateSendClientProps) {
@@ -370,7 +370,7 @@ const useTrademarkTable = (data: TrademarkWithDetails[]) => {
   });
 };
 
-const useContactTable = (data: (Contact & { agent: any })[]) => {
+const useContactTable = (data: ContactWithAgent[]) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
@@ -410,7 +410,7 @@ const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
 
 const areaFilterFn: FilterFn<any> = (row, columnId, value) => {
     if (!value) return true;
-    const agent = row.original.owner?.contacts?.[0]?.agent ?? row.original.agent;
+    const agent = row.original.owner?.ownerContacts?.[0]?.contact.agent ?? row.original.agent;
     return agent?.area === value;
 };
 
@@ -426,15 +426,15 @@ const globalTrademarkFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
     const flatString = [
         trademark.denomination,
         trademark.owner.name,
-        trademark.class.toString(),
+        trademark.trademarkClasses.map(tc => tc.class.id).join(', '),
         trademark.certificate,
-        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
+        ...trademark.owner.ownerContacts.map(oc => oc.contact).flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
     ].filter(Boolean).join(' ').toLowerCase();
     return flatString.includes(search);
 };
 
 const globalContactFilterFn: GlobalFilterFn<any> = (row, columnId, value) => {
-    const contact = row.original as Contact & { agent: any };
+    const contact = row.original as ContactWithAgent;
     const search = String(value).toLowerCase();
     const flatString = [
         contact.firstName,
@@ -470,17 +470,22 @@ const trademarkColumns: ColumnDef<TrademarkWithDetails>[] = [
       },
     },
     {
-        accessorKey: 'owner.contacts', header: 'Contact',
+        id: 'contact', 
+        header: 'Contact',
+        accessorFn: (row) => row.owner.ownerContacts[0]?.contact.email,
         cell: ({ row }) => {
-            const primaryContact = row.original.owner.contacts?.[0];
+            const primaryContact = row.original.owner.ownerContacts?.[0]?.contact;
             if (!primaryContact) return 'N/A';
             return <Link href={`/contacts/${primaryContact.id}`} className="font-medium hover:underline text-primary">{`${primaryContact.firstName} ${primaryContact.lastName}`}</Link>;
         },
     },
     {
-        accessorKey: 'owner.contacts[0].agent.name', id: 'agent', header: 'Agent', filterFn: areaFilterFn,
+        id: 'agent', 
+        header: 'Agent', 
+        accessorFn: (row) => row.owner.ownerContacts[0]?.contact.agent.name,
+        filterFn: areaFilterFn,
         cell: ({ row }) => {
-            const agent = row.original.owner.contacts?.[0]?.agent;
+            const agent = row.original.owner.ownerContacts?.[0]?.contact.agent;
             if (!agent) return 'N/A';
             return <div className="flex flex-col"><span>{agent.name}</span>{agent.area && <span className="text-xs text-muted-foreground">{agent.area}</span>}</div>;
         },
@@ -488,7 +493,7 @@ const trademarkColumns: ColumnDef<TrademarkWithDetails>[] = [
     { id: 'expirationYear', accessorKey: 'expiration', filterFn: yearFilterFn, header: () => null, cell: () => null, enableHiding: true },
 ];
 
-const contactColumns: ColumnDef<Contact & { agent: any }>[] = [
+const contactColumns: ColumnDef<ContactWithAgent>[] = [
     {
         id: 'select',
         header: ({ table }) => <Checkbox checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />,
@@ -502,7 +507,10 @@ const contactColumns: ColumnDef<Contact & { agent: any }>[] = [
     },
     { accessorKey: 'email', header: 'Email' },
     {
-        accessorKey: 'agent.name', id: 'agent', header: 'Agent', filterFn: areaFilterFn,
+        id: 'agent',
+        accessorKey: 'agent.name', 
+        header: 'Agent', 
+        filterFn: areaFilterFn,
         cell: ({ row }) => {
             const agent = row.original.agent;
             if (!agent) return 'N/A';
@@ -515,14 +523,15 @@ const contactColumns: ColumnDef<Contact & { agent: any }>[] = [
 const getAgentAreas = (trademarks: TrademarkWithDetails[]) => {
     const areas = new Set<string>();
     trademarks.forEach(tm => {
-        if (tm.owner.contacts[0]?.agent?.area) {
-            areas.add(tm.owner.contacts[0].agent.area);
+        const agentArea = tm.owner.ownerContacts[0]?.contact.agent.area
+        if (agentArea) {
+            areas.add(agentArea);
         }
     });
     return Array.from(areas).sort();
 };
 
-const getContactAgentAreas = (contacts: (Contact & { agent: any })[]) => {
+const getContactAgentAreas = (contacts: ContactWithAgent[]) => {
     const areas = new Set<string>();
     contacts.forEach(c => {
         if (c.agent?.area) {

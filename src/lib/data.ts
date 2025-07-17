@@ -2,15 +2,24 @@
 import prisma from './prisma';
 import type { TrademarkWithDetails } from '@/types';
 
-export async function getTrademarks(): Promise<TrademarkWithDetails[]> {
+export async function getTrademarks() {
   try {
     const trademarks = await prisma.trademark.findMany({
       include: {
+        trademarkClasses: {
+            include: {
+                class: true
+            }
+        },
         owner: {
           include: {
-            contacts: {
+            ownerContacts: {
               include: {
-                agent: true,
+                contact: {
+                    include: {
+                        agent: true
+                    }
+                }
               },
             },
           },
@@ -23,10 +32,7 @@ export async function getTrademarks(): Promise<TrademarkWithDetails[]> {
     return trademarks;
   } catch (error) {
     console.error('Database Error:', error);
-    // In a real app, you'd handle this more gracefully
-    // For now, returning an empty array to avoid breaking the page.
     return [];
-    // throw new Error('Failed to fetch trademarks.');
   }
 }
 
@@ -48,34 +54,6 @@ export async function getContacts() {
     }
 }
 
-export async function getContactAndTrademarksForEmail(contactEmail: string) {
-    try {
-        const contact = await prisma.contact.findUnique({
-            where: { email: contactEmail },
-            include: {
-                agent: true,
-                owners: {
-                    include: {
-                        trademarks: true,
-                    }
-                }
-            }
-        });
-
-        if (!contact) {
-            return { error: 'Contact not found.' };
-        }
-
-        const allTrademarks = contact.owners.flatMap(owner => owner.trademarks);
-
-        return { contact, trademarks: allTrademarks };
-
-    } catch (error) {
-        console.error('Database Error:', error);
-        return { error: 'Failed to fetch data for email generation.' };
-    }
-}
-
 
 export async function getContactDetails(id: number) {
   try {
@@ -83,17 +61,25 @@ export async function getContactDetails(id: number) {
       where: { id },
       include: {
         agent: true,
-        owners: {
+        ownerContacts: {
           include: {
-            trademarks: {
-              orderBy: {
-                expiration: 'asc',
-              },
-            },
+            owner: {
+                include: {
+                    trademarks: {
+                        include: {
+                            trademarkClasses: {
+                                include: {
+                                    class: true
+                                }
+                            }
+                        },
+                        orderBy: {
+                            expiration: 'asc',
+                        },
+                    }
+                }
+            }
           },
-          orderBy: {
-            name: 'asc'
-          }
         },
       },
     });
@@ -111,18 +97,29 @@ export async function getAgentDetails(id: number) {
             include: {
                 contacts: {
                     include: {
-                        owners: {
+                        ownerContacts: {
                             include: {
-                                trademarks: {
-                                    orderBy: {
-                                        expiration: 'asc',
+                                owner: {
+                                    include: {
+                                        trademarks: {
+                                            include: {
+                                                trademarkClasses: {
+                                                    include: {
+                                                        class: true
+                                                    }
+                                                }
+                                            },
+                                            orderBy: {
+                                                expiration: 'asc',
+                                            },
+                                        },
                                     },
-                                },
-                            },
-                            orderBy: {
-                                name: 'asc',
-                            },
-                        },
+                                    orderBy: {
+                                        name: 'asc',
+                                    },
+                                }
+                            }
+                        }
                     },
                     orderBy: {
                         firstName: 'asc',
@@ -143,17 +140,25 @@ export async function getOwnerDetails(id: number) {
             where: { id },
             include: {
                 trademarks: {
+                     include: {
+                        trademarkClasses: {
+                            include: {
+                                class: true
+                            }
+                        }
+                    },
                     orderBy: {
                         expiration: 'asc'
                     }
                 },
-                contacts: {
+                ownerContacts: {
                     include: {
-                        agent: true
+                        contact: {
+                            include: {
+                                agent: true
+                            }
+                        }
                     },
-                    orderBy: {
-                        firstName: 'asc'
-                    }
                 }
             }
         });

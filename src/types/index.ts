@@ -1,41 +1,47 @@
 
-import type { Trademark, Owner, Contact, Agent, EmailTemplate, Campaign, SentEmail } from '@prisma/client';
+import type { Trademark as PrismaTrademark, Owner, Contact, Agent, EmailTemplate, Campaign, SentEmail, OwnerContact, TrademarkClass, Class as PrismaClass } from '@prisma/client';
 
-// Re-export all types from Prisma Client
 export * from '@prisma/client';
 
-// Define a composite type for the Trademark table, including its related owner,
-// contacts, and agents. This simplifies passing data to components.
-export type TrademarkWithDetails = Trademark & {
-  owner: Owner & {
-    contacts: (Contact & {
-      agent: Agent;
-    })[];
-  };
+export type TrademarkWithClasses = PrismaTrademark & {
+    trademarkClasses: (TrademarkClass & { class: PrismaClass })[];
 };
 
-// Define a composite type for the Contact detail view.
+export type ContactWithAgent = Contact & { agent: Agent };
+
+export type OwnerWithContacts = Owner & {
+    ownerContacts: (OwnerContact & {
+        contact: ContactWithAgent;
+    })[];
+};
+
+export type TrademarkWithDetails = TrademarkWithClasses & {
+  owner: OwnerWithContacts;
+};
+
 export type ContactWithDetails = Contact & {
   agent: Agent;
-  owners: (Owner & {
-    trademarks: Trademark[];
+  ownerContacts: (OwnerContact & {
+    owner: Owner & {
+        trademarks: TrademarkWithClasses[];
+    }
   })[];
 };
 
-// Define a composite type for the Agent detail view.
 export type AgentWithDetails = Agent & {
     contacts: (Contact & {
-        owners: (Owner & {
-            trademarks: Trademark[];
+        ownerContacts: (OwnerContact & {
+            owner: Owner & {
+                trademarks: TrademarkWithClasses[];
+            }
         })[];
     })[];
 };
 
-// Define a composite type for the Owner detail view.
 export type OwnerWithDetails = Owner & {
-  trademarks: Trademark[];
-  contacts: (Contact & {
-    agent: Agent;
+  trademarks: TrademarkWithClasses[];
+  ownerContacts: (OwnerContact & {
+    contact: ContactWithAgent;
   })[];
 };
 

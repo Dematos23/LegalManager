@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { TrademarkTable } from "@/components/trademark-table";
 import { useLanguage } from "@/context/language-context";
-import type { TrademarkWithDetails } from "@/types";
+import type { TrademarkWithDetails, ContactWithAgent } from "@/types";
 import { Button } from '@/components/ui/button';
 import { Mail, MoreHorizontal, ArrowUpDown, PlusCircle, Users, FileText, CalendarClock } from 'lucide-react';
 import {
@@ -43,9 +43,9 @@ const globalFilterFn: FilterFn<TrademarkWithDetails> = (row: Row<TrademarkWithDe
     const flatString = [
         trademark.denomination,
         trademark.owner.name,
-        trademark.class.toString(),
+        trademark.trademarkClasses.map(tc => tc.class.id).join(' '),
         trademark.certificate,
-        ...trademark.owner.contacts.flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
+        ...trademark.owner.ownerContacts.map(oc => oc.contact).flatMap(c => [c.firstName, c.lastName, c.email, c.agent.name, c.agent.area])
     ].filter(Boolean).join(' ').toLowerCase();
 
     return flatString.includes(search);
@@ -84,7 +84,7 @@ const expirationFilterFn: FilterFn<any> = (row, columnId, value) => {
 
 const areaFilterFn: FilterFn<any> = (row, columnId, value, addMeta) => {
     if (!value) return true;
-    const agent = row.original.owner.contacts?.[0]?.agent;
+    const agent = row.original.owner.ownerContacts?.[0]?.contact.agent;
     return agent?.area === value;
 };
 
@@ -101,9 +101,10 @@ type DashboardClientProps = {
 
 
 // A new component for the mobile card view
-function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: TrademarkWithDetails, onSendEmail: (trademark: TrademarkWithDetails, contact: TrademarkWithDetails['owner']['contacts'][0]) => void, dictionary: any }) {
-    const contact = trademark.owner.contacts?.[0];
+function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: TrademarkWithDetails, onSendEmail: (trademark: TrademarkWithDetails, contact: ContactWithAgent) => void, dictionary: any }) {
+    const contact = trademark.owner.ownerContacts?.[0]?.contact;
     const agent = contact?.agent;
+    const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
 
     const expirationDate = new Date(trademark.expiration);
     const daysUntilExpiration = differenceInDays(expirationDate, new Date());
@@ -144,7 +145,7 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4" />
-                        <span>Class {trademark.class}</span>
+                        <span>Class {classes}</span>
                     </div>
                      <div className="flex items-center gap-2">
                         <span>•</span>
@@ -152,7 +153,7 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
                     </div>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>
+                    {trademark.type && <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>}
                 </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -213,7 +214,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState('');
 
-  const handleSendEmail = React.useCallback((trademark: TrademarkWithDetails, contact: TrademarkWithDetails['owner']['contacts'][0]) => {
+  const handleSendEmail = React.useCallback((trademark: TrademarkWithDetails, contact: ContactWithAgent) => {
     const params = new URLSearchParams();
     params.set('contactId', String(contact.id));
     params.set('contactName', `${contact.firstName} ${contact.lastName}`);
@@ -245,7 +246,8 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
       }
     },
     {
-      accessorKey: 'class',
+      id: 'class',
+      accessorFn: (row) => row.trademarkClasses.map(tc => tc.class.id).join(', '),
       header: dictionary.dashboard.table.class,
     },
     {
@@ -287,10 +289,11 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
       },
     },
     {
-        accessorKey: 'owner.contacts',
+        id: 'contact',
+        accessorFn: (row) => row.owner.ownerContacts[0]?.contact,
         header: dictionary.dashboard.table.contact,
         cell: ({ row }) => {
-            const contacts = row.original.owner.contacts;
+            const contacts = row.original.owner.ownerContacts.map(oc => oc.contact);
             if (!contacts || contacts.length === 0) return 'N/A';
             const primaryContact = contacts[0];
             return (
@@ -306,12 +309,12 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         enableColumnFilter: false,
     },
     {
-        accessorKey: 'owner.contacts[0].agent.name',
         id: 'agent',
+        accessorFn: (row) => row.owner.ownerContacts[0]?.contact.agent.name,
         header: dictionary.dashboard.table.agent,
         filterFn: areaFilterFn,
         cell: ({ row }) => {
-            const agent = row.original.owner.contacts?.[0]?.agent;
+            const agent = row.original.owner.ownerContacts?.[0]?.contact.agent;
             if (!agent) return 'N/A';
             return (
                 <div className="flex flex-col">
@@ -328,7 +331,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
         id: 'actions',
         cell: ({ row }) => {
           const trademark = row.original;
-          const contact = trademark.owner.contacts?.[0];
+          const contact = trademark.owner.ownerContacts?.[0]?.contact;
   
           return (
             <DropdownMenu>
@@ -384,8 +387,9 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     const areas = new Set<string>();
     const years = new Set<number>();
     trademarks.forEach(tm => {
-        if (tm.owner.contacts[0]?.agent?.area) {
-            areas.add(tm.owner.contacts[0].agent.area);
+        const agentArea = tm.owner.ownerContacts[0]?.contact.agent?.area;
+        if (agentArea) {
+            areas.add(agentArea);
         }
         years.add(getYear(new Date(tm.expiration)));
     });

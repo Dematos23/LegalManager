@@ -16,6 +16,7 @@ type ContactDetailClientProps = {
 
 export function ContactDetailClient({ contact }: ContactDetailClientProps) {
   const { dictionary } = useLanguage();
+  const owners = contact.ownerContacts.map(oc => oc.owner);
 
   return (
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
@@ -59,7 +60,7 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
 
         {/* Associated Owners & Trademarks */}
         <div className="space-y-6">
-          {contact.owners.length === 0 ? (
+          {owners.length === 0 ? (
             <Card>
               <CardHeader>
                  <CardTitle>{dictionary.contact.ownersTitle}</CardTitle>
@@ -69,7 +70,7 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
               </CardContent>
             </Card>
           ) : (
-            contact.owners.map(owner => (
+            owners.map(owner => (
               <Card key={owner.id}>
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -108,11 +109,12 @@ export function ContactDetailClient({ contact }: ContactDetailClientProps) {
                             : daysUntilExpiration <= 90
                             ? 'text-warning'
                             : '';
+                          const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
 
                           return (
                             <TableRow key={trademark.id}>
                               <TableCell className="font-medium">{trademark.denomination}</TableCell>
-                              <TableCell>{trademark.class}</TableCell>
+                              <TableCell>{classes}</TableCell>
                               <TableCell>{trademark.type ? <Badge variant="outline">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge> : 'N/A'}</TableCell>
                               <TableCell className={cn('flex flex-col', colorClass)}>
                                 <span>{format(expirationDate, 'MMM dd, yyyy')}</span>

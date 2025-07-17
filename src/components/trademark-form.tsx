@@ -40,14 +40,12 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { TrademarkType, Country } from '@prisma/client';
-import type { Agent, Owner, Contact as PrismaContact, Trademark } from '@/types';
+import type { Agent, Owner, ContactWithAgent } from '@/types';
 
-// The page passes contacts with agents included
-type ContactWithAgent = PrismaContact & { agent: Agent };
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
-  class: z.coerce.number().int().min(1, 'Class must be between 1 and 45.').max(45, 'Class must be between 1 and 45.'),
+  classIds: z.string().min(1, 'At least one class is required.'),
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1, 'Certificate is required.'),
   expiration: z.date({ required_error: 'Expiration date is required.' }),
@@ -91,7 +89,7 @@ const TrademarkFormSchema = z.object({
 type TrademarkFormValues = z.infer<typeof TrademarkFormSchema>;
 
 interface TrademarkFormProps {
-  trademark?: Trademark;
+  trademark?: any; // Simplified for now
   agents: Agent[];
   owners: Owner[];
   contacts: ContactWithAgent[];
@@ -105,7 +103,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
     resolver: zodResolver(TrademarkFormSchema),
     defaultValues: {
       denomination: trademark?.denomination ?? '',
-      class: trademark?.class ?? 1,
+      classIds: trademark?.trademarkClasses?.map((tc: any) => tc.classId).join(', ') ?? '',
       type: trademark?.type ?? 'NOMINATIVE',
       certificate: trademark?.certificate ?? '',
       expiration: trademark?.expiration ? new Date(trademark.expiration) : undefined,
@@ -173,8 +171,12 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                 <FormField control={form.control} name="certificate" render={({ field }) => (
                     <FormItem><FormLabel>{dictionary.trademarkForm.certificate}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                 <FormField control={form.control} name="class" render={({ field }) => (
-                    <FormItem><FormLabel>{dictionary.trademarkForm.class}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                 <FormField control={form.control} name="classIds" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>{dictionary.trademarkForm.class}</FormLabel>
+                        <FormControl><Input placeholder="e.g., 5, 12, 25" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )} />
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>

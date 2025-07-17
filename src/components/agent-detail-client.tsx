@@ -93,64 +93,68 @@ export function AgentDetailClient({ agent }: AgentDetailClientProps) {
                                 </div>
                             </CollapsibleTrigger>
                             <CollapsibleContent className="p-4 pt-0 space-y-4">
-                                {contact.owners.length === 0 ? (
+                                {contact.ownerContacts.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">This contact has no associated owners.</p>
                                 ) : (
-                                    contact.owners.map(owner => (
-                                        <Card key={owner.id}>
-                                            <CardHeader>
-                                                <div className="flex items-center gap-3">
-                                                    <Building className="h-6 w-6 text-primary" />
-                                                    <div>
-                                                    <CardTitle className="text-base">{owner.name}</CardTitle>
-                                                    <CardDescription className="flex items-center gap-2 text-xs">
-                                                        <Globe className="h-4 w-4" /> {owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())}
-                                                    </CardDescription>
+                                    contact.ownerContacts.map(oc => {
+                                        const owner = oc.owner;
+                                        return (
+                                            <Card key={owner.id}>
+                                                <CardHeader>
+                                                    <div className="flex items-center gap-3">
+                                                        <Building className="h-6 w-6 text-primary" />
+                                                        <div>
+                                                        <CardTitle className="text-base">{owner.name}</CardTitle>
+                                                        <CardDescription className="flex items-center gap-2 text-xs">
+                                                            <Globe className="h-4 w-4" /> {owner.country.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase())}
+                                                        </CardDescription>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <h4 className="mb-2 text-sm font-semibold">Trademarks</h4>
-                                                {owner.trademarks.length === 0 ? (
-                                                    <p className="text-xs text-muted-foreground">This owner has no trademarks.</p>
-                                                ) : (
-                                                    <Table>
-                                                        <TableHeader>
-                                                            <TableRow>
-                                                            <TableHead className="text-xs">Denomination</TableHead>
-                                                            <TableHead className="text-xs">Class</TableHead>
-                                                            <TableHead className="text-xs">Expiration</TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {owner.trademarks.map(trademark => {
-                                                                const expirationDate = new Date(trademark.expiration);
-                                                                const daysUntilExpiration = differenceInDays(expirationDate, new Date());
-                                                                const hasExpired = isPast(expirationDate);
-                                                                const colorClass = hasExpired
-                                                                    ? 'text-destructive font-semibold'
-                                                                    : daysUntilExpiration <= 30
-                                                                    ? 'text-destructive'
-                                                                    : daysUntilExpiration <= 90
-                                                                    ? 'text-warning'
-                                                                    : '';
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <h4 className="mb-2 text-sm font-semibold">Trademarks</h4>
+                                                    {owner.trademarks.length === 0 ? (
+                                                        <p className="text-xs text-muted-foreground">This owner has no trademarks.</p>
+                                                    ) : (
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                <TableHead className="text-xs">Denomination</TableHead>
+                                                                <TableHead className="text-xs">Class</TableHead>
+                                                                <TableHead className="text-xs">Expiration</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {owner.trademarks.map(trademark => {
+                                                                    const expirationDate = new Date(trademark.expiration);
+                                                                    const daysUntilExpiration = differenceInDays(expirationDate, new Date());
+                                                                    const hasExpired = isPast(expirationDate);
+                                                                    const colorClass = hasExpired
+                                                                        ? 'text-destructive font-semibold'
+                                                                        : daysUntilExpiration <= 30
+                                                                        ? 'text-destructive'
+                                                                        : daysUntilExpiration <= 90
+                                                                        ? 'text-warning'
+                                                                        : '';
+                                                                    const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
 
-                                                                return (
-                                                                    <TableRow key={trademark.id}>
-                                                                        <TableCell className="font-medium text-xs">{trademark.denomination}</TableCell>
-                                                                        <TableCell className="text-xs">{trademark.class}</TableCell>
-                                                                        <TableCell className={cn('text-xs', colorClass)}>
-                                                                            {format(expirationDate, 'MMM dd, yyyy')}
-                                                                        </TableCell>
-                                                                    </TableRow>
-                                                                );
-                                                            })}
-                                                        </TableBody>
-                                                    </Table>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))
+                                                                    return (
+                                                                        <TableRow key={trademark.id}>
+                                                                            <TableCell className="font-medium text-xs">{trademark.denomination}</TableCell>
+                                                                            <TableCell className="text-xs">{classes}</TableCell>
+                                                                            <TableCell className={cn('text-xs', colorClass)}>
+                                                                                {format(expirationDate, 'MMM dd, yyyy')}
+                                                                            </TableCell>
+                                                                        </TableRow>
+                                                                    );
+                                                                })}
+                                                            </TableBody>
+                                                        </Table>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })
                                 )}
                             </CollapsibleContent>
                         </Collapsible>
