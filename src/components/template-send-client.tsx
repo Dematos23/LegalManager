@@ -80,22 +80,21 @@ export function TemplateSendClient({ template, trademarks, contacts }: TemplateS
   
   const templateType = React.useMemo(() => getTemplateType(template.body), [template.body]);
   
-  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>('trademark');
-
-  React.useEffect(() => {
-    const defaultMode = (() => {
-        switch (templateType) {
-            case 'plain':
-            case 'multi-owner':
-                return 'contact';
-            case 'single-trademark':
-            case 'multi-trademark-no-owner':
-            default:
-                return 'trademark';
-        }
-    })();
-    setSendMode(defaultMode);
+  // Initialize state directly instead of using useEffect to prevent state update on unmounted component error
+  const initialSendMode = React.useMemo(() => {
+      switch (templateType) {
+          case 'plain':
+          case 'multi-owner':
+              return 'contact';
+          case 'single-trademark':
+          case 'multi-trademark-no-owner':
+          default:
+              return 'trademark';
+      }
   }, [templateType]);
+
+  const [sendMode, setSendMode] = React.useState<'trademark' | 'contact'>(initialSendMode);
+
 
   const { dictionary } = useLanguage();
   const { toast } = useToast();
