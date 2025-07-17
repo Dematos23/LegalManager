@@ -143,11 +143,21 @@ export async function getTemplatePreviewData() {
       contacts: {
         orderBy: { firstName: 'asc' },
         include: {
-          owners: {
-            orderBy: { name: 'asc' },
+          ownerContacts: {
             include: {
-              trademarks: {
-                orderBy: { denomination: 'asc' },
+              owner: {
+                include: {
+                  trademarks: {
+                    include: {
+                        trademarkClasses: {
+                            include: {
+                                class: true
+                            }
+                        }
+                    },
+                    orderBy: { denomination: 'asc' },
+                  },
+                },
               },
             },
           },
