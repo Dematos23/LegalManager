@@ -35,12 +35,12 @@ import { CalendarIcon, Loader2 } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { useLanguage } from '@/context/language-context';
-import { createTrademark } from '@/app/trademarks/actions';
+import { createTrademark, updateTrademark } from '@/app/trademarks/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { TrademarkType, Country } from '@prisma/client';
-import type { Agent, Owner, ContactWithAgent } from '@/types';
+import type { Agent, Owner, ContactWithAgent, TrademarkWithDetails } from '@/types';
 
 
 const TrademarkFormSchema = z.object({
@@ -51,45 +51,14 @@ const TrademarkFormSchema = z.object({
   expiration: z.date({ required_error: 'Expiration date is required.' }),
   products: z.string().optional(),
   
-  ownerId: z.string().min(1, "Please select or create an owner."),
-  ownerName: z.string().optional(),
-  ownerCountry: z.nativeEnum(Country).optional(),
-
-  contactId: z.string().min(1, "Please select or create a contact."),
-  contactFirstName: z.string().optional(),
-  contactLastName: z.string().optional(),
-  contactEmail: z.string().email().optional().or(z.literal('')),
-  
-  agentId: z.string().optional(),
-}).superRefine((data, ctx) => {
-    if (data.ownerId === 'new') {
-        if (!data.ownerName) {
-            ctx.addIssue({ code: 'custom', message: 'Owner name is required for a new owner.', path: ['ownerName'] });
-        }
-        if (!data.ownerCountry) {
-            ctx.addIssue({ code: 'custom', message: 'Owner country is required for a new owner.', path: ['ownerCountry'] });
-        }
-    }
-    if (data.contactId === 'new') {
-        if (!data.contactFirstName) {
-            ctx.addIssue({ code: 'custom', message: 'First name is required for a new contact.', path: ['contactFirstName'] });
-        }
-        if (!data.contactLastName) {
-            ctx.addIssue({ code: 'custom', message: 'Last name is required for a new contact.', path: ['contactLastName'] });
-        }
-        if (!data.contactEmail) {
-            ctx.addIssue({ code: 'custom', message: 'Email is required for a new contact.', path: ['contactEmail'] });
-        }
-        if (!data.agentId) {
-            ctx.addIssue({ code: 'custom', message: 'Agent is required for a new contact.', path: ['agentId'] });
-        }
-    }
+  ownerId: z.string().min(1, "Please select an owner."),
+  contactId: z.string().min(1, "Please select a contact."),
 });
 
 type TrademarkFormValues = z.infer<typeof TrademarkFormSchema>;
 
 interface TrademarkFormProps {
-  trademark?: any; // Simplified for now
+  trademark?: TrademarkWithDetails;
   agents: Agent[];
   owners: Owner[];
   contacts: ContactWithAgent[];
@@ -103,24 +72,15 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
     resolver: zodResolver(TrademarkFormSchema),
     defaultValues: {
       denomination: trademark?.denomination ?? '',
-      classIds: trademark?.trademarkClasses?.map((tc: any) => tc.classId).join(', ') ?? '',
+      classIds: trademark?.trademarkClasses?.map((tc: any) => tc.class.id).join(', ') ?? '',
       type: trademark?.type ?? 'NOMINATIVE',
       certificate: trademark?.certificate ?? '',
       expiration: trademark?.expiration ? new Date(trademark.expiration) : undefined,
       products: trademark?.products ?? '',
-      ownerId: '',
-      ownerName: '',
-      ownerCountry: undefined,
-      contactId: '',
-      contactFirstName: '',
-      contactLastName: '',
-      contactEmail: '',
-      agentId: '',
+      ownerId: String(trademark?.ownerId || ''),
+      contactId: String(trademark?.owner.ownerContacts[0]?.contactId || ''),
     },
   });
-
-  const ownerId = form.watch('ownerId');
-  const contactId = form.watch('contactId');
 
   const onSubmit = async (data: TrademarkFormValues) => {
     const formData = new FormData();
@@ -134,10 +94,10 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
       }
     });
 
-    const result = await createTrademark(formData);
+    const action = trademark ? updateTrademark.bind(null, trademark.id) : createTrademark;
+    const result = await action(formData);
 
     if (result?.errors) {
-      // Handle server-side validation errors
       Object.entries(result.errors).forEach(([key, messages]) => {
         form.setError(key as keyof TrademarkFormValues, {
           type: 'server',
@@ -152,16 +112,19 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
     }
   };
 
+  const title = trademark ? dictionary.trademarkForm.editTitle : dictionary.trademarkForm.createTitle;
+  const description = trademark ? dictionary.trademarkForm.editDescription : dictionary.trademarkForm.description;
+  const submitButtonText = trademark ? dictionary.trademarkForm.updateButton : dictionary.trademarkForm.submitButton;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>{dictionary.trademarkForm.title}</CardTitle>
-            <CardDescription>{dictionary.trademarkForm.description}</CardDescription>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Trademark Details */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">{dictionary.trademarkForm.trademarkDetailsTitle}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,93 +180,39 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
               )} />
             </div>
 
-            {/* Owner and Contact */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium">{dictionary.trademarkForm.ownerAndContactTitle}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Owner Section */}
-                <div className="space-y-4 rounded-md border p-4">
-                  <FormField control={form.control} name="ownerId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{dictionary.trademarkForm.owner}</FormLabel>
-                      <FormDescription>{dictionary.trademarkForm.contactAssociationDescription}</FormDescription>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.ownerPlaceholder} /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="new">{dictionary.trademarkForm.createNewOwner}</SelectItem>
-                          {owners.map(o => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {ownerId === 'new' && (
-                    <>
-                      <FormField control={form.control} name="ownerName" render={({ field }) => (
-                        <FormItem><FormLabel>{dictionary.trademarkForm.newOwnerName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="ownerCountry" render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{dictionary.trademarkForm.newOwnerCountry}</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.countryPlaceholder} /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {Object.values(Country).map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, ' ')}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                      )} />
-                    </>
-                  )}
-                </div>
+                <FormField control={form.control} name="ownerId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{dictionary.trademarkForm.owner}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.ownerPlaceholder} /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {owners.map(o => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
-                {/* Contact Section */}
-                <div className="space-y-4 rounded-md border p-4">
-                   <FormField control={form.control} name="contactId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{dictionary.trademarkForm.contact}</FormLabel>
-                       <FormDescription>{dictionary.trademarkForm.contactAssociationDescription}</FormDescription>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.contactPlaceholder} /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="new">{dictionary.trademarkForm.createNewContact}</SelectItem>
-                          {contacts.map(c => (
-                              <SelectItem key={c.id} value={String(c.id)}>
-                                {`${c.firstName} ${c.lastName} (${c.agent.name})`}
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  {contactId === 'new' && (
-                    <>
-                      <FormField control={form.control} name="contactFirstName" render={({ field }) => (
-                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactFirstName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="contactLastName" render={({ field }) => (
-                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactLastName}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                        <FormItem><FormLabel>{dictionary.trademarkForm.newContactEmail}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                      )} />
-                      <FormField control={form.control} name="agentId" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>{dictionary.trademarkForm.agentForNewContact}</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.agentPlaceholder} /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {agents.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                      )} />
-                    </>
-                  )}
-                </div>
+                 <FormField control={form.control} name="contactId" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{dictionary.trademarkForm.contact}</FormLabel>
+                     <FormDescription>{dictionary.trademarkForm.contactAssociationDescription}</FormDescription>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.contactPlaceholder} /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {contacts.map(c => (
+                            <SelectItem key={c.id} value={String(c.id)}>
+                              {`${c.firstName} ${c.lastName} (${c.agent.name})`}
+                            </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
               </div>
             </div>
           </CardContent>
@@ -311,7 +220,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : dictionary.trademarkForm.submitButton }
+          ) : submitButtonText }
         </Button>
       </form>
     </Form>

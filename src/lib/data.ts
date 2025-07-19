@@ -36,6 +36,38 @@ export async function getTrademarks() {
   }
 }
 
+export async function getTrademarkDetails(id: number) {
+  try {
+    const trademark = await prisma.trademark.findUnique({
+      where: { id },
+      include: {
+        trademarkClasses: {
+          include: {
+            class: true,
+          },
+        },
+        owner: {
+          include: {
+            ownerContacts: {
+              include: {
+                contact: {
+                  include: {
+                    agent: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    return trademark as TrademarkWithDetails;
+  } catch (error) {
+    console.error('Database Error:', error);
+    return null;
+  }
+}
+
 export async function getContacts() {
     try {
         const contacts = await prisma.contact.findMany({

@@ -122,7 +122,9 @@ function TrademarkCard({ trademark, onSendEmail, dictionary }: { trademark: Trad
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
+                    <Link href={`/trademarks/${trademark.id}`}>
+                        <CardTitle className="text-lg hover:underline text-primary">{trademark.denomination}</CardTitle>
+                    </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -231,7 +233,11 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div className="font-medium">{row.getValue('denomination')}</div>,
+      cell: ({ row }) => (
+        <Link href={`/trademarks/${row.original.id}`} className="font-medium hover:underline text-primary">
+            {row.getValue('denomination')}
+        </Link>
+      ),
     },
     {
       accessorKey: 'owner.name',
