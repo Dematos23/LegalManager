@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { FileText, CalendarClock, Building, Contact as ContactIcon, Briefcase, Tag, Edit, Layers } from 'lucide-react';
+import { FileText, CalendarClock, Building, Contact as ContactIcon, Briefcase, Tag, Edit, Layers, Package } from 'lucide-react';
 import { Separator } from './ui/separator';
 
 type TrademarkDetailClientProps = {
@@ -40,32 +40,32 @@ export function TrademarkDetailClient({ trademark }: TrademarkDetailClientProps)
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="flex items-start gap-3">
-                <FileText className="h-6 w-6 text-muted-foreground mt-1" />
-                <div>
+              <div className="flex items-start gap-4">
+                <FileText className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                <div className="flex-grow">
                   <p className="text-sm font-semibold text-muted-foreground">{dictionary.dashboard.table.certificate}</p>
                   <p className="text-lg">{trademark.certificate}</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <CalendarClock className="h-6 w-6 text-muted-foreground mt-1" />
-                <div>
+              <div className="flex items-start gap-4">
+                <CalendarClock className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                <div className="flex-grow">
                   <p className="text-sm font-semibold text-muted-foreground">{dictionary.dashboard.table.expiration}</p>
                   <p className="text-lg">{format(new Date(trademark.expiration), 'MMM dd, yyyy')}</p>
                 </div>
               </div>
               {trademark.type && (
-                <div className="flex items-start gap-3">
-                    <Tag className="h-6 w-6 text-muted-foreground mt-1" />
-                    <div>
+                <div className="flex items-start gap-4">
+                    <Tag className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                    <div className="flex-grow">
                         <p className="text-sm font-semibold text-muted-foreground">{dictionary.contact.type}</p>
                         <Badge variant="outline" className="text-base mt-1">{trademark.type.charAt(0).toUpperCase() + trademark.type.slice(1).toLowerCase()}</Badge>
                     </div>
                 </div>
               )}
-               <div className="flex items-start gap-3">
-                 <Layers className="h-6 w-6 text-muted-foreground mt-1" />
-                 <div>
+               <div className="flex items-start gap-4">
+                 <Layers className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                 <div className="flex-grow">
                     <p className="text-sm font-semibold text-muted-foreground">{dictionary.dashboard.table.class}</p>
                     <div className="flex flex-wrap gap-2 mt-1">
                         {trademark.trademarkClasses.map(tc => (
@@ -78,8 +78,9 @@ export function TrademarkDetailClient({ trademark }: TrademarkDetailClientProps)
             {trademark.products && (
                 <>
                     <Separator className="my-4" />
-                    <div className="flex items-start gap-3">
-                        <div>
+                    <div className="flex items-start gap-4">
+                        <Package className="h-6 w-6 text-muted-foreground flex-shrink-0 mt-1" />
+                        <div className="flex-grow">
                             <p className="text-sm font-semibold text-muted-foreground">{dictionary.trademarkForm.products}</p>
                             <p className="text-sm mt-1 whitespace-pre-wrap">{trademark.products}</p>
                         </div>
