@@ -228,7 +228,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     {
       accessorKey: 'denomination',
       header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="p-0 hover:bg-transparent">
           {dictionary.dashboard.table.trademark}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -263,7 +263,7 @@ export function DashboardClient({ trademarks }: DashboardClientProps) {
     {
       accessorKey: 'expiration',
       header: ({ column }) => (
-        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')} className="p-0 hover:bg-transparent">
           {dictionary.dashboard.table.expiration}
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
