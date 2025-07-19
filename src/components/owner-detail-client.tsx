@@ -184,7 +184,6 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="space-y-1">
                     <CardTitle>Associated Contacts</CardTitle>
-                    <CardDescription>Contacts linked to this owner.</CardDescription>
                 </div>
                 <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
             </CardHeader>
