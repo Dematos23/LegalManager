@@ -36,6 +36,7 @@ function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWit
     const [isSaving, startSavingTransition] = React.useTransition();
     const { toast } = useToast();
     const router = useRouter();
+    const { dictionary } = useLanguage();
 
     const ownerContacts = owner.ownerContacts.map(oc => oc.contact);
     const initialAgentId = ownerContacts[0]?.agentId;
@@ -78,12 +79,12 @@ function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWit
             <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
                     <Edit className="mr-2 h-4 w-4" />
-                    Edit Associated Contacts
+                    {dictionary.owner.editContacts}
                 </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Edit Contacts for {owner.name}</DialogTitle>
+                    <DialogTitle>{dictionary.owner.editContacts} for {owner.name}</DialogTitle>
                     <DialogDescription>
                         Select an agent, then select the contacts to associate with this owner.
                     </DialogDescription>
@@ -161,7 +162,7 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
     <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-primary">
-          Owner Profile
+          {dictionary.owner.title}
         </h1>
       </div>
 
@@ -179,11 +180,11 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
             </div>
           </CardHeader>
         </Card>
-
+        
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div className="space-y-1">
-                    <CardTitle>Associated Contacts</CardTitle>
+                    <CardTitle>{dictionary.owner.associatedContacts}</CardTitle>
                 </div>
                 <EditContactsDialog owner={owner} allContacts={allContacts} allAgents={allAgents} />
             </CardHeader>
@@ -221,10 +222,10 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                 )}
             </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
-            <CardTitle>Trademarks</CardTitle>
+            <CardTitle>{dictionary.owner.trademarks}</CardTitle>
           </CardHeader>
           <CardContent>
             {owner.trademarks.length === 0 ? (
@@ -246,7 +247,9 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                         return (
                              <Card key={trademark.id}>
                                 <CardHeader className="space-y-2">
-                                    <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
+                                    <Link href={`/trademarks/${trademark.id}`} className="hover:underline text-primary">
+                                        <CardTitle className="text-lg">{trademark.denomination}</CardTitle>
+                                    </Link>
                                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                                         <Badge variant="outline">Class: {classes}</Badge>
                                         <Badge variant="outline">Cert: {trademark.certificate}</Badge>
@@ -293,7 +296,11 @@ export function OwnerDetailClient({ owner, allContacts, allAgents }: OwnerDetail
                     const classes = trademark.trademarkClasses.map(tc => tc.class.id).join(', ');
                     return (
                       <TableRow key={trademark.id}>
-                        <TableCell className="font-medium">{trademark.denomination}</TableCell>
+                        <TableCell className="font-medium">
+                            <Link href={`/trademarks/${trademark.id}`} className="hover:underline text-primary">
+                                {trademark.denomination}
+                            </Link>
+                        </TableCell>
                         <TableCell>{classes}</TableCell>
                         <TableCell>{trademark.certificate}</TableCell>
                         <TableCell className={cn(colorClass)}>

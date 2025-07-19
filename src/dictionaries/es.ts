@@ -176,6 +176,12 @@ export const es: Dictionary = {
       },
     },
   },
+  owner: {
+    title: 'Perfil del Titular',
+    associatedContacts: 'Contactos Asociados',
+    editContacts: 'Editar Contactos Asociados',
+    trademarks: 'Marcas',
+  },
   contact: {
     title: 'Perfil de Contacto',
     contactDetails: 'Detalles de Contacto',

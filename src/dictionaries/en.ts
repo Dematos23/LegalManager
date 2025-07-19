@@ -174,6 +174,12 @@ export const en = {
       },
     },
   },
+  owner: {
+    title: 'Owner Profile',
+    associatedContacts: 'Associated Contacts',
+    editContacts: 'Edit Associated Contacts',
+    trademarks: 'Trademarks',
+  },
   contact: {
     title: 'Contact Profile',
     contactDetails: 'Contact Details',
