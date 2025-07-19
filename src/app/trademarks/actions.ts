@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
-  classIds: z.string().min(1, 'At least one class is required.'),
+  classIds: z.array(z.string()).min(1, 'At least one class is required.'),
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1, 'Certificate is required.'),
   expiration: z.coerce.date({ required_error: 'Expiration date is required.' }),
@@ -23,13 +23,18 @@ const TrademarkFormSchema = z.object({
 });
 
 export async function createTrademark(formData: FormData) {
-  const rawFormData = Object.fromEntries(formData.entries());
-
-  // Handle optional fields that might not be in formData if empty
-  if (!rawFormData.contactFirstName) rawFormData.contactFirstName = undefined;
-  if (!rawFormData.contactLastName) rawFormData.contactLastName = undefined;
-  if (!rawFormData.contactEmail) rawFormData.contactEmail = undefined;
-  if (!rawFormData.agentId) rawFormData.agentId = undefined;
+  const rawFormData = {
+    denomination: formData.get('denomination'),
+    classIds: formData.getAll('classIds'),
+    type: formData.get('type'),
+    certificate: formData.get('certificate'),
+    expiration: formData.get('expiration'),
+    products: formData.get('products'),
+    ownerId: formData.get('ownerId'),
+    ownerName: formData.get('ownerName'),
+    ownerCountry: formData.get('ownerCountry'),
+    contactId: formData.get('contactId'),
+  };
 
   const validatedFields = TrademarkFormSchema.safeParse(rawFormData);
   
@@ -48,19 +53,16 @@ export async function createTrademark(formData: FormData) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      // 1. Owner should already exist, we just get its ID
       const finalOwnerId = parseInt(ownerId, 10);
       if (isNaN(finalOwnerId)) {
         throw new Error('Invalid Owner ID provided.');
       }
       
-      // 2. Contact should already exist
       const finalContactId = parseInt(contactId, 10);
        if (isNaN(finalContactId)) {
         throw new Error('Invalid Contact ID provided.');
       }
 
-      // 3. Connect Contact to Owner using the explicit join table
       await tx.ownerContact.upsert({
         where: {
           ownerId_contactId: {
@@ -75,8 +77,6 @@ export async function createTrademark(formData: FormData) {
         },
       });
       
-
-      // 4. Create Trademark
       const newTrademark = await tx.trademark.create({
         data: {
           denomination,
@@ -88,8 +88,7 @@ export async function createTrademark(formData: FormData) {
         },
       });
       
-      // 5. Connect Trademark to Classes
-      const parsedClassIds = classIds.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+      const parsedClassIds = classIds.map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
       if (parsedClassIds.length > 0) {
           await tx.trademarkClass.createMany({
               data: parsedClassIds.map(classId => ({
@@ -111,7 +110,19 @@ export async function createTrademark(formData: FormData) {
 }
 
 export async function updateTrademark(trademarkId: number, formData: FormData) {
-  const rawFormData = Object.fromEntries(formData.entries());
+  const rawFormData = {
+    denomination: formData.get('denomination'),
+    classIds: formData.getAll('classIds'),
+    type: formData.get('type'),
+    certificate: formData.get('certificate'),
+    expiration: formData.get('expiration'),
+    products: formData.get('products'),
+    ownerId: formData.get('ownerId'),
+    ownerName: formData.get('ownerName'),
+    ownerCountry: formData.get('ownerCountry'),
+    contactId: formData.get('contactId'),
+  };
+
   const validatedFields = TrademarkFormSchema.safeParse(rawFormData);
 
   if (!validatedFields.success) {
@@ -135,7 +146,6 @@ export async function updateTrademark(trademarkId: number, formData: FormData) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      // 1. Update the trademark's main details
       await tx.trademark.update({
         where: { id: trademarkId },
         data: {
@@ -148,12 +158,11 @@ export async function updateTrademark(trademarkId: number, formData: FormData) {
         },
       });
 
-      // 2. Update the classes (delete old, create new)
       await tx.trademarkClass.deleteMany({
         where: { trademarkId: trademarkId },
       });
       
-      const parsedClassIds = classIds.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
+      const parsedClassIds = classIds.map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id));
       if (parsedClassIds.length > 0) {
         await tx.trademarkClass.createMany({
           data: parsedClassIds.map(classId => ({
@@ -163,7 +172,6 @@ export async function updateTrademark(trademarkId: number, formData: FormData) {
         });
       }
       
-      // 3. Ensure Owner-Contact relationship exists
       await tx.ownerContact.upsert({
         where: { ownerId_contactId: { ownerId: finalOwnerId, contactId: finalContactId } },
         update: {},

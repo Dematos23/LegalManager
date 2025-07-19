@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, ChevronsUpDown, X } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { useLanguage } from '@/context/language-context';
@@ -41,11 +41,14 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { TrademarkType, Country } from '@prisma/client';
 import type { Agent, Owner, ContactWithAgent, TrademarkWithDetails } from '@/types';
+import { Badge } from './ui/badge';
+import { ScrollArea } from './ui/scroll-area';
+import { Checkbox } from './ui/checkbox';
 
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
-  classIds: z.string().min(1, 'At least one class is required.'),
+  classIds: z.array(z.string()).min(1, 'At least one class is required.'),
   type: z.nativeEnum(TrademarkType),
   certificate: z.string().min(1, 'Certificate is required.'),
   expiration: z.date({ required_error: 'Expiration date is required.' }),
@@ -64,6 +67,11 @@ interface TrademarkFormProps {
   contacts: ContactWithAgent[];
 }
 
+const ALL_CLASSES = Array.from({ length: 45 }, (_, i) => ({
+  value: String(i + 1),
+  label: `Class ${i + 1}`,
+}));
+
 export function TrademarkForm({ trademark, agents, owners, contacts }: TrademarkFormProps) {
   const { dictionary } = useLanguage();
   const { toast } = useToast();
@@ -72,7 +80,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
     resolver: zodResolver(TrademarkFormSchema),
     defaultValues: {
       denomination: trademark?.denomination ?? '',
-      classIds: trademark?.trademarkClasses?.map((tc: any) => tc.class.id).join(', ') ?? '',
+      classIds: trademark?.trademarkClasses?.map((tc: any) => String(tc.class.id)) ?? [],
       type: trademark?.type ?? 'NOMINATIVE',
       certificate: trademark?.certificate ?? '',
       expiration: trademark?.expiration ? new Date(trademark.expiration) : undefined,
@@ -84,15 +92,29 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
 
   const onSubmit = async (data: TrademarkFormValues) => {
     const formData = new FormData();
+    
+    // Append non-array fields
     Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-          if (value instanceof Date) {
-            formData.append(key, value.toISOString());
-          } else {
-            formData.append(key, String(value));
-          }
+      if (key !== 'classIds' && value !== undefined && value !== null) {
+        if (value instanceof Date) {
+          formData.append(key, value.toISOString());
+        } else {
+          formData.append(key, String(value));
+        }
       }
     });
+
+    // Append array field
+    data.classIds.forEach(id => {
+        formData.append('classIds', id);
+    });
+
+    // We need owner details for the action, even if they aren't directly in the schema
+    const selectedOwner = owners.find(o => o.id === Number(data.ownerId));
+    if (selectedOwner) {
+        formData.append('ownerName', selectedOwner.name);
+        formData.append('ownerCountry', selectedOwner.country);
+    }
 
     const action = trademark ? updateTrademark.bind(null, trademark.id) : createTrademark;
     const result = await action(formData);
@@ -134,13 +156,75 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                 <FormField control={form.control} name="certificate" render={({ field }) => (
                     <FormItem><FormLabel>{dictionary.trademarkForm.certificate}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
-                 <FormField control={form.control} name="classIds" render={({ field }) => (
+                 <FormField
+                  control={form.control}
+                  name="classIds"
+                  render={({ field }) => (
                     <FormItem>
-                        <FormLabel>{dictionary.trademarkForm.class}</FormLabel>
-                        <FormControl><Input placeholder="e.g., 5, 12, 25" {...field} /></FormControl>
-                        <FormMessage />
+                      <FormLabel>{dictionary.trademarkForm.class}</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        className={cn(
+                                        "w-full justify-between h-auto min-h-10",
+                                        !field.value.length && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <div className="flex gap-1 flex-wrap">
+                                        {field.value.length > 0 ? (
+                                             field.value.map((id) => (
+                                                <Badge
+                                                    variant="secondary"
+                                                    key={id}
+                                                    className="mr-1"
+                                                    onClick={() => {
+                                                        const newValues = field.value.filter((val) => val !== id);
+                                                        field.onChange(newValues);
+                                                    }}
+                                                >
+                                                    {ALL_CLASSES.find(c => c.value === id)?.label}
+                                                    <X className="ml-1 h-3 w-3" />
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <span>Select classes...</span>
+                                        )}
+                                        </div>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <ScrollArea className="h-72">
+                                {ALL_CLASSES.map((item) => (
+                                    <div key={item.value} className="flex items-center space-x-2 p-2">
+                                    <Checkbox
+                                        id={`class-${item.value}`}
+                                        checked={field.value.includes(item.value)}
+                                        onCheckedChange={(checked) => {
+                                        const newValue = checked
+                                            ? [...field.value, item.value]
+                                            : field.value.filter(
+                                                (value) => value !== item.value
+                                            );
+                                        field.onChange(newValue);
+                                        }}
+                                    />
+                                    <label htmlFor={`class-${item.value}`} className="text-sm font-medium leading-none">
+                                        {item.label}
+                                    </label>
+                                    </div>
+                                ))}
+                                </ScrollArea>
+                            </PopoverContent>
+                        </Popover>
+                      <FormMessage />
                     </FormItem>
-                )} />
+                  )}
+                />
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>
                     <FormLabel>{dictionary.trademarkForm.type}</FormLabel>
