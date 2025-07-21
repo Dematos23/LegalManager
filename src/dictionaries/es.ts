@@ -4,6 +4,7 @@ import { Dictionary } from './en';
 export const es: Dictionary = {
   sidebar: {
     dashboard: 'Marcas',
+    agents: 'Agentes',
     import: 'Importar',
     templates: 'Plantillas',
     tracking: 'Seguimiento',
@@ -194,6 +195,21 @@ export const es: Dictionary = {
     daysAgo: 'días',
     in: 'en',
     days: 'días',
+  },
+  agents: {
+    title: 'Agentes',
+    listTitle: 'Lista de Agentes',
+    filterDescription: 'Filtre y busque a través de todos los agentes registrados.',
+    searchPlaceholder: 'Buscar por nombre de agente...',
+    countryFilterPlaceholder: 'Filtrar por país...',
+    allCountries: 'Todos los Países',
+    contacts: 'Contactos',
+    table: {
+      name: 'Nombre',
+      country: 'País',
+      area: 'Área',
+      contacts: 'Contactos',
+    }
   },
   sendTemplate: {
     title: 'Enviar Campaña',

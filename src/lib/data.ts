@@ -127,6 +127,26 @@ export async function getContactDetails(id: number) {
   }
 }
 
+export async function getAgentsList() {
+    try {
+        return await prisma.agent.findMany({
+            include: {
+                _count: {
+                    select: {
+                        contacts: true
+                    }
+                }
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+    } catch (error) {
+        console.error('Database Error:', error);
+        return [];
+    }
+}
+
 export async function getAgentDetails(id: number) {
     try {
         const agent = await prisma.agent.findUnique({

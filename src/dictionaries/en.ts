@@ -2,6 +2,7 @@
 export const en = {
   sidebar: {
     dashboard: 'Trademarks',
+    agents: 'Agents',
     import: 'Import',
     templates: 'Templates',
     tracking: 'Tracking',
@@ -192,6 +193,21 @@ export const en = {
     daysAgo: 'days ago',
     in: 'in',
     days: 'days',
+  },
+  agents: {
+    title: 'Agents',
+    listTitle: 'Agent List',
+    filterDescription: 'Filter and search through all registered agents.',
+    searchPlaceholder: 'Search by agent name...',
+    countryFilterPlaceholder: 'Filter by country...',
+    allCountries: 'All Countries',
+    contacts: 'Contacts',
+    table: {
+      name: 'Name',
+      country: 'Country',
+      area: 'Area',
+      contacts: 'Contacts',
+    }
   },
   sendTemplate: {
     title: 'Send Campaign',

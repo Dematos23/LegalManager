@@ -38,6 +38,12 @@ export type AgentWithDetails = Agent & {
     })[];
 };
 
+export type AgentWithContactCount = Agent & {
+  _count: {
+    contacts: number;
+  };
+};
+
 export type OwnerWithDetails = Owner & {
   trademarks: TrademarkWithClasses[];
   ownerContacts: (OwnerContact & {

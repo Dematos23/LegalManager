@@ -18,6 +18,7 @@ import {
   LayoutTemplate,
   Languages,
   History,
+  Briefcase,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -63,6 +64,17 @@ export function AppSidebar() {
               >
                 <LayoutDashboard />
                 <span>{dictionary.sidebar.dashboard}</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <Link href="/agents" passHref>
+              <SidebarMenuButton
+                isActive={isActive('/agents')}
+                tooltip={{ children: dictionary.sidebar.agents }}
+              >
+                <Briefcase />
+                <span>{dictionary.sidebar.agents}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
