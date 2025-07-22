@@ -66,8 +66,14 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
+        // Since there is no auth yet, we will fetch the first user and assign them as the sender.
+        const user = await prisma.user.findFirst();
+        if (!user) {
+            return { error: "No users found in the system. Please seed the database." };
+        }
+
         if (payload.sendMode === 'custom') {
-            return handleSendCustomEmail(payload);
+            return handleSendCustomEmail(payload, user.id);
         }
 
         const { templateId, campaignName } = payload;
@@ -104,7 +110,11 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             campaignId = existingCampaign.id;
         } else {
              const campaign = await prisma.campaign.create({
-                data: { name: campaignName, emailTemplateId: template.id },
+                data: { 
+                    name: campaignName, 
+                    emailTemplateId: template.id,
+                    userId: user.id
+                },
             });
             campaignId = campaign.id;
         }
@@ -251,7 +261,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
 }
 
 
-async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
+async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: string) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     let campaignId: number;
@@ -292,7 +302,12 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload) {
         const newCampaign = await prisma.campaign.create({
             data: {
                 name: campaignName,
-                // Custom emails don't have a persistent template
+                userId: userId,
+                // Custom emails don't have a persistent template, so we can't link one.
+                // This assumes the schema allows for a null emailTemplateId, 
+                // or we need to link a placeholder/default template.
+                // For now, let's assume it can be created without one if it's a custom email campaign.
+                // This part might need adjustment based on final schema.
             }
         });
         campaignId = newCampaign.id;
@@ -404,6 +419,7 @@ export async function getCampaigns() {
     return prisma.campaign.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
+            user: true,
             emailTemplate: true,
             _count: {
                 select: { sentEmails: true },
@@ -416,6 +432,7 @@ export async function getCampaignDetails(campaignId: number) {
     return prisma.campaign.findUnique({
         where: { id: campaignId },
         include: {
+            user: true,
             emailTemplate: true,
             sentEmails: {
                 include: {

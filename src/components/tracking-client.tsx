@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { CampaignWithDetails, EmailTemplate } from '@/types';
+import type { CampaignWithDetails, EmailTemplate, User } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import {
   Card,
@@ -23,7 +23,7 @@ import { format, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button, buttonVariants } from './ui/button';
-import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2, MoreHorizontal, Users, LayoutTemplate, CalendarClock } from 'lucide-react';
+import { Eye, Calendar as CalendarIcon, X, ArrowUpDown, Trash2, Loader2, MoreHorizontal, Users, LayoutTemplate, CalendarClock, User as UserIcon } from 'lucide-react';
 import { Badge } from './ui/badge';
 import React, { useState, useMemo, useTransition } from 'react';
 import { Input } from './ui/input';
@@ -149,6 +149,11 @@ function CampaignCard({ campaign, onCampaignDeleted, formatDate, dictionary }: {
                  <CardTitle className="text-lg">{campaign.name}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
+                 <div className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold">{dictionary.tracking.table.sentBy}: </span>
+                    <span>{campaign.user ? `${campaign.user.firstName} ${campaign.user.lastName}` : 'Unknown'}</span>
+                </div>
                 <div className="flex items-center gap-2">
                     <LayoutTemplate className="h-4 w-4 text-muted-foreground" />
                     <span className="font-semibold">{dictionary.tracking.table.template}: </span>
@@ -181,6 +186,10 @@ function CampaignCard({ campaign, onCampaignDeleted, formatDate, dictionary }: {
     )
 }
 
+type TrackingClientProps = {
+    campaigns: CampaignWithDetails[];
+}
+
 
 export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientProps) {
   const { language, dictionary } = useLanguage();
@@ -210,7 +219,8 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
   const filteredCampaigns = useMemo(() => {
     return campaigns
         .filter(campaign => {
-            const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const searchString = `${campaign.name} ${campaign.user?.firstName} ${campaign.user?.lastName}`.toLowerCase();
+            const matchesSearch = searchString.includes(searchTerm.toLowerCase());
             const matchesTemplate = templateFilter === 'all' || !campaign.emailTemplate || campaign.emailTemplateId === Number(templateFilter);
             const campaignDate = new Date(campaign.createdAt);
             const matchesDate = !dateRange || (dateRange.from && isWithinInterval(campaignDate, { start: dateRange.from, end: dateRange.to || dateRange.from }));
@@ -227,6 +237,10 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
             if (key === 'emailTemplate.name') {
                 valA = a.emailTemplate?.name || '';
                 valB = b.emailTemplate?.name || '';
+            }
+             if (key === 'user') {
+                valA = `${a.user?.firstName} ${a.user?.lastName}`;
+                valB = `${b.user?.firstName} ${b.user?.lastName}`;
             }
 
             let result = 0;
@@ -251,6 +265,19 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
             </Button>
         ),
         cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
+    },
+     {
+        accessorKey: 'user',
+        header: ({ column }) => (
+            <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                {dictionary.tracking.table.sentBy}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => {
+            const user = row.original.user;
+            return user ? `${user.firstName} ${user.lastName}` : 'Unknown';
+        },
     },
     {
         accessorKey: 'emailTemplate.name',

@@ -1,10 +1,26 @@
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role, Area } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding...');
+
+  // Seed Admin User
+  await prisma.user.upsert({
+    where: { email: 'admin@legalintel.com' },
+    update: {},
+    create: {
+      email: 'admin@legalintel.com',
+      password: 'adminpassword', // In a real app, this should be a hashed password
+      firstName: 'Admin',
+      lastName: 'User',
+      role: Role.ADMIN,
+      area: Area.ACD,
+    },
+  });
+  console.log('Seeded admin user.');
+
 
   // Seed Classes 1 to 45
   for (let i = 1; i <= 45; i++) {

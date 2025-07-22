@@ -1,5 +1,5 @@
 
-import type { Trademark as PrismaTrademark, Owner, Contact, Agent, EmailTemplate, Campaign, SentEmail, OwnerContact, TrademarkClass, Class as PrismaClass } from '@prisma/client';
+import type { Trademark as PrismaTrademark, Owner, Contact, Agent, EmailTemplate, Campaign, SentEmail, OwnerContact, TrademarkClass, Class as PrismaClass, User } from '@prisma/client';
 
 export * from '@prisma/client';
 
@@ -59,6 +59,7 @@ export type OwnerWithDetails = Owner & {
 
 // New types for campaign tracking
 export type CampaignWithDetails = Campaign & {
+  user: User;
   emailTemplate: EmailTemplate;
   _count: {
     sentEmails: number;
@@ -66,7 +67,8 @@ export type CampaignWithDetails = Campaign & {
 };
 
 export type CampaignDetails = Campaign & {
-    emailTemplate: EmailTemplate;
+    user: User;
+    emailTemplate: EmailTemplate | null;
     sentEmails: (SentEmail & {
         contact: Contact
     })[];

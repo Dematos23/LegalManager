@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { CampaignDetails, SentEmail, Contact } from '@/types';
+import type { CampaignDetails, SentEmail, Contact, User } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import {
   Card,
@@ -24,7 +24,7 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { ArrowLeft, Mail, MailOpen, CheckCircle2, ArrowRight, RefreshCw, Loader2, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, Mail, MailOpen, CheckCircle2, ArrowRight, RefreshCw, Loader2, ArrowUpDown, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import React, { useMemo, useState, useTransition } from 'react';
@@ -255,11 +255,18 @@ export function CampaignDetailClient({ campaign }: CampaignDetailClientProps) {
             <CardContent className="grid grid-cols-2 gap-4">
                 <div>
                     <p className="text-sm font-medium text-muted-foreground">{dictionary.tracking.details.template}</p>
-                    <p>{campaign.emailTemplate.name}</p>
+                    <p>{campaign.emailTemplate?.name || 'Custom Email'}</p>
                 </div>
                 <div>
                     <p className="text-sm font-medium text-muted-foreground">{dictionary.tracking.details.sentAt}</p>
                     <p>{formatDate(new Date(campaign.createdAt))}</p>
+                </div>
+                 <div>
+                    <p className="text-sm font-medium text-muted-foreground">{dictionary.tracking.details.sentBy}</p>
+                    <p className="flex items-center gap-2">
+                        <UserIcon className="h-4 w-4" />
+                        {campaign.user ? `${campaign.user.firstName} ${campaign.user.lastName}` : 'Unknown User'}
+                    </p>
                 </div>
             </CardContent>
         </Card>
