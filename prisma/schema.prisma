@@ -1,4 +1,3 @@
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -9,92 +8,120 @@ generator client {
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
+model User {
+  id        String @id @default(uuid())
+  email     String @unique
+  password  String
+  firstName String
+  lastName  String
+  role      Role
+  area      Area
+
+  Campaigns Campaign[]
+
+  updatedAt DateTime @updatedAt
+}
+
 model Agent {
-  id        Int       @id @default(autoincrement())
-  name      String    @unique
-  country   Country
-  area      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  contacts  Contact[]
+  id      String  @id @default(uuid())
+  name    String  @unique
+  country Country
+  area    Area
+
+  contacts Contact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Contact {
-  id         Int         @id @default(autoincrement())
-  firstName  String
-  lastName   String
-  email      String      @unique
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  agent      Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  agentId    Int
+  id        String  @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String  @unique
+  phone     String?
+
+  agent         Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId       String
   ownerContacts OwnerContact[]
-  sentEmails SentEmail[]
+  sentEmails    SentEmail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Owner {
-  id         Int         @id @default(autoincrement())
-  name       String      @unique
-  country    Country
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  trademarks Trademark[]
+  id      String  @id @default(uuid())
+  name    String  @unique
+  country Country
+
+  trademarks    Trademark[]
   ownerContacts OwnerContact[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Trademark {
-  id           Int           @id @default(autoincrement())
+  id           String        @id @default(uuid())
   denomination String
-  type         TrademarkType?
-  certificate  String
-  expiration   DateTime
+  type         TrademarkType
+  certificate  String?
+  expiration   DateTime?
   products     String?
 
-  owner        Owner         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId      Int
+  owner            Owner            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String
   trademarkClasses TrademarkClass[]
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model EmailTemplate {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  subject     String
-  body        String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  campaigns   Campaign[]
+  id      String @id @default(uuid())
+  name    String @unique
+  subject String
+  body    String
+
+  campaigns Campaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Campaign {
-  id              Int           @id @default(autoincrement())
-  name            String
-  createdAt       DateTime      @default(now())
+  id   String @id @default(uuid())
+  name String
+
   emailTemplate   EmailTemplate @relation(fields: [emailTemplateId], references: [id], onDelete: Cascade)
-  emailTemplateId Int
+  emailTemplateId String
   sentEmails      SentEmail[]
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+
+  createdAt DateTime @default(now())
 }
 
 model SentEmail {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(uuid())
   resendId    String    @unique
   sentAt      DateTime  @default(now())
   deliveredAt DateTime?
   openedAt    DateTime?
-  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  campaignId  Int
-  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId   Int
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId  String
 }
 
 model OwnerContact {
-  owner     Owner   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId   Int
+  owner   Owner  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
 
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  contactId Int
+  contactId String
 
   createdAt DateTime @default(now())
 
@@ -103,16 +130,16 @@ model OwnerContact {
 
 model TrademarkClass {
   trademark   Trademark @relation(fields: [trademarkId], references: [id], onDelete: Cascade)
-  trademarkId Int
+  trademarkId String
 
-  class       Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
-  classId     Int
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId Int
 
   @@id([trademarkId, classId])
 }
 
 model Class {
-  id               Int               @id
+  id               Int              @id
   description      String?
   trademarkClasses TrademarkClass[]
 }
@@ -333,3 +360,19 @@ enum Country {
   ZIMBABWE
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Area {
+  ACD
+  LCD
+}
+
+enum Role {
+  SALES
+  LEGAL
+  MANAGERS
+  ADMIN
+}
