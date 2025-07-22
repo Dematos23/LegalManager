@@ -7,12 +7,14 @@ async function main() {
   console.log('Start seeding...');
 
   // Seed Admin User
+  // IMPORTANT: In a real production environment, this password should be
+  // securely hashed using a library like argon2 or bcrypt.
   await prisma.user.upsert({
     where: { email: 'dmatos@estudiodelion.com.pe' },
     update: {},
     create: {
       email: 'dmatos@estudiodelion.com.pe',
-      password: 'alessandra', // In a real app, this should be a hashed password
+      password: 'alessandra',
       firstName: 'Diego',
       lastName: 'Matos',
       role: Role.ADMIN,
