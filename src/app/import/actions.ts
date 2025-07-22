@@ -255,9 +255,12 @@ export async function importDataAction(formData: FormData) {
         
         const getAreaEnumValue = (value: any) => {
           if (typeof value === 'string') {
-            return value.trim().toUpperCase() as Area;
+            const upperValue = value.trim().toUpperCase();
+            if(Object.values(Area).includes(upperValue as Area)) {
+              return upperValue as Area;
+            }
           }
-          return value;
+          return null;
         }
 
         await prisma.$transaction(async (tx) => {

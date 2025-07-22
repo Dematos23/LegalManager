@@ -3,8 +3,9 @@
 
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { Role, Area } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import argon2 from 'argon2';
 
 const PasswordSchema = z.string().min(8, 'Password must be at least 8 characters long.');
 
@@ -13,7 +14,6 @@ const UserSchema = z.object({
   lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().email('Invalid email address.'),
   role: z.nativeEnum(Role),
-  area: z.nativeEnum(Area),
 });
 
 export async function createUser(formData: FormData) {
@@ -30,14 +30,13 @@ export async function createUser(formData: FormData) {
   const { email, password, ...rest } = validatedFields.data;
 
   try {
-    // In a real app, hash the password here with a library like argon2 or bcrypt
-    // const hashedPassword = await hashPassword(password);
+    const hashedPassword = await argon2.hash(password);
     
     await prisma.user.create({
       data: {
         ...rest,
         email: email,
-        password: password, // Should be hashedPassword
+        password: hashedPassword,
       },
     });
     revalidatePath('/users');
@@ -54,7 +53,7 @@ export async function createUser(formData: FormData) {
   }
 }
 
-export async function updateUser(userId: number, formData: FormData) {
+export async function updateUser(userId: string, formData: FormData) {
   const validatedFields = UserSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
@@ -82,7 +81,7 @@ export async function updateUser(userId: number, formData: FormData) {
   }
 }
 
-export async function resetPassword(userId: number, formData: FormData) {
+export async function resetPassword(userId: string, formData: FormData) {
     const validatedFields = z.object({ password: PasswordSchema }).safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
@@ -92,10 +91,10 @@ export async function resetPassword(userId: number, formData: FormData) {
     const { password } = validatedFields.data;
 
     try {
-        // In a real app, hash the password here
+        const hashedPassword = await argon2.hash(password);
         await prisma.user.update({
             where: { id: userId },
-            data: { password: password }, // Should be hashedPassword
+            data: { password: hashedPassword },
         });
         revalidatePath('/users');
         return { success: true };
@@ -104,7 +103,7 @@ export async function resetPassword(userId: number, formData: FormData) {
     }
 }
 
-export async function deactivateUser(userId: number) {
+export async function deactivateUser(userId: string) {
     try {
         await prisma.user.delete({ where: { id: userId }});
         revalidatePath('/users');

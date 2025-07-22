@@ -394,7 +394,6 @@ export const es: Dictionary = {
         name: "Nombre",
         email: "Correo",
         role: "Rol",
-        area: "Área",
         status: "Estado",
         actions: "Acciones"
     },
@@ -408,7 +407,6 @@ export const es: Dictionary = {
         passwordConfirm: "Confirmar Contraseña",
         passwordPlaceholder: "Dejar en blanco para mantener la contraseña actual",
         role: "Rol",
-        area: "Área",
         status: "Estado",
         active: "Activo",
         inactive: "Inactivo",

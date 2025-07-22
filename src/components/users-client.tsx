@@ -20,7 +20,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import type { User } from '@prisma/client';
-import { Role, Area } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { useLanguage } from '@/context/language-context';
 import {
   Card,
@@ -91,7 +91,6 @@ const UserFormSchema = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   role: z.nativeEnum(Role),
-  area: z.nativeEnum(Area),
 });
 
 const CreateUserSchema = UserFormSchema.extend({
@@ -118,7 +117,6 @@ function UserForm({ user, onFinished }: { user?: User; onFinished: () => void })
       lastName: '',
       email: '',
       role: Role.LEGAL,
-      area: Area.ACD,
       password: '',
       passwordConfirm: '',
     },
@@ -171,22 +169,13 @@ function UserForm({ user, onFinished }: { user?: User; onFinished: () => void })
               )} />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <FormField control={form.control} name="role" render={({ field }) => (
               <FormItem>
                 <FormLabel>{dictionary.users.form.role}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                   <SelectContent>{Object.values(Role).filter(role => role !== Role.ADMIN).map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
-                </Select><FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="area" render={({ field }) => (
-              <FormItem>
-                <FormLabel>{dictionary.users.form.area}</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                  <SelectContent>{Object.values(Area).map(area => <SelectItem key={area} value={area}>{area}</SelectItem>)}</SelectContent>
                 </Select><FormMessage />
               </FormItem>
             )} />
@@ -274,7 +263,7 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
   const { dictionary } = useLanguage();
   const { toast } = useToast();
 
-  const onDeactivate = async (userId: number) => {
+  const onDeactivate = async (userId: string) => {
     const result = await deactivateUser(userId);
     if(result.success) {
         toast({ title: dictionary.users.toasts.statusChanged });
@@ -292,7 +281,6 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
     },
     { accessorKey: 'email', header: dictionary.users.table.email },
     { accessorKey: 'role', header: dictionary.users.table.role, cell: ({ row }) => <Badge variant="outline">{row.getValue('role')}</Badge> },
-    { accessorKey: 'area', header: dictionary.users.table.area, cell: ({ row }) => <Badge variant="secondary">{row.getValue('area')}</Badge> },
     {
       id: 'actions',
       cell: ({ row }) => {

@@ -392,7 +392,6 @@ export const en = {
         name: "Name",
         email: "Email",
         role: "Role",
-        area: "Area",
         status: "Status",
         actions: "Actions"
     },
@@ -406,7 +405,6 @@ export const en = {
         passwordConfirm: "Confirm Password",
         passwordPlaceholder: "Leave blank to keep current password",
         role: "Role",
-        area: "Area",
         status: "Status",
         active: "Active",
         inactive: "Inactive",
