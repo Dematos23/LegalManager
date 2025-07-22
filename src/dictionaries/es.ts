@@ -209,6 +209,8 @@ export const es: Dictionary = {
       country: 'País',
       area: 'Área',
       contacts: 'Contactos',
+      owners: 'Titulares',
+      trademarks: 'Marcas',
     }
   },
   sendTemplate: {

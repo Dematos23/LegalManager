@@ -207,6 +207,8 @@ export const en = {
       country: 'Country',
       area: 'Area',
       contacts: 'Contacts',
+      owners: 'Owners',
+      trademarks: 'Trademarks',
     }
   },
   sendTemplate: {

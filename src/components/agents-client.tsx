@@ -1,14 +1,13 @@
 
 'use client';
 
-import type { AgentWithContactCount } from '@/types';
+import type { AgentWithCounts } from '@/types';
 import { useLanguage } from '@/context/language-context';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from '@/components/ui/card';
 import {
@@ -23,7 +22,7 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Globe, Users, Network, ArrowUpDown, X, Briefcase } from 'lucide-react';
+import { Globe, Users, Network, ArrowUpDown, X, Briefcase, FileText, Building } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
@@ -39,10 +38,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { Country } from '@prisma/client';
 
 type AgentsClientProps = {
-  agents: AgentWithContactCount[];
+  agents: AgentWithCounts[];
 };
 
-function AgentCard({ agent, dictionary }: { agent: AgentWithContactCount, dictionary: any }) {
+function AgentCard({ agent, dictionary }: { agent: AgentWithCounts, dictionary: any }) {
     return (
         <Card>
             <CardHeader>
@@ -65,10 +64,14 @@ function AgentCard({ agent, dictionary }: { agent: AgentWithContactCount, dictio
                     </div>
                  )}
             </CardContent>
-            <CardFooter>
-                <div className="flex items-center gap-2 text-sm font-medium w-full">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{agent._count.contacts} {dictionary.agents.contacts}</span>
+            <CardFooter className="grid grid-cols-2 gap-2 text-sm font-medium w-full">
+                <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <span>{agent.ownerCount} {dictionary.agents.table.owners}</span>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>{agent.trademarkCount} {dictionary.agents.table.trademarks}</span>
                 </div>
             </CardFooter>
         </Card>
@@ -83,7 +86,7 @@ export function AgentsClient({ agents }: AgentsClientProps) {
   const [areaFilter, setAreaFilter] = useState('all');
   const isMobile = useIsMobile();
   
-  const columns = useMemo<ColumnDef<AgentWithContactCount>[]>(() => [
+  const columns = useMemo<ColumnDef<AgentWithCounts>[]>(() => [
     {
         accessorKey: 'name',
         header: ({ column }) => (
@@ -109,14 +112,24 @@ export function AgentsClient({ agents }: AgentsClientProps) {
         cell: ({ row }) => row.original.area || 'N/A',
     },
     {
-        accessorKey: '_count.contacts',
+        accessorKey: 'ownerCount',
         header: ({ column }) => (
              <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                {dictionary.agents.table.contacts}
+                {dictionary.agents.table.owners}
                 <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
         ),
-        cell: ({ row }) => <Badge variant="secondary">{row.original._count.contacts}</Badge>,
+        cell: ({ row }) => <span className="pl-4">{row.original.ownerCount}</span>,
+    },
+     {
+        accessorKey: 'trademarkCount',
+        header: ({ column }) => (
+             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                {dictionary.agents.table.trademarks}
+                <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+        ),
+        cell: ({ row }) => <span className="pl-4">{row.original.trademarkCount}</span>,
     },
   ], [dictionary]);
   

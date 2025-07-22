@@ -44,6 +44,11 @@ export type AgentWithContactCount = Agent & {
   };
 };
 
+export type AgentWithCounts = Agent & {
+    ownerCount: number;
+    trademarkCount: number;
+};
+
 export type OwnerWithDetails = Owner & {
   trademarks: TrademarkWithClasses[];
   ownerContacts: (OwnerContact & {

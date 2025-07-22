@@ -1,6 +1,6 @@
 
 import prisma from './prisma';
-import type { TrademarkWithDetails } from '@/types';
+import type { AgentWithCounts, TrademarkWithDetails } from '@/types';
 
 export async function getTrademarks() {
   try {
@@ -127,13 +127,23 @@ export async function getContactDetails(id: number) {
   }
 }
 
-export async function getAgentsList() {
+export async function getAgentsList(): Promise<AgentWithCounts[]> {
     try {
-        return await prisma.agent.findMany({
+        const agents = await prisma.agent.findMany({
             include: {
-                _count: {
-                    select: {
-                        contacts: true
+                contacts: {
+                    include: {
+                        ownerContacts: {
+                            include: {
+                                owner: {
+                                    include: {
+                                        _count: {
+                                            select: { trademarks: true }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -141,6 +151,26 @@ export async function getAgentsList() {
                 name: 'asc'
             }
         });
+
+        // Process the data to get the counts
+        return agents.map(agent => {
+            const owners = new Set<number>();
+            let trademarkCount = 0;
+
+            agent.contacts.forEach(contact => {
+                contact.ownerContacts.forEach(oc => {
+                    owners.add(oc.owner.id);
+                    trademarkCount += oc.owner._count.trademarks;
+                });
+            });
+
+            return {
+                ...agent,
+                ownerCount: owners.size,
+                trademarkCount: trademarkCount
+            };
+        });
+
     } catch (error) {
         console.error('Database Error:', error);
         return [];
