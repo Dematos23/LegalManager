@@ -4,7 +4,7 @@
 import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
-import { Country, TrademarkType, Agent, Contact } from '@prisma/client';
+import { Country, TrademarkType, Agent, Contact, Area } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 // Define schemas for validation, now accounting for optional fields
@@ -34,7 +34,7 @@ const ContactSchema = z.object({
 const AgentSchema = z.object({
   name: z.string().min(1),
   country: z.nativeEnum(Country),
-  area: z.string().optional().nullable(),
+  area: z.nativeEnum(Area).optional().nullable(),
 });
 
 async function parseAndValidateRows(formData: FormData) {
@@ -84,7 +84,10 @@ async function parseAndValidateRows(formData: FormData) {
     const RowSchema = z.object({
         agentName: z.string().optional().nullable(),
         agentCountry: z.string().optional().nullable(),
-        agentArea: z.string().optional().nullable(),
+        agentArea: z.preprocess(
+            (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim().toUpperCase() : null),
+            z.nativeEnum(Area, {invalid_type_error: "Invalid area"}).nullable()
+        ),
         contactFirstName: z.string().optional().nullable(),
         contactLastName: z.string().optional().nullable(),
         contactEmail: z.string().email().optional().nullable(),
@@ -249,6 +252,13 @@ export async function importDataAction(formData: FormData) {
           }
           return value;
         };
+        
+        const getAreaEnumValue = (value: any) => {
+          if (typeof value === 'string') {
+            return value.trim().toUpperCase() as Area;
+          }
+          return value;
+        }
 
         await prisma.$transaction(async (tx) => {
           let agent: Agent | null = null;
@@ -258,11 +268,12 @@ export async function importDataAction(formData: FormData) {
 
           if (agentName) {
             const agentCountryForDb = getCountryEnumValue(getValue('agent.country') || ownerCountryValue);
+            const agentAreaForDb = getAreaEnumValue(getValue('agent.area'))
 
             const agentData = AgentSchema.parse({
               name: agentName,
               country: agentCountryForDb,
-              area: getValue('agent.area'),
+              area: agentAreaForDb,
             });
             agent = await tx.agent.upsert({
               where: { name: agentData.name },
