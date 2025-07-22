@@ -115,22 +115,26 @@ export function AgentsClient({ agents }: AgentsClientProps) {
     {
         accessorKey: 'ownerCount',
         header: ({ column }) => (
-             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                {dictionary.agents.table.owners}
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="text-center">
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    {dictionary.agents.table.owners}
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
         ),
-        cell: ({ row }) => <span className="pl-4">{row.original.ownerCount}</span>,
+        cell: ({ row }) => <div className="text-center">{row.original.ownerCount}</div>,
     },
      {
         accessorKey: 'trademarkCount',
         header: ({ column }) => (
-             <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                {dictionary.agents.table.trademarks}
-                <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="text-center">
+                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+                    {dictionary.agents.table.trademarks}
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
         ),
-        cell: ({ row }) => <span className="pl-4">{row.original.trademarkCount}</span>,
+        cell: ({ row }) => <div className="text-center">{row.original.trademarkCount}</div>,
     },
   ], [dictionary]);
   
