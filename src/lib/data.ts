@@ -265,3 +265,17 @@ export async function getAgents() {
     return [];
   }
 }
+
+export async function getUsers() {
+    try {
+        const users = await prisma.user.findMany({
+            orderBy: {
+                lastName: 'asc',
+            },
+        });
+        return users;
+    } catch (error) {
+        console.error('Database Error:', error);
+        return [];
+    }
+}

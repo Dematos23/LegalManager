@@ -19,6 +19,7 @@ import {
   Languages,
   History,
   Briefcase,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -108,6 +109,17 @@ export function AppSidebar() {
               >
                 <History />
                 <span>{dictionary.sidebar.tracking}</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/users" passHref>
+              <SidebarMenuButton
+                isActive={isActive('/users')}
+                tooltip={{ children: dictionary.sidebar.users }}
+              >
+                <Users />
+                <span>{dictionary.sidebar.users}</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

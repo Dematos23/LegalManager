@@ -10,6 +10,7 @@ export const en = {
     language: 'Language',
     english: 'English',
     spanish: 'Spanish',
+    users: 'Users',
   },
   dashboard: {
     title: 'Trademarks',
@@ -373,6 +374,57 @@ export const en = {
     updateButton: 'Update Trademark',
     errorTitle: "Error",
     errorDescription: "Please correct the errors in the form.",
+  },
+  users: {
+    title: "User Management",
+    description: "Create, edit, and manage user accounts.",
+    createUser: "Create User",
+    table: {
+        name: "Name",
+        email: "Email",
+        role: "Role",
+        area: "Area",
+        status: "Status",
+        actions: "Actions"
+    },
+    form: {
+        createTitle: "Create New User",
+        editTitle: "Edit User",
+        firstName: "First Name",
+        lastName: "Last Name",
+        email: "Email",
+        password: "Password",
+        passwordConfirm: "Confirm Password",
+        passwordPlaceholder: "Leave blank to keep current password",
+        role: "Role",
+        area: "Area",
+        status: "Status",
+        active: "Active",
+        inactive: "Inactive",
+        createButton: "Create User",
+        updateButton: "Update User",
+    },
+    dialogs: {
+        deactivateTitle: "Are you sure you want to deactivate this user?",
+        deactivateDescription: "The user will no longer be able to log in, but their data will be preserved.",
+        activateTitle: "Are you sure you want to activate this user?",
+        activateDescription: "The user will regain access to the system.",
+        resetPasswordTitle: "Reset Password",
+        resetPasswordDescription: "Enter a new password for the user. They will be notified of this change.",
+        newPassword: "New Password",
+        confirmNewPassword: "Confirm New Password",
+        cancel: "Cancel",
+        deactivate: "Deactivate",
+        activate: "Activate",
+        reset: "Reset"
+    },
+    toasts: {
+        userCreated: "User created successfully.",
+        userUpdated: "User updated successfully.",
+        passwordReset: "Password reset successfully.",
+        statusChanged: "User status changed successfully.",
+        error: "An error occurred."
+    }
   }
 };
 

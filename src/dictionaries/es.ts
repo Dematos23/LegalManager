@@ -12,6 +12,7 @@ export const es: Dictionary = {
     language: 'Idioma',
     english: 'Inglés',
     spanish: 'Español',
+    users: 'Usuarios',
   },
   dashboard: {
     title: 'Marcas',
@@ -375,5 +376,56 @@ export const es: Dictionary = {
     updateButton: 'Actualizar Marca',
     errorTitle: "Error",
     errorDescription: "Por favor corrija los errores en el formulario.",
+  },
+  users: {
+    title: "Gestión de Usuarios",
+    description: "Crear, editar y gestionar cuentas de usuario.",
+    createUser: "Crear Usuario",
+    table: {
+        name: "Nombre",
+        email: "Correo",
+        role: "Rol",
+        area: "Área",
+        status: "Estado",
+        actions: "Acciones"
+    },
+    form: {
+        createTitle: "Crear Nuevo Usuario",
+        editTitle: "Editar Usuario",
+        firstName: "Nombre",
+        lastName: "Apellido",
+        email: "Correo",
+        password: "Contraseña",
+        passwordConfirm: "Confirmar Contraseña",
+        passwordPlaceholder: "Dejar en blanco para mantener la contraseña actual",
+        role: "Rol",
+        area: "Área",
+        status: "Estado",
+        active: "Activo",
+        inactive: "Inactivo",
+        createButton: "Crear Usuario",
+        updateButton: "Actualizar Usuario",
+    },
+    dialogs: {
+        deactivateTitle: "¿Está seguro de que desea desactivar este usuario?",
+        deactivateDescription: "El usuario ya no podrá iniciar sesión, pero sus datos se conservarán.",
+        activateTitle: "¿Está seguro de que desea activar este usuario?",
+        activateDescription: "El usuario recuperará el acceso al sistema.",
+        resetPasswordTitle: "Restablecer Contraseña",
+        resetPasswordDescription: "Ingrese una nueva contraseña para el usuario. Se le notificará de este cambio.",
+        newPassword: "Nueva Contraseña",
+        confirmNewPassword: "Confirmar Nueva Contraseña",
+        cancel: "Cancelar",
+        deactivate: "Desactivar",
+        activate: "Activar",
+        reset: "Restablecer"
+    },
+    toasts: {
+        userCreated: "Usuario creado exitosamente.",
+        userUpdated: "Usuario actualizado exitosamente.",
+        passwordReset: "Contraseña restablecida exitosamente.",
+        statusChanged: "Estado del usuario cambiado exitosamente.",
+        error: "Ocurrió un error."
+    }
   }
 };
