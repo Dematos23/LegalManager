@@ -21,7 +21,6 @@ async function main() {
       firstName: "Diego",
       lastName: "Matos",
       role: Role.ADMIN,
-      area: Area.ACD,
     },
   });
   console.log("Seeded admin user.");

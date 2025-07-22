@@ -15,7 +15,6 @@ model User {
   firstName String
   lastName  String
   role      Role
-  area      Area
 
   Campaigns Campaign[]
 
