@@ -4,6 +4,7 @@
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
+import argon2 from 'argon2';
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -27,10 +28,7 @@ export async function loginAction(data: z.infer<typeof LoginSchema>) {
     return { error: 'Invalid credentials.' };
   }
 
-  // In a real application, you would use a library like bcrypt or argon2
-  // to compare the hashed password.
-  // const isPasswordValid = await argon2.verify(user.password, password);
-  const isPasswordValid = user.password === password;
+  const isPasswordValid = await argon2.verify(user.password, password);
 
   if (!isPasswordValid) {
     return { error: 'Invalid credentials.' };
