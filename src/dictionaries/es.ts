@@ -13,6 +13,7 @@ export const es: Dictionary = {
     english: 'Inglés',
     spanish: 'Español',
     users: 'Usuarios',
+    logout: 'Cerrar Sesión',
   },
   login: {
     title: 'Bienvenido de Nuevo',

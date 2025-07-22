@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useSession } from '@/context/session-context';
 
 const LoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -39,6 +40,7 @@ export function LoginForm() {
   const { dictionary } = useLanguage();
   const { toast } = useToast();
   const router = useRouter();
+  const { login } = useSession();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(LoginSchema),
@@ -51,6 +53,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     const result = await loginAction(data);
     if (result.success) {
+      login(); // Set session flag in localStorage
       router.push('/');
     } else {
       toast({

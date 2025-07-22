@@ -11,6 +11,7 @@ export const en = {
     english: 'English',
     spanish: 'Spanish',
     users: 'Users',
+    logout: 'Logout',
   },
   login: {
     title: 'Welcome Back',

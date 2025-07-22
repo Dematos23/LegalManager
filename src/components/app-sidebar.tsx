@@ -20,9 +20,10 @@ import {
   History,
   Briefcase,
   Users,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,14 +32,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/context/language-context';
 import Image from 'next/image';
+import { useSession } from '@/context/session-context';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { language, dictionary, switchLanguage } = useLanguage();
+  const { logout } = useSession();
+  const router = useRouter();
+
 
   const isActive = (path: string) => {
     // Exact match for root, partial for others
     return path === '/' ? pathname === path : pathname.startsWith(path);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
   };
 
   const currentLanguageLabel = language === 'es' ? dictionary.sidebar.spanish : dictionary.sidebar.english;
@@ -127,6 +137,12 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+             <SidebarMenuButton onClick={handleLogout} tooltip={{ children: dictionary.sidebar.logout }}>
+                <LogOut />
+                <span>{dictionary.sidebar.logout}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

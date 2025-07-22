@@ -250,7 +250,7 @@ function ResetPasswordDialog({ user, onFinished }: { user: User; onFinished: () 
                         <FormItem><FormLabel>{dictionary.users.dialogs.newPassword}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="passwordConfirm" render={({ field }) => (
-                        <FormItem><FormLabel>{dictionary.users.dialogs.confirmNewPassword}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormMessage>
+                        <FormItem><FormLabel>{dictionary.users.dialogs.confirmNewPassword}</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="ghost">{dictionary.users.dialogs.cancel}</Button></DialogClose>
