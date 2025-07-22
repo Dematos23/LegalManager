@@ -177,7 +177,7 @@ function UserForm({ user, onFinished }: { user?: User; onFinished: () => void })
                 <FormLabel>{dictionary.users.form.role}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                  <SelectContent>{Object.values(Role).map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
+                  <SelectContent>{Object.values(Role).filter(role => role !== Role.ADMIN).map(role => <SelectItem key={role} value={role}>{role}</SelectItem>)}</SelectContent>
                 </Select><FormMessage />
               </FormItem>
             )} />
