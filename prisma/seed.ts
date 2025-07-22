@@ -8,13 +8,13 @@ async function main() {
 
   // Seed Admin User
   await prisma.user.upsert({
-    where: { email: 'admin@legalintel.com' },
+    where: { email: 'dmatos@estudiodelion.com.pe' },
     update: {},
     create: {
-      email: 'admin@legalintel.com',
-      password: 'adminpassword', // In a real app, this should be a hashed password
-      firstName: 'Admin',
-      lastName: 'User',
+      email: 'dmatos@estudiodelion.com.pe',
+      password: 'alessandra', // In a real app, this should be a hashed password
+      firstName: 'Diego',
+      lastName: 'Matos',
       role: Role.ADMIN,
       area: Area.ACD,
     },
