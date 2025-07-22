@@ -14,6 +14,7 @@ import { importDataAction, verifyDataAction } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useLanguage } from '@/context/language-context';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { MainLayout } from '@/components/main-layout';
 
 type FieldError = {
     fieldErrors: Record<string, string[] | undefined>;
@@ -97,7 +98,7 @@ const MODEL_TO_FRIENDLY_NAME: Record<string, string> = {
 };
 
 
-export default function ImportPage() {
+function ImportPageContent() {
   const [file, setFile] = useState<File | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -367,4 +368,13 @@ export default function ImportPage() {
       </Card>
     </div>
   );
+}
+
+
+export default function ImportPage() {
+    return (
+        <MainLayout>
+            <ImportPageContent />
+        </MainLayout>
+    )
 }

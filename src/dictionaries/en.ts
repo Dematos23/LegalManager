@@ -12,6 +12,14 @@ export const en = {
     spanish: 'Spanish',
     users: 'Users',
   },
+  login: {
+    title: 'Welcome Back',
+    description: 'Enter your credentials to access your account.',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    loginButton: 'Login',
+    errorTitle: 'Login Failed',
+  },
   dashboard: {
     title: 'Trademarks',
     noTrademarks: 'Your trademarks will appear here once you connect to a database and import data via the Import page.',

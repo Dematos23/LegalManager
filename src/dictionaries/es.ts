@@ -14,6 +14,14 @@ export const es: Dictionary = {
     spanish: 'Español',
     users: 'Usuarios',
   },
+  login: {
+    title: 'Bienvenido de Nuevo',
+    description: 'Ingrese sus credenciales para acceder a su cuenta.',
+    emailLabel: 'Correo Electrónico',
+    passwordLabel: 'Contraseña',
+    loginButton: 'Iniciar Sesión',
+    errorTitle: 'Inicio de Sesión Fallido',
+  },
   dashboard: {
     title: 'Marcas',
     noTrademarks: 'Sus marcas aparecerán aquí una vez que se conecte a una base de datos e importe datos a través de la página de Importación.',

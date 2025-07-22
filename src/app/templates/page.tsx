@@ -28,8 +28,9 @@ import { useLanguage } from '@/context/language-context';
 import { useState, useEffect } from 'react';
 import type { EmailTemplate } from '@prisma/client';
 import { Separator } from '@/components/ui/separator';
+import { MainLayout } from '@/components/main-layout';
 
-export default function TemplatesPage() {
+function TemplatesPageContent() {
   const { dictionary } = useLanguage();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,4 +193,12 @@ export default function TemplatesPage() {
       </div>
     </div>
   );
+}
+
+export default function TemplatesPage() {
+    return (
+        <MainLayout>
+            <TemplatesPageContent />
+        </MainLayout>
+    )
 }
