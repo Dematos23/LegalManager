@@ -28,22 +28,6 @@ export type ContactWithDetails = Contact & {
   })[];
 };
 
-export type AgentWithDetails = Agent & {
-    contacts: (Contact & {
-        ownerContacts: (OwnerContact & {
-            owner: Owner & {
-                trademarks: TrademarkWithClasses[];
-            }
-        })[];
-    })[];
-};
-
-export type AgentWithContactCount = Agent & {
-  _count: {
-    contacts: number;
-  };
-};
-
 export type AgentWithCounts = Agent & {
     ownerCount: number;
     trademarkCount: number;
@@ -71,5 +55,15 @@ export type CampaignDetails = Campaign & {
     emailTemplate: EmailTemplate | null;
     sentEmails: (SentEmail & {
         contact: Contact
+    })[];
+};
+
+export type AgentWithDetails = Agent & {
+    contacts: (Contact & {
+        ownerContacts: (OwnerContact & {
+            owner: Owner & {
+                trademarks: TrademarkWithClasses[];
+            }
+        })[];
     })[];
 };
