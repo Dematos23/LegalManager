@@ -1,28 +1,30 @@
+import argon2 from "argon2";
 
-import { PrismaClient, Role, Area } from '@prisma/client';
+import { PrismaClient, Role, Area } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Start seeding...');
+  console.log("Start seeding...");
 
   // Seed Admin User
   // IMPORTANT: In a real production environment, this password should be
   // securely hashed using a library like argon2 or bcrypt.
+  const hasshedPassword: string = await argon2.hash("alessandra");
+
   await prisma.user.upsert({
-    where: { email: 'dmatos@estudiodelion.com.pe' },
+    where: { email: "dmatos@estudiodelion.com.pe" },
     update: {},
     create: {
-      email: 'dmatos@estudiodelion.com.pe',
-      password: 'alessandra',
-      firstName: 'Diego',
-      lastName: 'Matos',
+      email: "dmatos@estudiodelion.com.pe",
+      password: hasshedPassword,
+      firstName: "Diego",
+      lastName: "Matos",
       role: Role.ADMIN,
       area: Area.ACD,
     },
   });
-  console.log('Seeded admin user.');
-
+  console.log("Seeded admin user.");
 
   // Seed Classes 1 to 45
   for (let i = 1; i <= 45; i++) {
@@ -35,16 +37,15 @@ async function main() {
       },
     });
   }
-  console.log('Seeded 45 trademark classes.');
-
+  console.log("Seeded 45 trademark classes.");
 
   // Template 1: Multi-trademark and Multi-owner
   await prisma.emailTemplate.upsert({
-    where: { name: 'Multi-trademark and Multi-owner' },
+    where: { name: "Multi-trademark and Multi-owner" },
     update: {},
     create: {
-      name: 'Multi-trademark and Multi-owner',
-      subject: 'Important Update on Your Trademarks',
+      name: "Multi-trademark and Multi-owner",
+      subject: "Important Update on Your Trademarks",
       body: `Agent name: {{agent.name}}
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
@@ -74,11 +75,11 @@ Trademark products: {{products}}
 
   // Template 2: Multi-trademark with no owner
   await prisma.emailTemplate.upsert({
-    where: { name: 'Multi-trademark (No Owner)' },
+    where: { name: "Multi-trademark (No Owner)" },
     update: {},
     create: {
-      name: 'Multi-trademark (No Owner)',
-      subject: 'Your Trademark Portfolio Update',
+      name: "Multi-trademark (No Owner)",
+      subject: "Your Trademark Portfolio Update",
       body: `Agent name: {{agent.name}}
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
@@ -98,11 +99,11 @@ Trademark products: {{products}}
 
   // Template 3: Single trademark
   await prisma.emailTemplate.upsert({
-    where: { name: 'Single Trademark Notification' },
+    where: { name: "Single Trademark Notification" },
     update: {},
     create: {
-      name: 'Single Trademark Notification',
-      subject: 'Notification for Trademark: {{denomination}}',
+      name: "Single Trademark Notification",
+      subject: "Notification for Trademark: {{denomination}}",
       body: `Agent name: {{agent.name}}
 Agente country: {{agent.country}}
 Agent area: {{agent.area}}
@@ -123,11 +124,11 @@ Trademark products: {{products}}`,
 
   // Template 4: Plain text
   await prisma.emailTemplate.upsert({
-    where: { name: 'Plain Text Example' },
+    where: { name: "Plain Text Example" },
     update: {},
     create: {
-      name: 'Plain Text Example',
-      subject: 'General Information',
+      name: "Plain Text Example",
+      subject: "General Information",
       body: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce rutrum fermentum nunc, in viverra quam commodo sit amet. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nullam magna arcu, volutpat ac nisi a, commodo lobortis nibh. Aenean pharetra leo vitae erat vestibulum consectetur. Vestibulum vel sagittis tellus, id pretium urna. Vivamus convallis egestas nulla suscipit pulvinar. Donec nec ipsum vel arcu gravida molestie iaculis euismod felis. Morbi et ante in est tempor tempus eu eu arcu. Suspendisse arcu magna, ullamcorper vel commodo quis, aliquam eget sapien. Pellentesque vel nibh et nulla bibendum mollis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Fusce sit amet facilisis ligula, eu commodo libero.
 
 Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse vitae semper urna, sit amet aliquam nunc. Donec id sodales mauris. Maecenas facilisis eros dolor, a iaculis mauris luctus id. Cras non ipsum scelerisque, tincidunt quam pellentesque, aliquam odio. Sed commodo eros orci, ac varius arcu porttitor at. Aenean id leo vitae neque condimentum eleifend at id tortor. Maecenas euismod mauris ac congue dignissim.
@@ -138,11 +139,11 @@ Sed aliquam ante sit amet nisi rhoncus iaculis. Phasellus laoreet, dui non imper
 
   // Template 5: Six-Month Expiration Notice
   await prisma.emailTemplate.upsert({
-    where: { name: 'Six-Month Expiration Notice' },
+    where: { name: "Six-Month Expiration Notice" },
     update: {},
     create: {
-      name: 'Six-Month Expiration Notice',
-      subject: 'Upcoming Trademark Expiration',
+      name: "Six-Month Expiration Notice",
+      subject: "Upcoming Trademark Expiration",
       body: `Dear {{contact.firstName}} {{contact.lastName}},
 
 Our records indicate that the following trademark registration(s) are set to expire in less than six months. Please be aware that once a trademark exceeds six months past its expiration date, it becomes susceptible to actions from third parties. To maintain your rights and avoid potential risks, we strongly recommend renewing the listed trademark(s) at your earliest convenience.
@@ -164,14 +165,14 @@ We look forward to your confirmation.
 Best regards,`,
     },
   });
-  
+
   // Template 6: Holiday Office Closure
   await prisma.emailTemplate.upsert({
-    where: { name: 'Holiday Office Closure' },
+    where: { name: "Holiday Office Closure" },
     update: {},
     create: {
-      name: 'Holiday Office Closure',
-      subject: 'Office Closure Notification',
+      name: "Holiday Office Closure",
+      subject: "Office Closure Notification",
       body: `Dear {{contact.firstName}},
 
 We hope this message finds you well.
@@ -186,7 +187,7 @@ Warm regards,`,
     },
   });
 
-  console.log('Seeding finished.');
+  console.log("Seeding finished.");
 }
 
 main()
