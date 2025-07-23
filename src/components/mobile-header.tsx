@@ -13,7 +13,7 @@ export function MobileHeader() {
           <Image src="/logo.png" alt="Legal CRM Logo" width={32} height={32} />
         </div>
         <h2 className="text-lg font-semibold tracking-tighter text-foreground">
-          Legal CRM
+          Estudio Delion
         </h2>
       </div>
     </header>

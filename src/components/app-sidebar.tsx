@@ -62,7 +62,7 @@ export function AppSidebar() {
             <Image src="/logo.png" alt="Legal CRM Logo" width={32} height={32} />
           </div>
           <h2 className="text-lg font-semibold tracking-tighter text-sidebar-foreground">
-            Legal CRM
+            Estudio Delion
           </h2>
         </div>
       </SidebarHeader>
