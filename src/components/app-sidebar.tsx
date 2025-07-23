@@ -21,6 +21,7 @@ import {
   Briefcase,
   Users,
   LogOut,
+  User
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -37,7 +38,7 @@ import { useSession } from '@/context/session-context';
 export function AppSidebar() {
   const pathname = usePathname();
   const { language, dictionary, switchLanguage } = useLanguage();
-  const { logout } = useSession();
+  const { user, logout } = useSession();
   const router = useRouter();
 
 
@@ -170,15 +171,25 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <div className="flex items-center gap-3 p-2">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://placehold.co/100x100" alt="@user" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>
+                  <User />
+                </AvatarFallback>
               </Avatar>
-              <div className="flex flex-col overflow-hidden">
-                <span className="font-medium text-sm truncate">John Doe</span>
-                <span className="text-xs text-sidebar-foreground/70 truncate">
-                  john.doe@legalfirm.com
-                </span>
-              </div>
+              {user ? (
+                <div className="flex flex-col overflow-hidden">
+                  <span className="font-medium text-sm truncate">{`${user.firstName} ${user.lastName}`}</span>
+                  <span className="text-xs text-sidebar-foreground/70 truncate">
+                    {user.email}
+                  </span>
+                </div>
+              ) : (
+                 <div className="flex flex-col overflow-hidden">
+                  <span className="font-medium text-sm truncate">...</span>
+                  <span className="text-xs text-sidebar-foreground/70 truncate">
+                    ...
+                  </span>
+                </div>
+              )}
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

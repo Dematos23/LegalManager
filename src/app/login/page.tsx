@@ -5,18 +5,19 @@ import { LoginForm } from '@/components/login-form';
 import { SessionProvider, useSession } from '@/context/session-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import type { User } from '@prisma/client';
 
 function LoginPageContent() {
-  const { isAuthenticated, isLoading } = useSession();
+  const { isAuthenticated, isLoading, user } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && isAuthenticated && user) {
       router.push('/');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
-  if (isLoading || isAuthenticated) {
+  if (isLoading || (isAuthenticated && user)) {
     return null; // or a loading spinner
   }
 

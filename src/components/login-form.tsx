@@ -53,7 +53,7 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     const result = await loginAction(data);
     if (result.success) {
-      login(); // Set session flag in localStorage
+      login(result.user);
       router.push('/');
     } else {
       toast({

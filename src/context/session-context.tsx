@@ -3,13 +3,13 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import type { Role } from '@prisma/client';
+import type { User, Role } from '@prisma/client';
 
 interface SessionContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  role: Role;
-  login: () => void;
+  user: User | null;
+  login: (user: User) => void;
   logout: () => void;
 }
 
@@ -17,49 +17,49 @@ const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    // For now, we'll mock the user role. In a real app, this would come from the session.
-    const [role, setRole] = useState<Role>('ADMIN'); 
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
         try {
-            const session = localStorage.getItem('isLoggedIn');
-            if (session === 'true') {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
                 setIsAuthenticated(true);
-                // In a real app, you would fetch the user's role here
-                // For now, we will just keep the default 'ADMIN' role
             } else {
                  if (pathname !== '/login') {
                     router.push('/login');
                 }
             }
         } catch (error) {
-            // localStorage not available on server
+            // localStorage not available on server or JSON parsing failed
+            if (pathname !== '/login') {
+                router.push('/login');
+            }
         } finally {
             setIsLoading(false);
         }
     }, [pathname, router]);
 
-    const login = useCallback(() => {
+    const login = useCallback((userData: User) => {
         try {
-            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
             setIsAuthenticated(true);
-            // After login, you would set the user's role
-            // For now, we'll default to ADMIN
-            setRole('ADMIN');
         } catch (error) {}
     }, []);
 
     const logout = useCallback(() => {
         try {
-            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('user');
+            setUser(null);
             setIsAuthenticated(false);
         } catch (error) {}
     }, []);
 
-    const value = { isAuthenticated, isLoading, role, login, logout };
+    const value = { isAuthenticated, isLoading, user, login, logout };
     
     if (isLoading) {
         return null; // Or a loading spinner
@@ -67,6 +67,11 @@ export const SessionProvider = ({ children }: { children: ReactNode }) => {
 
     if (!isAuthenticated && pathname !== '/login') {
         return null; // Or a loading spinner, while redirecting
+    }
+    
+    // This prevents a flash of the login page if the user is already authenticated
+    if (isAuthenticated && pathname === '/login') {
+        return null;
     }
 
     return (
