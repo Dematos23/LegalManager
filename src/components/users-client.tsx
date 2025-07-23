@@ -28,6 +28,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -76,11 +77,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowUpDown, Edit, Loader2, MoreHorizontal, PlusCircle, Trash2, KeyRound } from 'lucide-react';
+import { ArrowUpDown, Edit, Loader2, MoreHorizontal, PlusCircle, Trash2, KeyRound, User as UserIcon, Mail, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createUser, updateUser, deactivateUser, resetPassword } from '@/app/users/actions';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 type UsersClientProps = {
   users: User[];
@@ -254,6 +257,69 @@ function ResetPasswordDialog({ user, onFinished }: { user: User; onFinished: () 
     )
 }
 
+function UserCard({ user, onDeactivate, onSelectForEdit, onSelectForPasswordReset }: { 
+    user: User, 
+    onDeactivate: (userId: string) => void,
+    onSelectForEdit: (user: User) => void,
+    onSelectForPasswordReset: (user: User) => void,
+}) {
+  const { dictionary } = useLanguage();
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div className="flex items-center gap-3">
+                <UserIcon className="h-6 w-6 text-primary" />
+                <CardTitle className="text-lg">{`${user.firstName} ${user.lastName}`}</CardTitle>
+            </div>
+            <Dialog>
+                <AlertDialog>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>{dictionary.users.table.actions}</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => onSelectForEdit(user)}>
+                                <Edit className="mr-2 h-4 w-4" />{dictionary.templates.table.edit}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onSelectForPasswordReset(user)}>
+                                <KeyRound className="mr-2 h-4 w-4" />{dictionary.users.dialogs.resetPasswordTitle}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />{dictionary.users.dialogs.deactivate}
+                                </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{dictionary.users.dialogs.deactivateTitle}</AlertDialogTitle>
+                            <AlertDialogDescription>{dictionary.users.dialogs.deactivateDescription}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>{dictionary.users.dialogs.cancel}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => onDeactivate(user.id)}>{dictionary.users.dialogs.deactivate}</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <span>{user.email}</span>
+        </div>
+        <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="outline">{user.role}</Badge>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function UsersClient({ users: initialUsers }: UsersClientProps) {
   const [users, setUsers] = React.useState(initialUsers);
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -262,6 +328,7 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
   const [selectedUser, setSelectedUser] = React.useState<User | undefined>(undefined);
   const { dictionary } = useLanguage();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const onDeactivate = async (userId: string) => {
     const result = await deactivateUser(userId);
@@ -272,6 +339,17 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
         toast({ title: dictionary.users.toasts.error, description: result.error, variant: 'destructive' });
     }
   }
+  
+  const handleSelectForEdit = (user: User) => {
+    setSelectedUser(user);
+    setIsFormOpen(true);
+  }
+
+  const handleSelectForPasswordReset = (user: User) => {
+    setSelectedUser(user);
+    setIsResetPasswordOpen(true);
+  }
+
 
   const columns: ColumnDef<User>[] = React.useMemo(() => [
     {
@@ -292,10 +370,10 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
                     <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuLabel>{dictionary.users.table.actions}</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => { setSelectedUser(user); setIsFormOpen(true); }}>
+                        <DropdownMenuItem onSelect={() => handleSelectForEdit(user)}>
                             <Edit className="mr-2 h-4 w-4" />{dictionary.templates.table.edit}
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => { setSelectedUser(user); setIsResetPasswordOpen(true); }}>
+                        <DropdownMenuItem onSelect={() => handleSelectForPasswordReset(user)}>
                             <KeyRound className="mr-2 h-4 w-4" />{dictionary.users.dialogs.resetPasswordTitle}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -321,7 +399,7 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
         );
       },
     },
-  ], [dictionary, onDeactivate]);
+  ], [dictionary, onDeactivate, handleSelectForEdit, handleSelectForPasswordReset]);
 
   const table = useReactTable({
     data: users,
@@ -351,42 +429,64 @@ export function UsersClient({ users: initialUsers }: UsersClientProps) {
       <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
         {selectedUser && <ResetPasswordDialog user={selectedUser} onFinished={() => setIsResetPasswordOpen(false)} />}
       </Dialog>
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableHead key={header.id}>
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+      {isMobile ? (
+        <div className="space-y-4">
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map(row => (
+              <UserCard 
+                key={row.original.id}
+                user={row.original}
+                onDeactivate={onDeactivate}
+                onSelectForEdit={handleSelectForEdit}
+                onSelectForPasswordReset={handleSelectForPasswordReset}
+              />
+            ))
+          ) : (
+            <Card>
+              <CardContent className="h-24 text-center flex items-center justify-center">
+                  {dictionary.dashboard.table.noResults}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="pt-6">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableHead key={header.id}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    {dictionary.dashboard.table.noResults}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      {dictionary.dashboard.table.noResults}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
