@@ -17,10 +17,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as Handlebars from 'handlebars';
+import { MainLayout } from '@/components/main-layout';
 
 type PreviewDataContext = any;
 
-export default function SendEmailPage() {
+function SendEmailPageContent() {
   const searchParams = useSearchParams();
   const contactId = searchParams.get('contactId');
   const trademarkId = searchParams.get('trademarkId');
@@ -288,4 +289,12 @@ export default function SendEmailPage() {
       </Card>
     </div>
   );
+}
+
+export default function SendEmailPage() {
+    return (
+        <MainLayout>
+            <SendEmailPageContent />
+        </MainLayout>
+    )
 }

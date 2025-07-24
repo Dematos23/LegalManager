@@ -2,6 +2,7 @@
 import { getContactDetails } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { ContactDetailClient } from '@/components/contact-detail-client';
+import { MainLayout } from '@/components/main-layout';
 
 type ContactDetailPageProps = {
     params: {
@@ -16,5 +17,9 @@ export default async function ContactDetailPage({ params }: ContactDetailPagePro
         notFound();
     }
     
-    return <ContactDetailClient contact={contact} />;
+    return (
+        <MainLayout>
+            <ContactDetailClient contact={contact} />
+        </MainLayout>
+    );
 }

@@ -3,6 +3,7 @@ import { TrademarkForm } from '@/components/trademark-form';
 import { getAgents, getOwners, getContacts } from '@/app/trademarks/actions';
 import { getTrademarkDetails } from '@/lib/data';
 import { notFound } from 'next/navigation';
+import { MainLayout } from '@/components/main-layout';
 
 type EditTrademarkPageProps = {
     params: {
@@ -23,8 +24,10 @@ export default async function EditTrademarkPage({ params }: EditTrademarkPagePro
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <TrademarkForm trademark={trademark} agents={agents} owners={owners} contacts={contacts} />
-    </div>
+    <MainLayout>
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <TrademarkForm trademark={trademark} agents={agents} owners={owners} contacts={contacts} />
+        </div>
+    </MainLayout>
   );
 }

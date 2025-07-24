@@ -2,6 +2,7 @@
 import { getTrademarkDetails } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { TrademarkDetailClient } from '@/components/trademark-detail-client';
+import { MainLayout } from '@/components/main-layout';
 
 type TrademarkDetailPageProps = {
     params: {
@@ -16,5 +17,9 @@ export default async function TrademarkDetailPage({ params }: TrademarkDetailPag
         notFound();
     }
     
-    return <TrademarkDetailClient trademark={trademark} />;
+    return (
+        <MainLayout>
+            <TrademarkDetailClient trademark={trademark} />
+        </MainLayout>
+    );
 }

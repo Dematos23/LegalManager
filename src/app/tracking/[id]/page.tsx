@@ -2,6 +2,7 @@
 import { getCampaignDetails } from '@/app/campaigns/actions';
 import { CampaignDetailClient } from '@/components/campaign-detail-client';
 import { notFound } from 'next/navigation';
+import { MainLayout } from '@/components/main-layout';
 
 type CampaignDetailPageProps = {
     params: {
@@ -15,5 +16,9 @@ export default async function CampaignDetailPage({ params }: CampaignDetailPageP
         notFound();
     }
 
-    return <CampaignDetailClient campaign={campaign} />;
+    return (
+        <MainLayout>
+            <CampaignDetailClient campaign={campaign} />
+        </MainLayout>
+    );
 }

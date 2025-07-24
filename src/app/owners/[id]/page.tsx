@@ -2,6 +2,7 @@
 import { getOwnerDetails, getContacts, getAgents } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { OwnerDetailClient } from '@/components/owner-detail-client';
+import { MainLayout } from '@/components/main-layout';
 
 type OwnerDetailPageProps = {
     params: {
@@ -20,5 +21,9 @@ export default async function OwnerDetailPage({ params }: OwnerDetailPageProps) 
         notFound();
     }
     
-    return <OwnerDetailClient owner={owner} allContacts={allContacts} allAgents={allAgents} />;
+    return (
+        <MainLayout>
+            <OwnerDetailClient owner={owner} allContacts={allContacts} allAgents={allAgents} />
+        </MainLayout>
+    );
 }
