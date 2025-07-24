@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import React, { useMemo, useState, useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { syncCampaignStatusAction } from '@/app/campaigns/actions';
+import { syncCampaignStatusAction } from '@/app/(protected)/campaigns/actions';
 import {
     ColumnDef,
     flexRender,
