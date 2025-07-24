@@ -8,17 +8,19 @@ import { headers } from 'next/headers';
 import prisma from './prisma';
 
 async function getCurrentUser(): Promise<User | null> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-        // Fallback for client-side actions or scenarios where session is not in headers
-        const h = headers();
-        const userId = h.get('X-User-Id');
-        if (userId) {
-            return prisma.user.findUnique({ where: { id: userId } });
-        }
-        return null;
+    const h = headers();
+    const userIdFromHeader = h.get('X-User-Id');
+
+    if (userIdFromHeader) {
+        return prisma.user.findUnique({ where: { id: userIdFromHeader } });
     }
-    return session.user as User;
+
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+        return session.user as User;
+    }
+
+    return null;
 }
 
 
