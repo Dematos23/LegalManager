@@ -9,9 +9,8 @@ export default withAuth(
     const { token } = req.nextauth;
     const { pathname } = req.nextUrl;
     
-    const requestHeaders = new Headers(req.headers);
-    if (token?.id) {
-      requestHeaders.set('X-User-Id', token.id as string);
+    if (pathname === '/login' && token) {
+        return NextResponse.redirect(new URL('/dashboard', req.url));
     }
     
     const role = token?.role as Role | undefined;
@@ -20,7 +19,7 @@ export default withAuth(
       if (pathname !== '/login') {
         return NextResponse.redirect(new URL('/login', req.url));
       }
-      return NextResponse.next({ request: { headers: requestHeaders } });
+      return NextResponse.next();
     }
 
     const userPermissions = permissions[role];
@@ -33,22 +32,17 @@ export default withAuth(
         return regex.test(pathname);
     });
 
-    if (!hasAccess && pathname !== '/login') {
+    if (!hasAccess) {
+      // If user is trying to access a forbidden page, redirect them to their default page.
+      // For simplicity, we'll redirect all unauthorized access to the dashboard.
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
-    return NextResponse.next({
-        request: {
-            headers: requestHeaders,
-        },
-    });
+    return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-    pages: {
-      signIn: '/login',
+      authorized: () => true, // Let the middleware function handle all auth logic
     },
   }
 );

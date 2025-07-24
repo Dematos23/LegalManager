@@ -1,6 +1,6 @@
 
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { permissions } from '@/config/permissions';
 import type { Action } from '@/config/permissions';
 import type { User, Role } from '@prisma/client';
