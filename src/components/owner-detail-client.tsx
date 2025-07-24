@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Checkbox } from './ui/checkbox';
-import { updateOwnerContacts } from '@/app/owners/actions';
+import { updateOwnerContacts } from '@/app/(protected)/owners/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -40,15 +40,14 @@ function EditContactsDialog({ owner, allContacts, allAgents }: { owner: OwnerWit
 
     const ownerContacts = owner.ownerContacts.map(oc => oc.contact);
     const initialAgentId = ownerContacts[0]?.agentId;
-    const [selectedAgentId, setSelectedAgentId] = React.useState<number | undefined>(initialAgentId);
+    const [selectedAgentId, setSelectedAgentId] = React.useState<string | undefined>(initialAgentId);
 
-    const [selectedContactIds, setSelectedContactIds] = React.useState<number[]>(() =>
+    const [selectedContactIds, setSelectedContactIds] = React.useState<string[]>(() =>
         ownerContacts.map(c => c.id)
     );
 
     const handleAgentChange = (agentId: string) => {
-        const id = Number(agentId);
-        setSelectedAgentId(id);
+        setSelectedAgentId(agentId);
         setSelectedContactIds([]); // Clear selection when agent changes
     };
 
