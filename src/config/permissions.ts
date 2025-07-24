@@ -45,6 +45,6 @@ export const permissions: Record<Role, { routes: string[]; actions: Action[]; me
         'campaign:send', 'campaign:sync', 'campaign:delete',
         'read:data'
     ],
-    menus: ['dashboard', 'agents', 'templates','tracking'],
+    menus: ['trademarks', 'agents', 'templates','tracking'],
   },
 } ;

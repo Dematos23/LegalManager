@@ -19,14 +19,16 @@ export function usePermission() {
     if (role === 'ADMIN') return true;
     if (!role) return false;
     
-    const baseRoute = path.split('/')[1] || '';
-    const checkRoute = `/${baseRoute}`;
+    // Handle the root path explicitly
+    if (path === '/') return true;
+
+    const baseRoute = '/' + (path.split('/')[1] || '');
 
     return userPermissions.routes.some(allowedRoute => {
         if (allowedRoute.endsWith('/*')) {
-            return checkRoute.startsWith(allowedRoute.slice(0, -2));
+            return baseRoute.startsWith(allowedRoute.slice(0, -2));
         }
-        return checkRoute === allowedRoute;
+        return baseRoute === allowedRoute;
     });
   };
 

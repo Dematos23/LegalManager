@@ -21,7 +21,8 @@ import {
   Briefcase,
   Users,
   LogOut,
-  User
+  User,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -69,14 +70,14 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {canSeeMenu('dashboard') && (
+          {canSeeMenu('trademarks') && (
             <SidebarMenuItem>
-              <Link href="/dashboard" passHref>
+              <Link href="/trademarks" passHref>
                 <SidebarMenuButton
-                  isActive={isActive('/dashboard')}
+                  isActive={isActive('/trademarks')}
                   tooltip={{ children: dictionary.sidebar.dashboard }}
                 >
-                  <LayoutDashboard />
+                  <FileText />
                   <span>{dictionary.sidebar.dashboard}</span>
                 </SidebarMenuButton>
               </Link>

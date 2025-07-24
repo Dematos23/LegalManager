@@ -17,7 +17,10 @@ export function PermissionGuard({ children }: { children: ReactNode }) {
     if (user && !canAccessRoute(pathname)) {
         // If the user can't access the route, redirect them to the first route they CAN access.
         const userPermissions = permissions[user.role];
-        const fallbackRoute = userPermissions?.routes[0] || '/login';
+        let fallbackRoute = userPermissions?.routes[0] || '/login';
+        if (fallbackRoute === '/') {
+            fallbackRoute = '/trademarks'
+        }
         router.replace(fallbackRoute);
     }
   }, [pathname, user, canAccessRoute, router]);
