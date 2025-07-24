@@ -11,19 +11,6 @@ import { PermissionGuard } from '@/components/permission-guard';
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
     return (
-<<<<<<< HEAD
-        <NextAuthSessionProvider>
-            <SessionProvider>
-                <SidebarProvider>
-                    <AppSidebar />
-                    <SidebarInset>
-                        <MobileHeader />
-                        {children}
-                    </SidebarInset>
-                </SidebarProvider>
-            </SessionProvider>
-        </NextAuthSessionProvider>
-=======
         <SessionProvider>
             <SidebarProvider>
                 <AppSidebar />
@@ -35,6 +22,5 @@ export default function ProtectedLayout({ children }: { children: ReactNode }) {
                 </SidebarInset>
             </SidebarProvider>
         </SessionProvider>
->>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
     );
 }
