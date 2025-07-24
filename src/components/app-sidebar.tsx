@@ -162,12 +162,6 @@ export function AppSidebar() {
             </DropdownMenu>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={{ children: dictionary.sidebar.settings }}>
-              <Settings />
-              <span>{dictionary.sidebar.settings}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <div className="flex items-center gap-3 p-2">
               <Avatar className="h-9 w-9">
                 <AvatarFallback>
