@@ -43,8 +43,7 @@ export function AppSidebar() {
 
 
   const isActive = (path: string) => {
-    // Exact match for root, partial for others
-    return path === '/' ? pathname === path : pathname.startsWith(path);
+    return pathname.startsWith(path);
   };
 
   const handleLogout = () => {
@@ -69,9 +68,9 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/" passHref>
+            <Link href="/dashboard" passHref>
               <SidebarMenuButton
-                isActive={isActive('/')}
+                isActive={isActive('/dashboard')}
                 tooltip={{ children: dictionary.sidebar.dashboard }}
               >
                 <LayoutDashboard />
