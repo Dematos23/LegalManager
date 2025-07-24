@@ -35,7 +35,7 @@ import { CalendarIcon, Loader2, ChevronsUpDown, X } from 'lucide-react';
 import { Calendar } from './ui/calendar';
 import { Textarea } from './ui/textarea';
 import { useLanguage } from '@/context/language-context';
-import { createTrademark, updateTrademark } from '@/app/trademarks/actions';
+import { createTrademark, updateTrademark } from '@/app/(protected)/trademarks/actions';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -110,7 +110,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
     });
 
     // We need owner details for the action, even if they aren't directly in the schema
-    const selectedOwner = owners.find(o => o.id === Number(data.ownerId));
+    const selectedOwner = owners.find(o => o.id === data.ownerId);
     if (selectedOwner) {
         formData.append('ownerName', selectedOwner.name);
         formData.append('ownerCountry', selectedOwner.country);
@@ -273,7 +273,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.ownerPlaceholder} /></SelectTrigger></FormControl>
                       <SelectContent>
-                        {owners.map(o => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}
+                        {owners.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -288,7 +288,7 @@ export function TrademarkForm({ trademark, agents, owners, contacts }: Trademark
                       <FormControl><SelectTrigger><SelectValue placeholder={dictionary.trademarkForm.contactPlaceholder} /></SelectTrigger></FormControl>
                       <SelectContent>
                         {contacts.map(c => (
-                            <SelectItem key={c.id} value={String(c.id)}>
+                            <SelectItem key={c.id} value={c.id}>
                               {`${c.firstName} ${c.lastName} (${c.agent.name})`}
                             </SelectItem>
                         ))}
