@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { AgentWithCounts } from '@/types';
@@ -177,7 +176,6 @@ export function AgentsClient({ agents }: AgentsClientProps) {
       <Card>
         <CardHeader>
           <CardTitle>{dictionary.dashboard.filtersTitle}</CardTitle>
-          <CardDescription>{dictionary.agents.filterDescription}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
