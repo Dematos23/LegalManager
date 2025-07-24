@@ -10,13 +10,8 @@ type OwnerDetailPageProps = {
 }
 
 export default async function OwnerDetailPage({ params }: OwnerDetailPageProps) {
-    const id = parseInt(params.id, 10);
-    if (isNaN(id)) {
-        notFound();
-    }
-
     const [owner, allContacts, allAgents] = await Promise.all([
-        getOwnerDetails(id),
+        getOwnerDetails(params.id),
         getContacts(),
         getAgents(),
     ]);

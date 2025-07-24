@@ -48,7 +48,7 @@ export default function SendEmailPage() {
       const [fetchedTemplates, fetchedCampaigns, previewData] = await Promise.all([
         getEmailTemplates(),
         getCampaigns(),
-        getContactDataForPreview(Number(contactId), trademarkId ? Number(trademarkId) : undefined),
+        getContactDataForPreview(contactId, trademarkId ? trademarkId : undefined),
       ]);
       setTemplates(fetchedTemplates);
       setCampaigns(fetchedCampaigns as Campaign[]);
@@ -71,10 +71,10 @@ export default function SendEmailPage() {
 
     const payload = {
         sendMode: 'contact' as const,
-        templateId: Number(selectedTemplateId),
+        templateId: selectedTemplateId,
         campaignName: campaignName,
-        contactIds: [Number(contactId)],
-        trademarkId: trademarkId ? Number(trademarkId) : undefined,
+        contactIds: [contactId],
+        trademarkId: trademarkId ? trademarkId : undefined,
         campaignId: selectedCampaignId !== 'new' ? selectedCampaignId : undefined,
     };
 
@@ -105,7 +105,7 @@ export default function SendEmailPage() {
         sendMode: 'custom' as const,
         subject: customSubject,
         body: customBody,
-        contactIds: [Number(contactId)],
+        contactIds: [contactId],
         campaignName: `Custom email to ${contactName}: ${customSubject}`.substring(0, 100),
         campaignId: undefined // Custom emails always create new campaigns for simplicity
     };
@@ -130,7 +130,7 @@ export default function SendEmailPage() {
     });
   };
 
-  const selectedTemplate = templates.find(t => t.id === Number(selectedTemplateId));
+  const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
   const isSendTemplateDisabled = !selectedTemplateId || !contactId || isSending || (selectedCampaignId === 'new' && campaignName.trim().length < 10);
   const isSendCustomDisabled = isSending || !contactId || customSubject.trim() === '' || customBody.trim() === '';
   

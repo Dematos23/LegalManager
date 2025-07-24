@@ -53,13 +53,13 @@ export async function createTrademark(formData: FormData) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      const finalOwnerId = parseInt(ownerId, 10);
-      if (isNaN(finalOwnerId)) {
+      const finalOwnerId = ownerId;
+      if (!finalOwnerId) {
         throw new Error('Invalid Owner ID provided.');
       }
       
-      const finalContactId = parseInt(contactId, 10);
-       if (isNaN(finalContactId)) {
+      const finalContactId = contactId;
+       if (!finalContactId) {
         throw new Error('Invalid Contact ID provided.');
       }
 
@@ -109,7 +109,7 @@ export async function createTrademark(formData: FormData) {
   redirect('/');
 }
 
-export async function updateTrademark(trademarkId: number, formData: FormData) {
+export async function updateTrademark(trademarkId: string, formData: FormData) {
   const rawFormData = {
     denomination: formData.get('denomination'),
     classIds: formData.getAll('classIds'),
@@ -137,10 +137,10 @@ export async function updateTrademark(trademarkId: number, formData: FormData) {
     contactId,
   } = validatedFields.data;
   
-  const finalOwnerId = parseInt(ownerId, 10);
-  const finalContactId = parseInt(contactId, 10);
+  const finalOwnerId = ownerId;
+  const finalContactId = contactId;
 
-  if (isNaN(finalOwnerId) || isNaN(finalContactId)) {
+  if (!finalOwnerId || !finalContactId) {
     return { errors: { _form: ['Invalid Owner or Contact ID'] } };
   }
 

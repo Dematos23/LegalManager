@@ -10,12 +10,7 @@ type AgentDetailPageProps = {
 }
 
 export default async function AgentDetailPage({ params }: AgentDetailPageProps) {
-    const id = parseInt(params.id, 10);
-    if (isNaN(id)) {
-        notFound();
-    }
-
-    const agent = await getAgentDetails(id);
+    const agent = await getAgentDetails(params.id);
 
     if (!agent) {
         notFound();

@@ -36,7 +36,7 @@ export async function getTrademarks() {
   }
 }
 
-export async function getTrademarkDetails(id: number) {
+export async function getTrademarkDetails(id: string) {
   try {
     const trademark = await prisma.trademark.findUnique({
       where: { id },
@@ -92,7 +92,7 @@ export async function getContacts() {
 }
 
 
-export async function getContactDetails(id: number) {
+export async function getContactDetails(id: string) {
   try {
     const contact = await prisma.contact.findUnique({
       where: { id },
@@ -154,7 +154,7 @@ export async function getAgentsList(): Promise<AgentWithCounts[]> {
 
         // Process the data to get the counts
         return agents.map(agent => {
-            const owners = new Set<number>();
+            const owners = new Set<string>();
             let trademarkCount = 0;
 
             agent.contacts.forEach(contact => {
@@ -177,7 +177,7 @@ export async function getAgentsList(): Promise<AgentWithCounts[]> {
     }
 }
 
-export async function getAgentDetails(id: number) {
+export async function getAgentDetails(id: string) {
     try {
         const agent = await prisma.agent.findUnique({
             where: { id },
@@ -218,7 +218,7 @@ export async function getAgentDetails(id: number) {
     }
 }
 
-export async function getOwnerDetails(id: number) {
+export async function getOwnerDetails(id: string) {
     try {
         const owner = await prisma.owner.findUnique({
             where: { id },

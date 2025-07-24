@@ -36,24 +36,24 @@ function getTemplateType(templateBody: string): TemplateType {
 
 interface SendCampaignByTrademarkPayload {
     sendMode: 'trademark';
-    templateId: number;
+    templateId: string;
     campaignName: string;
-    trademarkIds: number[];
+    trademarkIds: string[];
 }
 
 interface SendCampaignByContactPayload {
     sendMode: 'contact';
-    templateId: number;
+    templateId: string;
     campaignName: string;
-    contactIds: number[];
-    trademarkId?: number; // Optional trademarkId for single sends
+    contactIds: string[];
+    trademarkId?: string; // Optional trademarkId for single sends
 }
 
 interface SendCustomEmailPayload {
     sendMode: 'custom';
     subject: string;
     body: string;
-    contactIds: number[];
+    contactIds: string[];
     campaignName?: string;
     campaignId?: string;
 }
@@ -105,7 +105,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
         
         let campaignId;
         if (payload.campaignId && payload.campaignId !== 'new') {
-            const existingCampaign = await prisma.campaign.findUnique({ where: { id: Number(payload.campaignId) } });
+            const existingCampaign = await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
             if (!existingCampaign) return { error: 'Selected campaign not found.' };
             campaignId = existingCampaign.id;
         } else {
@@ -186,7 +186,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
             
             if (templateType === 'multi-trademark-no-owner') {
                 // Group trademarks by their contact. One email per contact with a list of their trademarks.
-                const trademarksByContact = new Map<number, { contact: any; trademarks: any[] }>();
+                const trademarksByContact = new Map<string, { contact: any; trademarks: any[] }>();
                 for (const tm of selectedTrademarks) {
                     for (const ownerContact of tm.owner.ownerContacts) {
                         const contact = ownerContact.contact;
@@ -264,7 +264,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
 async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: string) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    let campaignId: number;
+    let campaignId: string;
     let campaignName: string;
 
     const contact = await prisma.contact.findUnique({
@@ -290,7 +290,7 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
     }
 
     if (payload.campaignId && payload.campaignId !== 'new') {
-        const existingCampaign = await prisma.campaign.findUnique({ where: { id: Number(payload.campaignId) } });
+        const existingCampaign = await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
         if (!existingCampaign) return { error: 'Selected campaign not found.' };
         campaignId = existingCampaign.id;
         campaignName = existingCampaign.name;
@@ -304,10 +304,6 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
                 name: campaignName,
                 userId: userId,
                 // Custom emails don't have a persistent template, so we can't link one.
-                // This assumes the schema allows for a null emailTemplateId, 
-                // or we need to link a placeholder/default template.
-                // For now, let's assume it can be created without one if it's a custom email campaign.
-                // This part might need adjustment based on final schema.
             }
         });
         campaignId = newCampaign.id;
@@ -360,7 +356,7 @@ async function createHandlebarsContext(contact: FullContact, owners: FullOwner[]
             denomination: tm.denomination,
             class: tm.trademarkClasses.map(tc => tc.class.id).join(', '),
             certificate: tm.certificate,
-            expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+            expiration: tm.expiration ? format(new Date(tm.expiration), 'yyyy-MM-dd') : '',
             products: tm.products,
             type: tm.type
         }))
@@ -370,7 +366,7 @@ async function createHandlebarsContext(contact: FullContact, owners: FullOwner[]
         denomination: tm.denomination,
         class: tm.trademarkClasses.map((tc: any) => tc.class.id).join(', '),
         certificate: tm.certificate,
-        expiration: format(new Date(tm.expiration), 'yyyy-MM-dd'),
+        expiration: tm.expiration ? format(new Date(tm.expiration), 'yyyy-MM-dd') : '',
         products: tm.products,
         type: tm.type
     }));
@@ -428,7 +424,7 @@ export async function getCampaigns() {
     });
 }
 
-export async function getCampaignDetails(campaignId: number) {
+export async function getCampaignDetails(campaignId: string) {
     return prisma.campaign.findUnique({
         where: { id: campaignId },
         include: {
@@ -446,8 +442,8 @@ export async function getCampaignDetails(campaignId: number) {
     });
 }
 
-export async function getContactDataForPreview(contactId: number, trademarkId?: number) {
-    if (isNaN(contactId)) return null;
+export async function getContactDataForPreview(contactId: string, trademarkId?: string) {
+    if (!contactId) return null;
     const contact = await prisma.contact.findUnique({
         where: { id: contactId },
         include: {
@@ -483,7 +479,7 @@ export async function getContactDataForPreview(contactId: number, trademarkId?: 
     return createHandlebarsContext(contact, allOwners, allTrademarks);
 }
 
-export async function syncCampaignStatusAction(campaignId: number) {
+export async function syncCampaignStatusAction(campaignId: string) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
         const campaign = await prisma.campaign.findUnique({
@@ -532,7 +528,7 @@ export async function syncCampaignStatusAction(campaignId: number) {
     }
 }
 
-export async function deleteCampaignAction(campaignId: number) {
+export async function deleteCampaignAction(campaignId: string) {
     try {
         // Use a transaction to ensure both deletions succeed or fail together
         await prisma.$transaction([

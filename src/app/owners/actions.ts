@@ -4,7 +4,7 @@
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
-export async function updateOwnerContacts(ownerId: number, contactIds: number[]) {
+export async function updateOwnerContacts(ownerId: string, contactIds: string[]) {
   try {
     // Use a transaction to ensure atomicity: delete old associations and create new ones.
     await prisma.$transaction([

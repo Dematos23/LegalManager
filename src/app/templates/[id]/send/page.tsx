@@ -11,12 +11,7 @@ type SendTemplatePageProps = {
 }
 
 export default async function SendTemplatePage({ params }: SendTemplatePageProps) {
-  const id = parseInt(params.id, 10);
-  if (isNaN(id)) {
-    notFound();
-  }
-
-  const template = await getEmailTemplate(id);
+  const template = await getEmailTemplate(params.id);
   if (!template) {
     notFound();
   }

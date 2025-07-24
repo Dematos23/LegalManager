@@ -10,12 +10,7 @@ type TrademarkDetailPageProps = {
 }
 
 export default async function TrademarkDetailPage({ params }: TrademarkDetailPageProps) {
-    const id = parseInt(params.id, 10);
-    if (isNaN(id)) {
-        notFound();
-    }
-
-    const trademark = await getTrademarkDetails(id);
+    const trademark = await getTrademarkDetails(params.id);
 
     if (!trademark) {
         notFound();

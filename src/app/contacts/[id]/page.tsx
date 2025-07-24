@@ -10,12 +10,7 @@ type ContactDetailPageProps = {
 }
 
 export default async function ContactDetailPage({ params }: ContactDetailPageProps) {
-    const id = parseInt(params.id, 10);
-    if (isNaN(id)) {
-        notFound();
-    }
-
-    const contact = await getContactDetails(id);
+    const contact = await getContactDetails(params.id);
 
     if (!contact) {
         notFound();

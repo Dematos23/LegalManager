@@ -39,8 +39,8 @@ export async function getEmailTemplates() {
   });
 }
 
-export async function getEmailTemplate(id: number) {
-    if (isNaN(id)) return null;
+export async function getEmailTemplate(id: string) {
+    if (!id) return null;
     return prisma.emailTemplate.findUnique({
       where: { id },
     });
@@ -83,7 +83,7 @@ export async function createEmailTemplate(formData: FormData) {
   redirect('/templates');
 }
 
-export async function updateEmailTemplate(id: number, formData: FormData) {
+export async function updateEmailTemplate(id: string, formData: FormData) {
     const validatedFields = TemplateSchema.safeParse({
         name: formData.get('name'),
         subject: formData.get('subject'),
@@ -123,7 +123,7 @@ export async function updateEmailTemplate(id: number, formData: FormData) {
 }
 
 
-export async function deleteEmailTemplate(id: number) {
+export async function deleteEmailTemplate(id: string) {
     try {
         await prisma.emailTemplate.delete({
             where: { id },

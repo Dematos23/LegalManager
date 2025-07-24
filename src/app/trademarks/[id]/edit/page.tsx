@@ -11,13 +11,8 @@ type EditTrademarkPageProps = {
 }
 
 export default async function EditTrademarkPage({ params }: EditTrademarkPageProps) {
-  const id = parseInt(params.id, 10);
-  if (isNaN(id)) {
-    notFound();
-  }
-  
   const [trademark, agents, owners, contacts] = await Promise.all([
-    getTrademarkDetails(id),
+    getTrademarkDetails(params.id),
     getAgents(),
     getOwners(),
     getContacts(),
