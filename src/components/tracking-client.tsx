@@ -363,7 +363,6 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
       <Card>
         <CardHeader>
           <CardTitle>{dictionary.tracking.filtersTitle}</CardTitle>
-          <CardDescription>{dictionary.tracking.description}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
