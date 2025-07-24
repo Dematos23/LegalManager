@@ -1,9 +1,11 @@
 
 import prisma from './prisma';
 import type { AgentWithCounts, TrademarkWithDetails } from '@/types';
+import { checkPermission } from './permissions';
 
 export async function getTrademarks() {
   try {
+    await checkPermission('read:data');
     const trademarks = await prisma.trademark.findMany({
       include: {
         trademarkClasses: {
@@ -38,6 +40,7 @@ export async function getTrademarks() {
 
 export async function getTrademarkDetails(id: string) {
   try {
+    await checkPermission('read:data');
     const trademark = await prisma.trademark.findUnique({
       where: { id },
       include: {
@@ -70,6 +73,7 @@ export async function getTrademarkDetails(id: string) {
 
 export async function getContacts() {
     try {
+        await checkPermission('read:data');
         const contacts = await prisma.contact.findMany({
             include: {
                 agent: true,
@@ -94,6 +98,7 @@ export async function getContacts() {
 
 export async function getContactDetails(id: string) {
   try {
+    await checkPermission('read:data');
     const contact = await prisma.contact.findUnique({
       where: { id },
       include: {
@@ -129,6 +134,7 @@ export async function getContactDetails(id: string) {
 
 export async function getAgentsList(): Promise<AgentWithCounts[]> {
     try {
+        await checkPermission('read:data');
         const agents = await prisma.agent.findMany({
             include: {
                 contacts: {
@@ -179,6 +185,7 @@ export async function getAgentsList(): Promise<AgentWithCounts[]> {
 
 export async function getAgentDetails(id: string) {
     try {
+        await checkPermission('read:data');
         const agent = await prisma.agent.findUnique({
             where: { id },
             include: {
@@ -220,6 +227,7 @@ export async function getAgentDetails(id: string) {
 
 export async function getOwnerDetails(id: string) {
     try {
+        await checkPermission('read:data');
         const owner = await prisma.owner.findUnique({
             where: { id },
             include: {
@@ -255,6 +263,7 @@ export async function getOwnerDetails(id: string) {
 
 export async function getAgents() {
   try {
+    await checkPermission('read:data');
     return await prisma.agent.findMany({
       orderBy: {
         name: 'asc',
@@ -268,6 +277,7 @@ export async function getAgents() {
 
 export async function getUsers() {
     try {
+        await checkPermission('read:data');
         const users = await prisma.user.findMany({
             orderBy: {
                 lastName: 'asc',
