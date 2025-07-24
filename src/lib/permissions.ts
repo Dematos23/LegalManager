@@ -4,22 +4,12 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { permissions } from '@/config/permissions';
 import type { Action } from '@/config/permissions';
 import type { User, Role } from '@prisma/client';
-import { headers } from 'next/headers';
-import prisma from './prisma';
 
 async function getCurrentUser(): Promise<User | null> {
-    const h = headers();
-    const userIdFromHeader = h.get('X-User-Id');
-
-    if (userIdFromHeader) {
-        return prisma.user.findUnique({ where: { id: userIdFromHeader } });
-    }
-
     const session = await getServerSession(authOptions);
     if (session?.user?.id) {
         return session.user as User;
     }
-
     return null;
 }
 
