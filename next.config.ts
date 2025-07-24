@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/',
-        destination: '/dashboard',
+        destination: '/login',
         permanent: true,
       },
     ]
