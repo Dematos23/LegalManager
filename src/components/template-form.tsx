@@ -28,7 +28,7 @@ import {
   createEmailTemplate,
   updateEmailTemplate,
   getTemplatePreviewData,
-} from "@/app/templates/actions";
+} from "@/app/(protected)/templates/actions";
 import { useLanguage } from "@/context/language-context";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
