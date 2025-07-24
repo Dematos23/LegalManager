@@ -34,11 +34,13 @@ import {
 import { useLanguage } from '@/context/language-context';
 import Image from 'next/image';
 import { useSession } from '@/context/session-context';
+import { usePermission } from '@/hooks/usePermission';
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { language, dictionary, switchLanguage } = useLanguage();
   const { user, logout } = useSession();
+  const { canSeeMenu } = usePermission();
   const router = useRouter();
 
 
@@ -67,72 +69,84 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <Link href="/dashboard" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/dashboard')}
-                tooltip={{ children: dictionary.sidebar.dashboard }}
-              >
-                <LayoutDashboard />
-                <span>{dictionary.sidebar.dashboard}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/agents" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/agents')}
-                tooltip={{ children: dictionary.sidebar.agents }}
-              >
-                <Briefcase />
-                <span>{dictionary.sidebar.agents}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/import" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/import')}
-                tooltip={{ children: dictionary.sidebar.import }}
-              >
-                <FileUp />
-                <span>{dictionary.sidebar.import}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/templates" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/templates')}
-                tooltip={{ children: dictionary.sidebar.templates }}
-              >
-                <LayoutTemplate />
-                <span>{dictionary.sidebar.templates}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-           <SidebarMenuItem>
-            <Link href="/tracking" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/tracking')}
-                tooltip={{ children: dictionary.sidebar.tracking }}
-              >
-                <History />
-                <span>{dictionary.sidebar.tracking}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/users" passHref>
-              <SidebarMenuButton
-                isActive={isActive('/users')}
-                tooltip={{ children: dictionary.sidebar.users }}
-              >
-                <Users />
-                <span>{dictionary.sidebar.users}</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
+          {canSeeMenu('dashboard') && (
+            <SidebarMenuItem>
+              <Link href="/dashboard" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/dashboard')}
+                  tooltip={{ children: dictionary.sidebar.dashboard }}
+                >
+                  <LayoutDashboard />
+                  <span>{dictionary.sidebar.dashboard}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
+           {canSeeMenu('agents') && (
+              <SidebarMenuItem>
+                <Link href="/agents" passHref>
+                  <SidebarMenuButton
+                    isActive={isActive('/agents')}
+                    tooltip={{ children: dictionary.sidebar.agents }}
+                  >
+                    <Briefcase />
+                    <span>{dictionary.sidebar.agents}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+           )}
+          {canSeeMenu('import') && (
+            <SidebarMenuItem>
+              <Link href="/import" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/import')}
+                  tooltip={{ children: dictionary.sidebar.import }}
+                >
+                  <FileUp />
+                  <span>{dictionary.sidebar.import}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
+          {canSeeMenu('templates') && (
+            <SidebarMenuItem>
+              <Link href="/templates" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/templates')}
+                  tooltip={{ children: dictionary.sidebar.templates }}
+                >
+                  <LayoutTemplate />
+                  <span>{dictionary.sidebar.templates}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
+           {canSeeMenu('tracking') && (
+            <SidebarMenuItem>
+              <Link href="/tracking" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/tracking')}
+                  tooltip={{ children: dictionary.sidebar.tracking }}
+                >
+                  <History />
+                  <span>{dictionary.sidebar.tracking}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+           )}
+          {canSeeMenu('users') && (
+            <SidebarMenuItem>
+              <Link href="/users" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/users')}
+                  tooltip={{ children: dictionary.sidebar.users }}
+                >
+                  <Users />
+                  <span>{dictionary.sidebar.users}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

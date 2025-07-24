@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Role } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import argon2 from 'argon2';
+import { checkPermission } from '@/lib/permissions';
 
 const PasswordSchema = z.string().min(8, 'Password must be at least 8 characters long.');
 
@@ -17,6 +18,8 @@ const UserSchema = z.object({
 });
 
 export async function createUser(formData: FormData) {
+  await checkPermission('user:create');
+  
   const validatedFields = UserSchema.extend({
     password: PasswordSchema,
   }).safeParse(Object.fromEntries(formData.entries()));
@@ -54,6 +57,8 @@ export async function createUser(formData: FormData) {
 }
 
 export async function updateUser(userId: string, formData: FormData) {
+  await checkPermission('user:update');
+
   const validatedFields = UserSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
@@ -82,6 +87,8 @@ export async function updateUser(userId: string, formData: FormData) {
 }
 
 export async function resetPassword(userId: string, formData: FormData) {
+    await checkPermission('user:reset-password');
+
     const validatedFields = z.object({ password: PasswordSchema }).safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
@@ -104,6 +111,7 @@ export async function resetPassword(userId: string, formData: FormData) {
 }
 
 export async function deactivateUser(userId: string) {
+    await checkPermission('user:delete');
     try {
         await prisma.user.delete({ where: { id: userId }});
         revalidatePath('/users');

@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { checkPermission } from '@/lib/permissions';
 
 const TemplateSchema = z.object({
   name: z.string().min(3, { message: 'Name must be at least 3 characters long.' }),
@@ -47,6 +48,8 @@ export async function getEmailTemplate(id: string) {
 }
 
 export async function createEmailTemplate(formData: FormData) {
+  await checkPermission('template:create');
+
   const validatedFields = TemplateSchema.safeParse({
     name: formData.get('name'),
     subject: formData.get('subject'),
@@ -84,6 +87,8 @@ export async function createEmailTemplate(formData: FormData) {
 }
 
 export async function updateEmailTemplate(id: string, formData: FormData) {
+    await checkPermission('template:update');
+    
     const validatedFields = TemplateSchema.safeParse({
         name: formData.get('name'),
         subject: formData.get('subject'),
@@ -124,6 +129,7 @@ export async function updateEmailTemplate(id: string, formData: FormData) {
 
 
 export async function deleteEmailTemplate(id: string) {
+    await checkPermission('template:delete');
     try {
         await prisma.emailTemplate.delete({
             where: { id },

@@ -22,12 +22,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/language-context';
-import { loginAction } from '@/app/login/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useSession } from '@/context/session-context';
+import { signIn } from 'next-auth/react';
 
 const LoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -40,7 +39,6 @@ export function LoginForm() {
   const { dictionary } = useLanguage();
   const { toast } = useToast();
   const router = useRouter();
-  const { login } = useSession();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(LoginSchema),
@@ -51,15 +49,19 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    const result = await loginAction(data);
-    if (result.success) {
-      login(result.user);
-      router.push('/');
+    const result = await signIn('credentials', {
+      redirect: false,
+      email: data.email,
+      password: data.password,
+    });
+
+    if (result?.ok) {
+      router.push('/dashboard');
     } else {
       toast({
         variant: 'destructive',
         title: dictionary.login.errorTitle,
-        description: result.error,
+        description: result?.error || 'Invalid credentials.',
       });
     }
   };

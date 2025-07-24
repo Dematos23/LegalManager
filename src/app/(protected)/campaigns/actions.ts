@@ -7,6 +7,7 @@ import * as Handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
 import type { Contact, Owner, Trademark, Agent } from '@prisma/client';
+import { checkPermission } from '@/lib/permissions';
 
 type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 'multi-owner';
 
@@ -63,6 +64,7 @@ type SendCampaignPayload = (SendCampaignByTrademarkPayload | SendCampaignByConta
 
 
 export async function sendCampaignAction(payload: SendCampaignPayload | SendCustomEmailPayload) {
+    await checkPermission('campaign:send');
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
@@ -480,6 +482,8 @@ export async function getContactDataForPreview(contactId: string, trademarkId?: 
 }
 
 export async function syncCampaignStatusAction(campaignId: string) {
+    await checkPermission('campaign:sync');
+    
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
         const campaign = await prisma.campaign.findUnique({
@@ -529,6 +533,7 @@ export async function syncCampaignStatusAction(campaignId: string) {
 }
 
 export async function deleteCampaignAction(campaignId: string) {
+    await checkPermission('campaign:delete');
     try {
         // Use a transaction to ensure both deletions succeed or fail together
         await prisma.$transaction([

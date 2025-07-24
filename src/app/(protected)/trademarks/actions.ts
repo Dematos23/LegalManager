@@ -6,6 +6,7 @@ import { Country, TrademarkType } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/permissions';
 
 const TrademarkFormSchema = z.object({
   denomination: z.string().min(1, 'Denomination is required.'),
@@ -23,6 +24,8 @@ const TrademarkFormSchema = z.object({
 });
 
 export async function createTrademark(formData: FormData) {
+  await checkPermission('trademark:create');
+
   const rawFormData = {
     denomination: formData.get('denomination'),
     classIds: formData.getAll('classIds'),
@@ -110,6 +113,8 @@ export async function createTrademark(formData: FormData) {
 }
 
 export async function updateTrademark(trademarkId: string, formData: FormData) {
+  await checkPermission('trademark:update');
+
   const rawFormData = {
     denomination: formData.get('denomination'),
     classIds: formData.getAll('classIds'),

@@ -2,87 +2,46 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import type { User, Role } from '@prisma/client';
+import { useSession as useNextAuthSession } from 'next-auth/react';
+import type { User } from '@prisma/client';
 
-interface SessionContextType {
-  isAuthenticated: boolean;
-  isLoading: boolean;
+interface AppSessionContextType {
   user: User | null;
-  login: (user: User) => void;
+  isLoading: boolean;
   logout: () => void;
 }
 
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
+const AppSessionContext = createContext<AppSessionContextType | undefined>(undefined);
 
 export const SessionProvider = ({ children }: { children: ReactNode }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { data: session, status } = useNextAuthSession();
     const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const router = useRouter();
-    const pathname = usePathname();
 
     useEffect(() => {
-        try {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-                setIsAuthenticated(true);
-            } else {
-                 if (pathname !== '/login') {
-                    router.push('/login');
-                }
-            }
-        } catch (error) {
-            // localStorage not available on server or JSON parsing failed
-            if (pathname !== '/login') {
-                router.push('/login');
-            }
-        } finally {
-            setIsLoading(false);
+        if (session?.user) {
+            setUser(session.user as User);
         }
-    }, [pathname, router]);
-
-    const login = useCallback((userData: User) => {
-        try {
-            localStorage.setItem('user', JSON.stringify(userData));
-            setUser(userData);
-            setIsAuthenticated(true);
-        } catch (error) {}
-    }, []);
+    }, [session]);
 
     const logout = useCallback(() => {
-        try {
-            localStorage.removeItem('user');
-            setUser(null);
-            setIsAuthenticated(false);
-        } catch (error) {}
+        // This will be handled by next-auth signOut
     }, []);
 
-    const value = { isAuthenticated, isLoading, user, login, logout };
+    const value = { 
+        user, 
+        isLoading: status === 'loading',
+        logout,
+    };
     
-    if (isLoading) {
-        return null; // Or a loading spinner
-    }
-
-    if (!isAuthenticated && pathname !== '/login') {
-        return null; // Or a loading spinner, while redirecting
-    }
-    
-    // This prevents a flash of the login page if the user is already authenticated
-    if (isAuthenticated && pathname === '/login') {
-        return null;
-    }
-
     return (
-        <SessionContext.Provider value={value}>
+        <AppSessionContext.Provider value={value}>
             {children}
-        </SessionContext.Provider>
+        </AppSessionContext.Provider>
     );
 };
 
-export const useSession = (): SessionContextType => {
-  const context = useContext(SessionContext);
+export const useSession = (): AppSessionContextType => {
+  const context = useContext(AppSessionContext);
   if (context === undefined) {
     throw new Error('useSession must be used within a SessionProvider');
   }

@@ -3,8 +3,11 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { checkPermission } from '@/lib/permissions';
 
 export async function updateOwnerContacts(ownerId: string, contactIds: string[]) {
+  await checkPermission('owner:update-contacts');
+  
   try {
     // Use a transaction to ensure atomicity: delete old associations and create new ones.
     await prisma.$transaction([

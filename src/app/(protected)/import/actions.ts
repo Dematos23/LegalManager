@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import { z } from 'zod';
 import { Country, TrademarkType, Agent, Contact, Area } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { checkPermission } from '@/lib/permissions';
 
 // Define schemas for validation, now accounting for optional fields
 const TrademarkSchema = z.object({
@@ -182,6 +183,7 @@ async function parseAndValidateRows(formData: FormData) {
 
 export async function verifyDataAction(formData: FormData) {
     try {
+        await checkPermission('data:import');
         const validationResult = await parseAndValidateRows(formData);
         if ('error' in validationResult) {
             return { error: validationResult.error };
@@ -208,6 +210,8 @@ export async function verifyDataAction(formData: FormData) {
 
 
 export async function importDataAction(formData: FormData) {
+  await checkPermission('data:import');
+  
   const file = formData.get('file') as File;
   const mappings = JSON.parse(formData.get('mappings') as string);
   
@@ -385,5 +389,3 @@ export async function importDataAction(formData: FormData) {
     return { error: 'An unexpected error occurred during import.' };
   }
 }
-
-    

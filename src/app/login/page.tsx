@@ -2,22 +2,22 @@
 'use client';
 
 import { LoginForm } from '@/components/login-form';
-import { SessionProvider, useSession } from '@/context/session-context';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import type { User } from '@prisma/client';
 
 function LoginPageContent() {
-  const { isAuthenticated, isLoading, user } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      router.push('/');
+    if (status === 'authenticated') {
+      router.push('/dashboard');
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [status, router]);
 
-  if (isLoading || (isAuthenticated && user)) {
+  if (status === 'loading' || status === 'authenticated') {
     return null; // or a loading spinner
   }
 
@@ -31,8 +31,6 @@ function LoginPageContent() {
 
 export default function LoginPage() {
     return (
-        <SessionProvider>
-            <LoginPageContent />
-        </SessionProvider>
+        <LoginPageContent />
     )
 }
