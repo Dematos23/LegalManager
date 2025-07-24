@@ -3,11 +3,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { permissions } from '@/config/permissions';
 import type { Action } from '@/config/permissions';
-import type { User, Role } from '@prisma/client';
+import type { User } from '@prisma/client';
 
 async function getCurrentUser(): Promise<User | null> {
     const session = await getServerSession(authOptions);
     if (session?.user?.id) {
+        // The session user object from next-auth is compatible with the Prisma User type
         return session.user as User;
     }
     return null;
