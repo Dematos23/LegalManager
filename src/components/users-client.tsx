@@ -81,7 +81,7 @@ import { ArrowUpDown, Edit, Loader2, MoreHorizontal, PlusCircle, Trash2, KeyRoun
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createUser, updateUser, deactivateUser, resetPassword } from '@/app/users/actions';
+import { createUser, updateUser, deactivateUser, resetPassword } from '@/app/(protected)/users/actions';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
