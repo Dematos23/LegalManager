@@ -82,6 +82,7 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           )}
+<<<<<<< HEAD
            {canSeeMenu('agents') && (
               <SidebarMenuItem>
                 <Link href="/agents" passHref>
@@ -95,6 +96,21 @@ export function AppSidebar() {
                 </Link>
               </SidebarMenuItem>
            )}
+=======
+          {canSeeMenu('agents') && (
+            <SidebarMenuItem>
+              <Link href="/agents" passHref>
+                <SidebarMenuButton
+                  isActive={isActive('/agents')}
+                  tooltip={{ children: dictionary.sidebar.agents }}
+                >
+                  <Briefcase />
+                  <span>{dictionary.sidebar.agents}</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
+>>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
           {canSeeMenu('import') && (
             <SidebarMenuItem>
               <Link href="/import" passHref>
@@ -121,7 +137,11 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           )}
+<<<<<<< HEAD
            {canSeeMenu('tracking') && (
+=======
+          {canSeeMenu('tracking') && (
+>>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
             <SidebarMenuItem>
               <Link href="/tracking" passHref>
                 <SidebarMenuButton
@@ -133,7 +153,11 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
+<<<<<<< HEAD
            )}
+=======
+          )}
+>>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
           {canSeeMenu('users') && (
             <SidebarMenuItem>
               <Link href="/users" passHref>
