@@ -112,8 +112,8 @@ async function parseAndValidateRows(formData: FormData) {
             });
         }
         if (data.agentName) {
-             const agentCountry = data.agentCountry || data.ownerCountry;
-             if (!agentCountry || Object.values(Country).indexOf(getCountryEnumValue(agentCountry)) === -1) {
+             const agentCountry = getCountryEnumValue(data.agentCountry || data.ownerCountry);
+             if (!agentCountry || Object.values(Country).indexOf(agentCountry) === -1) {
                  ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ['agentCountry'],
