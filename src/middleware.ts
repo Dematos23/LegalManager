@@ -9,7 +9,6 @@ export default withAuth(
     const { token } = req.nextauth;
     const { pathname } = req.nextUrl;
     
-    // Add user ID to the request headers so server actions can access it
     const requestHeaders = new Headers(req.headers);
     if (token?.id) {
       requestHeaders.set('X-User-Id', token.id as string);
@@ -18,7 +17,6 @@ export default withAuth(
     const role = token?.role as Role | undefined;
 
     if (!role) {
-      // If no role, redirect to login unless they are already there
       if (pathname !== '/login') {
         return NextResponse.redirect(new URL('/login', req.url));
       }
@@ -30,18 +28,12 @@ export default withAuth(
       return NextResponse.redirect(new URL('/login', req.url));
     }
     
-    // Check if the user's role has access to the requested route
-    const baseRoute = '/' + (pathname.split('/')[1] || '');
     const hasAccess = userPermissions.routes.some(allowedRoute => {
-        if (allowedRoute.endsWith('/*')) {
-            // e.g., /trademarks/* should match /trademarks/123
-            return baseRoute.startsWith(allowedRoute.slice(0, -2));
-        }
-        return baseRoute === allowedRoute;
+        const regex = new RegExp(`^${allowedRoute.replace(/\[.*?\]/g, '[^/]+')}$`);
+        return regex.test(pathname);
     });
 
     if (!hasAccess && pathname !== '/login') {
-      // If no access, redirect to their default allowed page or dashboard
       return NextResponse.redirect(new URL('/dashboard', req.url));
     }
 
@@ -62,6 +54,5 @@ export default withAuth(
 );
 
 export const config = {
-  // Match all routes except for static files and the API folder
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png).*)'],
 };
