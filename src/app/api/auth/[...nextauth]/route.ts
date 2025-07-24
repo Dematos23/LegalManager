@@ -34,6 +34,7 @@ export const authOptions: AuthOptions = {
   session: {
     strategy: 'jwt',
   },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
       // After sign in, `user` is passed, which contains role and other details.
