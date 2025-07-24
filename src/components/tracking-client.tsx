@@ -40,7 +40,7 @@ import {
     SortingState,
     useReactTable,
 } from '@tanstack/react-table';
-import { deleteCampaignAction } from '@/app/campaigns/actions';
+import { deleteCampaignAction } from '@/app/(protected)/campaigns/actions';
 import { useToast } from '@/hooks/use-toast';
 import {
     AlertDialog,
@@ -62,7 +62,7 @@ import { Label } from './ui/label';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 
-function DeleteCampaignDialog({ campaign, onCampaignDeleted, children, isMenuItem = true }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, children: React.ReactNode, isMenuItem?: boolean }) {
+function DeleteCampaignDialog({ campaign, onCampaignDeleted, children, isMenuItem = true }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: string) => void, children: React.ReactNode, isMenuItem?: boolean }) {
     const { dictionary } = useLanguage();
     const { toast } = useToast();
     const [isDeleting, startDeleteTransition] = useTransition();
@@ -142,7 +142,7 @@ function DeleteCampaignDialog({ campaign, onCampaignDeleted, children, isMenuIte
     );
 }
 
-function CampaignCard({ campaign, onCampaignDeleted, formatDate, dictionary }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: number) => void, formatDate: (date: Date) => string, dictionary: any }) {
+function CampaignCard({ campaign, onCampaignDeleted, formatDate, dictionary }: { campaign: CampaignWithDetails, onCampaignDeleted: (id: string) => void, formatDate: (date: Date) => string, dictionary: any }) {
     return (
         <Card>
             <CardHeader>
@@ -207,7 +207,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
   };
 
   const templates = useMemo(() => {
-    const uniqueTemplates = new Map<number, EmailTemplate>();
+    const uniqueTemplates = new Map<string, EmailTemplate>();
     initialCampaigns.forEach(campaign => {
         if (campaign.emailTemplate) {
             uniqueTemplates.set(campaign.emailTemplate.id, campaign.emailTemplate);
@@ -221,7 +221,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
         .filter(campaign => {
             const searchString = `${campaign.name} ${campaign.user?.firstName} ${campaign.user?.lastName}`.toLowerCase();
             const matchesSearch = searchString.includes(searchTerm.toLowerCase());
-            const matchesTemplate = templateFilter === 'all' || !campaign.emailTemplate || campaign.emailTemplateId === Number(templateFilter);
+            const matchesTemplate = templateFilter === 'all' || !campaign.emailTemplate || campaign.emailTemplateId === templateFilter;
             const campaignDate = new Date(campaign.createdAt);
             const matchesDate = !dateRange || (dateRange.from && isWithinInterval(campaignDate, { start: dateRange.from, end: dateRange.to || dateRange.from }));
             return matchesSearch && matchesTemplate && matchesDate;
@@ -251,7 +251,7 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
         });
   }, [campaigns, searchTerm, templateFilter, dateRange, sorting]);
 
-  const handleCampaignDeleted = (campaignId: number) => {
+  const handleCampaignDeleted = (campaignId: string) => {
       setCampaigns(prev => prev.filter(c => c.id !== campaignId));
   }
 
@@ -494,3 +494,5 @@ export function TrackingClient({ campaigns: initialCampaigns }: TrackingClientPr
     </div>
   );
 }
+
+    

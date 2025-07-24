@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { UploadCloud, FileSpreadsheet, Loader2, Copy, ShieldCheck, ChevronDown, Code } from 'lucide-react';
 import { useState, useTransition, useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import { importDataAction, verifyDataAction } from './actions';
+import { importDataAction, verifyDataAction } from '@/app/(protected)/import/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useLanguage } from '@/context/language-context';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -368,3 +368,7 @@ export default function ImportPage() {
     </div>
   );
 }
+
+    
+
+    
