@@ -22,7 +22,7 @@ export const authOptions: AuthOptions = {
 
         if (result.success) {
           // Destructure to remove password before returning
-          const { password, ...userWithoutPassword } = result.user;
+          const { password: _, ...userWithoutPassword } = result.user;
           return userWithoutPassword as any;
         }
         
