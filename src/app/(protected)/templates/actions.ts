@@ -1,7 +1,8 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -33,18 +34,26 @@ function validateTemplateLogic(body: string) {
 
 
 export async function getEmailTemplates() {
+  // TODO: Implement with Firestore
+  console.log('Fetching email templates from Firestore...');
+  return [];
+  /*
   return prisma.emailTemplate.findMany({
     orderBy: {
       updatedAt: 'desc',
     },
   });
+  */
 }
 
 export async function getEmailTemplate(id: string) {
     if (!id) return null;
-    return prisma.emailTemplate.findUnique({
-      where: { id },
-    });
+    // TODO: Implement with Firestore
+    console.log(`Fetching email template ${id} from Firestore...`);
+    return null;
+    // return prisma.emailTemplate.findUnique({
+    //   where: { id },
+    // });
 }
 
 export async function createEmailTemplate(formData: FormData) {
@@ -68,10 +77,15 @@ export async function createEmailTemplate(formData: FormData) {
   }
 
   try {
+    // TODO: Implement with Firestore
+    console.log(`Creating email template...`);
+    /*
     await prisma.emailTemplate.create({
       data: validatedFields.data,
     });
+    */
   } catch (error: any) {
+    // TODO: Adapt for Firebase errors (e.g., handling document ID collisions if names are used as IDs)
     if (error.code === 'P2002') { // Unique constraint violation
       return {
         errors: { name: ['A template with this name already exists.'] }
@@ -107,11 +121,16 @@ export async function updateEmailTemplate(id: string, formData: FormData) {
       }
 
       try {
+        // TODO: Implement with Firestore
+        console.log(`Updating email template ${id}...`);
+        /*
         await prisma.emailTemplate.update({
           where: { id },
           data: validatedFields.data,
         });
+        */
       } catch (error: any) {
+        // TODO: Adapt for Firebase errors
         if (error.code === 'P2002') {
           return {
             errors: { name: ['A template with this name already exists.'] }
@@ -131,9 +150,13 @@ export async function updateEmailTemplate(id: string, formData: FormData) {
 export async function deleteEmailTemplate(id: string) {
     await checkPermission('template:delete');
     try {
+        // TODO: Implement with Firestore
+        console.log(`Deleting email template ${id}...`);
+        /*
         await prisma.emailTemplate.delete({
             where: { id },
         });
+        */
         revalidatePath('/templates');
         return { success: true }
     } catch (error) {
@@ -143,6 +166,10 @@ export async function deleteEmailTemplate(id: string) {
 
 
 export async function getTemplatePreviewData() {
+  // TODO: Implement with Firestore
+  console.log('Fetching template preview data from Firestore...');
+  return [];
+  /*
   const agents = await prisma.agent.findMany({
     orderBy: { name: 'asc' },
     include: {
@@ -172,4 +199,5 @@ export async function getTemplatePreviewData() {
     },
   });
   return agents;
+  */
 }

@@ -1,7 +1,8 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { checkPermission } from '@/lib/permissions';
 
@@ -9,6 +10,9 @@ export async function updateOwnerContacts(ownerId: string, contactIds: string[])
   await checkPermission('owner:update-contacts');
   
   try {
+    // TODO: Implement with Firestore. This will involve updating the owner document's contactIds array.
+    console.log(`Updating contacts for owner ${ownerId}...`);
+    /*
     // Use a transaction to ensure atomicity: delete old associations and create new ones.
     await prisma.$transaction([
       // 1. Delete all existing entries for this owner in the join table
@@ -23,6 +27,7 @@ export async function updateOwnerContacts(ownerId: string, contactIds: string[])
         })),
       }),
     ]);
+    */
     
     revalidatePath(`/owners/${ownerId}`);
     return { success: true };

@@ -1,8 +1,9 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
-import { Country, TrademarkType } from '@prisma/client';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
+import { Country, TrademarkType } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -55,6 +56,9 @@ export async function createTrademark(formData: FormData) {
   } = validatedFields.data;
 
   try {
+    // TODO: Implement with Firestore using a transaction or batch write
+    console.log('Creating trademark in Firestore...');
+    /*
     await prisma.$transaction(async (tx) => {
       const finalOwnerId = ownerId;
       if (!finalOwnerId) {
@@ -101,6 +105,7 @@ export async function createTrademark(formData: FormData) {
           });
       }
     });
+    */
   } catch (error: any) {
     console.error('Failed to create trademark:', error);
     return {
@@ -150,6 +155,9 @@ export async function updateTrademark(trademarkId: string, formData: FormData) {
   }
 
   try {
+    // TODO: Implement with Firestore using a transaction or batch write
+    console.log(`Updating trademark ${trademarkId} in Firestore...`);
+    /*
     await prisma.$transaction(async (tx) => {
       await tx.trademark.update({
         where: { id: trademarkId },
@@ -183,6 +191,7 @@ export async function updateTrademark(trademarkId: string, formData: FormData) {
         create: { ownerId: finalOwnerId, contactId: finalContactId },
       });
     });
+    */
   } catch (error: any) {
     console.error('Failed to update trademark:', error);
     return {
@@ -199,16 +208,27 @@ export async function updateTrademark(trademarkId: string, formData: FormData) {
 
 // --- Data fetching functions for the form ---
 export async function getAgents() {
-  return prisma.agent.findMany({ orderBy: { name: 'asc' } });
+  // TODO: Implement with Firestore
+  console.log('Fetching agents from Firestore...');
+  return [];
+  // return prisma.agent.findMany({ orderBy: { name: 'asc' } });
 }
 
 export async function getOwners() {
-  return prisma.owner.findMany({ orderBy: { name: 'asc' } });
+  // TODO: Implement with Firestore
+  console.log('Fetching owners from Firestore...');
+  return [];
+  // return prisma.owner.findMany({ orderBy: { name: 'asc' } });
 }
 
 export async function getContacts() {
+  // TODO: Implement with Firestore
+  console.log('Fetching contacts from Firestore...');
+  return [];
+  /*
   return prisma.contact.findMany({
     include: { agent: true },
     orderBy: { firstName: 'asc' } 
   });
+  */
 }

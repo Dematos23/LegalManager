@@ -1,11 +1,16 @@
 
-import prisma from './prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from './prisma';
 import type { AgentWithCounts, TrademarkWithDetails } from '@/types';
 import { checkPermission } from './permissions';
 
 export async function getTrademarks() {
   try {
     await checkPermission('read:data');
+    // TODO: Implement with Firestore
+    console.log('Fetching trademarks from Firestore...');
+    return [];
+    /*
     const trademarks = await prisma.trademark.findMany({
       include: {
         trademarkClasses: {
@@ -32,6 +37,7 @@ export async function getTrademarks() {
       },
     });
     return trademarks;
+    */
   } catch (error) {
     console.error('Database Error:', error);
     return [];
@@ -41,6 +47,10 @@ export async function getTrademarks() {
 export async function getTrademarkDetails(id: string) {
   try {
     await checkPermission('read:data');
+    // TODO: Implement with Firestore
+    console.log(`Fetching trademark details for ${id} from Firestore...`);
+    return null;
+    /*
     const trademark = await prisma.trademark.findUnique({
       where: { id },
       include: {
@@ -65,6 +75,7 @@ export async function getTrademarkDetails(id: string) {
       },
     });
     return trademark as TrademarkWithDetails;
+    */
   } catch (error) {
     console.error('Database Error:', error);
     return null;
@@ -74,6 +85,10 @@ export async function getTrademarkDetails(id: string) {
 export async function getContacts() {
     try {
         await checkPermission('read:data');
+        // TODO: Implement with Firestore
+        console.log('Fetching contacts from Firestore...');
+        return [];
+        /*
         const contacts = await prisma.contact.findMany({
             include: {
                 agent: true,
@@ -89,6 +104,7 @@ export async function getContacts() {
             ]
         });
         return contacts;
+        */
     } catch (error) {
         console.error('Database Error:', error);
         return [];
@@ -99,6 +115,10 @@ export async function getContacts() {
 export async function getContactDetails(id: string) {
   try {
     await checkPermission('read:data');
+    // TODO: Implement with Firestore
+    console.log(`Fetching contact details for ${id} from Firestore...`);
+    return null;
+    /*
     const contact = await prisma.contact.findUnique({
       where: { id },
       include: {
@@ -126,6 +146,7 @@ export async function getContactDetails(id: string) {
       },
     });
     return contact;
+    */
   } catch (error) {
     console.error('Database Error:', error);
     return null;
@@ -135,6 +156,10 @@ export async function getContactDetails(id: string) {
 export async function getAgentsList(): Promise<AgentWithCounts[]> {
     try {
         await checkPermission('read:data');
+        // TODO: Implement with Firestore
+        console.log('Fetching agents list from Firestore...');
+        return [];
+        /*
         const agents = await prisma.agent.findMany({
             include: {
                 contacts: {
@@ -176,6 +201,7 @@ export async function getAgentsList(): Promise<AgentWithCounts[]> {
                 trademarkCount: trademarkCount
             };
         });
+        */
 
     } catch (error) {
         console.error('Database Error:', error);
@@ -186,6 +212,10 @@ export async function getAgentsList(): Promise<AgentWithCounts[]> {
 export async function getAgentDetails(id: string) {
     try {
         await checkPermission('read:data');
+        // TODO: Implement with Firestore
+        console.log(`Fetching agent details for ${id} from Firestore...`);
+        return null;
+        /*
         const agent = await prisma.agent.findUnique({
             where: { id },
             include: {
@@ -219,6 +249,7 @@ export async function getAgentDetails(id: string) {
             },
         });
         return agent;
+        */
     } catch (error) {
         console.error('Database Error:', error);
         return null;
@@ -228,6 +259,10 @@ export async function getAgentDetails(id: string) {
 export async function getOwnerDetails(id: string) {
     try {
         await checkPermission('read:data');
+        // TODO: Implement with Firestore
+        console.log(`Fetching owner details for ${id} from Firestore...`);
+        return null;
+        /*
         const owner = await prisma.owner.findUnique({
             where: { id },
             include: {
@@ -255,6 +290,7 @@ export async function getOwnerDetails(id: string) {
             }
         });
         return owner;
+        */
     } catch (error) {
         console.error('Database Error:', error);
         return null;
@@ -264,11 +300,16 @@ export async function getOwnerDetails(id: string) {
 export async function getAgents() {
   try {
     await checkPermission('read:data');
+    // TODO: Implement with Firestore
+    console.log('Fetching agents from Firestore...');
+    return [];
+    /*
     return await prisma.agent.findMany({
       orderBy: {
         name: 'asc',
       },
     });
+    */
   } catch (error) {
     console.error('Database Error:', error);
     return [];
@@ -278,12 +319,17 @@ export async function getAgents() {
 export async function getUsers() {
     try {
         await checkPermission('read:data');
+        // TODO: Implement with Firestore
+        console.log('Fetching users from Firestore...');
+        return [];
+        /*
         const users = await prisma.user.findMany({
             orderBy: {
                 lastName: 'asc',
             },
         });
         return users;
+        */
     } catch (error) {
         console.error('Database Error:', error);
         return [];

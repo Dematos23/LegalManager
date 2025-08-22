@@ -1,12 +1,14 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
 import { Resend } from 'resend';
 import * as Handlebars from 'handlebars';
 import { format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
-import type { Contact, Owner, Trademark, Agent } from '@prisma/client';
+// TODO: Use correct types from /src/types
+import type { Contact, Owner, Trademark, Agent } from '@/types';
 import { checkPermission } from '@/lib/permissions';
 
 type TemplateType = 'plain' | 'single-trademark' | 'multi-trademark-no-owner' | 'multi-owner';
@@ -68,8 +70,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
-        // Since there is no auth yet, we will fetch the first user and assign them as the sender.
-        const user = await prisma.user.findFirst();
+        // TODO: Replace with Firebase Auth user retrieval
+        console.log('Fetching user from Firebase Auth...');
+        // const user = await prisma.user.findFirst();
+        const user = { id: 'placeholder-user-id' }; // Placeholder
         if (!user) {
             return { error: "No users found in the system. Please seed the database." };
         }
@@ -83,8 +87,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
         if (!campaignName || campaignName.trim().length < 10) {
             return { error: 'Campaign name must be at least 10 characters long.' };
         }
-
-        const template = await prisma.emailTemplate.findUnique({ where: { id: templateId } });
+        
+        // TODO: Implement with Firestore
+        console.log(`Fetching email template ${templateId} from Firestore...`);
+        const template = null; // await prisma.emailTemplate.findUnique({ where: { id: templateId } });
         if (!template) {
             return { error: 'Email template not found.' };
         }
@@ -107,10 +113,15 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
         
         let campaignId;
         if (payload.campaignId && payload.campaignId !== 'new') {
-            const existingCampaign = await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
+            // TODO: Implement with Firestore
+            console.log(`Fetching campaign ${payload.campaignId} from Firestore...`);
+            const existingCampaign = null; // await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
             if (!existingCampaign) return { error: 'Selected campaign not found.' };
             campaignId = existingCampaign.id;
         } else {
+             // TODO: Implement with Firestore
+             console.log('Creating new campaign in Firestore...');
+             /*
              const campaign = await prisma.campaign.create({
                 data: { 
                     name: campaignName, 
@@ -119,6 +130,8 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 },
             });
             campaignId = campaign.id;
+            */
+           campaignId = 'new-campaign-placeholder-id';
         }
 
 
@@ -126,6 +139,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
         
         if (payload.sendMode === 'contact') {
             // Processing for 'Send by Contact'
+            // TODO: Implement with Firestore
+            console.log('Fetching contacts from Firestore...');
+            const contacts: any[] = [];
+            /*
             const contacts = await prisma.contact.findMany({
                 where: { id: { in: payload.contactIds } },
                 include: {
@@ -144,18 +161,19 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                     }
                 }
             });
+            */
 
             for (const contact of contacts) {
-                let allOwners = contact.ownerContacts.map(oc => oc.owner);
-                let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+                let allOwners = contact.ownerContacts.map((oc: any) => oc.owner);
+                let allTrademarks = allOwners.flatMap((owner: any) => owner.trademarks);
 
                 // For single-trademark templates sent via contact (e.g., from dashboard action)
                 // filter down to the specific trademark.
                 if (templateType === 'single-trademark' && payload.trademarkId) {
-                    allTrademarks = allTrademarks.filter(tm => tm.id === payload.trademarkId);
+                    allTrademarks = allTrademarks.filter((tm: any) => tm.id === payload.trademarkId);
                     if (allTrademarks.length > 0) {
                         const ownerId = allTrademarks[0].ownerId;
-                        allOwners = allOwners.filter(owner => owner.id === ownerId);
+                        allOwners = allOwners.filter((owner: any) => owner.id === ownerId);
                     }
                 }
 
@@ -166,6 +184,10 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
 
         } else if (payload.sendMode === 'trademark') {
             // Processing for 'Send by Trademark'
+            // TODO: Implement with Firestore
+            console.log('Fetching trademarks from Firestore...');
+            const selectedTrademarks: any[] = [];
+            /*
             const selectedTrademarks = await prisma.trademark.findMany({
                 where: { id: { in: payload.trademarkIds } },
                 include: {
@@ -185,6 +207,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                     trademarkClasses: { include: { class: true } }
                 }
             });
+            */
             
             if (templateType === 'multi-trademark-no-owner') {
                 // Group trademarks by their contact. One email per contact with a list of their trademarks.
@@ -244,6 +267,9 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                 continue;
             }
 
+            // TODO: Implement with Firestore
+            console.log('Creating sent email record in Firestore...');
+            /*
             await prisma.sentEmail.create({
                 data: {
                     resendId: data.id,
@@ -251,6 +277,7 @@ export async function sendCampaignAction(payload: SendCampaignPayload | SendCust
                     contactId: contact.id,
                 },
             });
+            */
         }
 
         revalidatePath('/tracking');
@@ -269,6 +296,10 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
     let campaignId: string;
     let campaignName: string;
 
+    // TODO: Implement with Firestore
+    console.log(`Fetching contact ${payload.contactIds[0]} from Firestore...`);
+    const contact: any = null;
+    /*
     const contact = await prisma.contact.findUnique({
         where: { id: payload.contactIds[0] },
         include: {
@@ -287,12 +318,15 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
             }
         }
     });
+    */
     if (!contact) {
         return { error: 'Contact not found.' };
     }
 
     if (payload.campaignId && payload.campaignId !== 'new') {
-        const existingCampaign = await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
+        // TODO: Implement with Firestore
+        console.log(`Fetching campaign ${payload.campaignId} from Firestore...`);
+        const existingCampaign: any = null; // await prisma.campaign.findUnique({ where: { id: payload.campaignId } });
         if (!existingCampaign) return { error: 'Selected campaign not found.' };
         campaignId = existingCampaign.id;
         campaignName = existingCampaign.name;
@@ -301,6 +335,9 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
             return { error: 'Campaign name is required for new campaigns.' };
         }
         campaignName = payload.campaignName;
+        // TODO: Implement with Firestore
+        console.log('Creating new custom campaign in Firestore...');
+        /*
         const newCampaign = await prisma.campaign.create({
             data: {
                 name: campaignName,
@@ -309,10 +346,12 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
             }
         });
         campaignId = newCampaign.id;
+        */
+        campaignId = 'new-custom-campaign-placeholder-id';
     }
 
-    const allOwners = contact.ownerContacts.map(oc => oc.owner);
-    const allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+    const allOwners = contact.ownerContacts.map((oc: any) => oc.owner);
+    const allTrademarks = allOwners.flatMap((owner: any) => owner.trademarks);
     const context = await createHandlebarsContext(contact, allOwners, allTrademarks);
 
     const emailSubject = compileAndRender(payload.subject, context);
@@ -333,7 +372,10 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
         console.error(`Failed to send custom email to ${contact.email}:`, error);
         return { error: 'Failed to send custom email.' };
     }
-
+    
+    // TODO: Implement with Firestore
+    console.log('Creating sent email record in Firestore...');
+    /*
     await prisma.sentEmail.create({
         data: {
             resendId: data.id,
@@ -341,6 +383,7 @@ async function handleSendCustomEmail(payload: SendCustomEmailPayload, userId: st
             contactId: contact.id,
         },
     });
+    */
 
     revalidatePath('/tracking');
     return { success: `Email successfully sent to ${contact.email} as part of campaign "${campaignName}".` };
@@ -414,6 +457,10 @@ function compileAndRender(templateString: string, context: any): string {
 }
 
 export async function getCampaigns() {
+    // TODO: Implement with Firestore
+    console.log('Fetching campaigns from Firestore...');
+    return [];
+    /*
     return prisma.campaign.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
@@ -424,9 +471,14 @@ export async function getCampaigns() {
             },
         },
     });
+    */
 }
 
 export async function getCampaignDetails(campaignId: string) {
+    // TODO: Implement with Firestore
+    console.log(`Fetching campaign details for ${campaignId} from Firestore...`);
+    return null;
+    /*
     return prisma.campaign.findUnique({
         where: { id: campaignId },
         include: {
@@ -442,10 +494,15 @@ export async function getCampaignDetails(campaignId: string) {
             },
         },
     });
+    */
 }
 
 export async function getContactDataForPreview(contactId: string, trademarkId?: string) {
     if (!contactId) return null;
+    // TODO: Implement with Firestore
+    console.log(`Fetching contact data for preview for contact ${contactId}...`);
+    const contact: any = null;
+    /*
     const contact = await prisma.contact.findUnique({
         where: { id: contactId },
         include: {
@@ -464,17 +521,18 @@ export async function getContactDataForPreview(contactId: string, trademarkId?: 
             }
         }
     });
+    */
     if (!contact) return null;
 
-    let allOwners = contact.ownerContacts.map(oc => oc.owner);
-    let allTrademarks = allOwners.flatMap(owner => owner.trademarks);
+    let allOwners = contact.ownerContacts.map((oc:any) => oc.owner);
+    let allTrademarks = allOwners.flatMap((owner:any) => owner.trademarks);
 
     // If a specific trademarkId is provided, filter the context for that single trademark
     if (trademarkId) {
-        allTrademarks = allTrademarks.filter(tm => tm.id === trademarkId);
+        allTrademarks = allTrademarks.filter((tm:any) => tm.id === trademarkId);
         if (allTrademarks.length > 0) {
             const singleOwnerId = allTrademarks[0].ownerId;
-            allOwners = allOwners.filter(owner => owner.id === singleOwnerId);
+            allOwners = allOwners.filter((owner:any) => owner.id === singleOwnerId);
         }
     }
     
@@ -486,10 +544,15 @@ export async function syncCampaignStatusAction(campaignId: string) {
     
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
+        // TODO: Implement with Firestore
+        console.log(`Fetching campaign ${campaignId} from Firestore for sync...`);
+        const campaign: any = null;
+        /*
         const campaign = await prisma.campaign.findUnique({
             where: { id: campaignId },
             include: { sentEmails: true },
         });
+        */
 
         if (!campaign) {
             return { error: 'Campaign not found.' };
@@ -515,10 +578,14 @@ export async function syncCampaignStatusAction(campaignId: string) {
                 }
 
                 if (Object.keys(updates).length > 0) {
+                    // TODO: Implement with Firestore
+                    console.log(`Updating email status for ${email.id}...`);
+                    /*
                     await prisma.sentEmail.update({
                         where: { id: email.id },
                         data: updates,
                     });
+                    */
                 }
             } catch (syncError) {
                  console.warn(`Error syncing status for email ${email.resendId}:`, syncError);
@@ -535,6 +602,9 @@ export async function syncCampaignStatusAction(campaignId: string) {
 export async function deleteCampaignAction(campaignId: string) {
     await checkPermission('campaign:delete');
     try {
+        // TODO: Implement with Firestore. This might involve deleting a campaign document and its subcollection of sent emails.
+        console.log(`Deleting campaign ${campaignId}...`);
+        /*
         // Use a transaction to ensure both deletions succeed or fail together
         await prisma.$transaction([
             // First, delete all SentEmail records associated with the campaign
@@ -546,6 +616,7 @@ export async function deleteCampaignAction(campaignId: string) {
                 where: { id: campaignId },
             }),
         ]);
+        */
         revalidatePath('/tracking');
         return { success: true };
     } catch (error) {

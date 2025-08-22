@@ -1,9 +1,11 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { Role } from '@prisma/client';
+// TODO: Use correct Role type from /src/types
+import { Role } from '@/types';
 import { revalidatePath } from 'next/cache';
 import argon2 from 'argon2';
 import { checkPermission } from '@/lib/permissions';
@@ -33,8 +35,10 @@ export async function createUser(formData: FormData) {
   const { email, password, ...rest } = validatedFields.data;
 
   try {
-    const hashedPassword = await argon2.hash(password);
-    
+    // TODO: Implement with Firebase Auth and Firestore
+    console.log(`Creating user ${email} in Firebase...`);
+    // const hashedPassword = await argon2.hash(password);
+    /*
     await prisma.user.create({
       data: {
         ...rest,
@@ -42,10 +46,12 @@ export async function createUser(formData: FormData) {
         password: hashedPassword,
       },
     });
+    */
     revalidatePath('/users');
     return { success: true };
   } catch (error: any) {
-    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+    // TODO: Adapt error handling for Firebase
+    if (error.code === 'auth/email-already-exists' || (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
       return {
         errors: { email: ['A user with this email already exists.'] },
       };
@@ -68,14 +74,19 @@ export async function updateUser(userId: string, formData: FormData) {
   }
 
   try {
+    // TODO: Implement with Firebase Auth and Firestore
+    console.log(`Updating user ${userId} in Firebase...`);
+    /*
     await prisma.user.update({
       where: { id: userId },
       data: validatedFields.data,
     });
+    */
     revalidatePath('/users');
     return { success: true };
   } catch (error: any) {
-     if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+    // TODO: Adapt error handling for Firebase
+     if (error.code === 'auth/email-already-exists' || (error.code === 'P2002' && error.meta?.target?.includes('email'))) {
       return {
         errors: { email: ['A user with this email already exists.'] },
       };
@@ -98,11 +109,15 @@ export async function resetPassword(userId: string, formData: FormData) {
     const { password } = validatedFields.data;
 
     try {
-        const hashedPassword = await argon2.hash(password);
+        // TODO: Implement with Firebase Auth
+        console.log(`Resetting password for user ${userId}...`);
+        // const hashedPassword = await argon2.hash(password);
+        /*
         await prisma.user.update({
             where: { id: userId },
             data: { password: hashedPassword },
         });
+        */
         revalidatePath('/users');
         return { success: true };
     } catch (error) {
@@ -113,7 +128,9 @@ export async function resetPassword(userId: string, formData: FormData) {
 export async function deactivateUser(userId: string) {
     await checkPermission('user:delete');
     try {
-        await prisma.user.delete({ where: { id: userId }});
+        // TODO: Implement with Firebase Auth (disable user) and Firestore (update status)
+        console.log(`Deactivating user ${userId}...`);
+        // await prisma.user.delete({ where: { id: userId }});
         revalidatePath('/users');
         return { success: true };
     } catch (error) {

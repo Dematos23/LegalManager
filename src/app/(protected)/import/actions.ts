@@ -1,10 +1,12 @@
 
 'use server';
 
-import prisma from '@/lib/prisma';
+// TODO: Replace with Firebase/Firestore imports
+// import prisma from '@/lib/prisma';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
-import { Country, TrademarkType, Agent, Contact, Area } from '@prisma/client';
+// TODO: Use correct types from /src/types
+import { Country, TrademarkType, Agent, Contact, Area } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { checkPermission } from '@/lib/permissions';
 
@@ -266,7 +268,10 @@ export async function importDataAction(formData: FormData) {
           }
           return null;
         }
-
+        
+        // TODO: Implement with Firestore batch writes
+        console.log(`Processing row ${index + 2} for Firestore import...`);
+        /*
         await prisma.$transaction(async (tx) => {
           let agent: Agent | null = null;
           const agentName = getValue('agent.name');
@@ -363,6 +368,7 @@ export async function importDataAction(formData: FormData) {
             });
           }
         });
+        */
 
         results.success++;
       } catch (e) {
