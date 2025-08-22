@@ -46,7 +46,10 @@ export function AppSidebar() {
 
 
   const isActive = (path: string) => {
-    return pathname.startsWith(path);
+    // Exact match for top-level routes
+    if (path === '/trademarks' && pathname === path) return true;
+    // Starts with for nested routes, but not for the root itself
+    return path !== '/trademarks' && pathname.startsWith(path);
   };
 
   const handleLogout = () => {
@@ -83,7 +86,6 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           )}
-<<<<<<< HEAD
            {canSeeMenu('agents') && (
               <SidebarMenuItem>
                 <Link href="/agents" passHref>
@@ -97,21 +99,6 @@ export function AppSidebar() {
                 </Link>
               </SidebarMenuItem>
            )}
-=======
-          {canSeeMenu('agents') && (
-            <SidebarMenuItem>
-              <Link href="/agents" passHref>
-                <SidebarMenuButton
-                  isActive={isActive('/agents')}
-                  tooltip={{ children: dictionary.sidebar.agents }}
-                >
-                  <Briefcase />
-                  <span>{dictionary.sidebar.agents}</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          )}
->>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
           {canSeeMenu('import') && (
             <SidebarMenuItem>
               <Link href="/import" passHref>
@@ -138,11 +125,7 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuItem>
           )}
-<<<<<<< HEAD
            {canSeeMenu('tracking') && (
-=======
-          {canSeeMenu('tracking') && (
->>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
             <SidebarMenuItem>
               <Link href="/tracking" passHref>
                 <SidebarMenuButton
@@ -154,11 +137,7 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
-<<<<<<< HEAD
            )}
-=======
-          )}
->>>>>>> 207140b (after loging in check the permission of the user to validate the menus a)
           {canSeeMenu('users') && (
             <SidebarMenuItem>
               <Link href="/users" passHref>

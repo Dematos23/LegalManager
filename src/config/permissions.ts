@@ -2,10 +2,10 @@
 import type { Role } from "@prisma/client";
 
 // Literal menu keys used in the sidebar component
-const allMenus = ['dashboard', 'agents', 'import', 'templates', 'tracking', 'users'];
+const allMenus = ['trademarks', 'agents', 'import', 'templates', 'tracking', 'users'];
 
 // Literal routes used in the application
-const allRoutes = ['/dashboard', '/agents', '/import', '/templates', '/tracking', '/users', '/send-email', '/owners/[id]', '/contacts/[id]', '/trademarks/[id]', '/trademarks/new', '/trademarks/[id]/edit', '/templates/new', '/templates/edit/[id]', '/templates/[id]/send', '/tracking/[id]', '/agents/[id]', '/owners', '/contacts'];
+const allRoutes = ['/trademarks', '/agents', '/import', '/templates', '/tracking', '/users', '/send-email', '/owners/[id]', '/contacts/[id]', '/trademarks/[id]', '/trademarks/new', '/trademarks/[id]/edit', '/templates/new', '/templates/edit/[id]', '/templates/[id]/send', '/tracking/[id]', '/agents/[id]', '/owners', '/contacts'];
 
 // Literal action names that will be checked in server actions
 const allActions = [
@@ -32,12 +32,12 @@ export const permissions: Record<Role, { routes: string[]; actions: Action[]; me
     menus: allMenus.filter(menu => menu !== 'users'),
   },
   LEGAL: {
-    routes: ['/dashboard', '/trademarks/[id]', '/owners/[id]'],
+    routes: ['/trademarks', '/trademarks/[id]', '/owners/[id]'],
     actions: ['trademark:update', 'read:data'],
-    menus: ['dashboard'],
+    menus: ['trademarks'],
   },
   SALES: {
-    routes: ['/dashboard', '/agents', '/templates', '/tracking', '/send-email', '/owners', '/contacts', '/trademarks', '/agents/[id]', '/contacts/[id]', '/owners/[id]', '/trademarks/[id]', '/templates/[id]/send'],
+    routes: ['/trademarks', '/agents', '/templates', '/tracking', '/send-email', '/owners', '/contacts', '/agents/[id]', '/contacts/[id]', '/owners/[id]', '/trademarks/[id]', '/templates/[id]/send', '/tracking/[id]'],
     actions: [
         'template:create', 'template:update', 'template:delete',
         'trademark:create', 'trademark:update',

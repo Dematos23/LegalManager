@@ -13,7 +13,7 @@ function LoginPageContent() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      router.push('/trademarks');
     }
   }, [status, router]);
 

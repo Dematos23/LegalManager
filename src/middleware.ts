@@ -1,4 +1,3 @@
-
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 import { permissions } from './config/permissions';
@@ -9,17 +8,25 @@ export default withAuth(
     const { token } = req.nextauth;
     const { pathname } = req.nextUrl;
     
+    // Allow access to login page
+    if (pathname === '/login') {
+        return NextResponse.next();
+    }
+    
+    // Redirect to login if no token
+    if (!token) {
+        return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    // If on login page with token, redirect to a default page
     if (pathname === '/login' && token) {
-        return NextResponse.redirect(new URL('/dashboard', req.url));
+        return NextResponse.redirect(new URL('/trademarks', req.url));
     }
     
     const role = token?.role as Role | undefined;
 
     if (!role) {
-      if (pathname !== '/login') {
-        return NextResponse.redirect(new URL('/login', req.url));
-      }
-      return NextResponse.next();
+      return NextResponse.redirect(new URL('/login', req.url));
     }
 
     const userPermissions = permissions[role];
@@ -28,21 +35,36 @@ export default withAuth(
     }
     
     const hasAccess = userPermissions.routes.some(allowedRoute => {
-        const regex = new RegExp(`^${allowedRoute.replace(/\[.*?\]/g, '[^/]+')}$`);
-        return regex.test(pathname);
+        // Exact match for simple routes
+        if (allowedRoute === pathname) return true;
+        // Handle dynamic routes like /trademarks/[id]
+        if (allowedRoute.includes('[id]')) {
+            const baseRoute = allowedRoute.split('/[id]')[0];
+            if (pathname.startsWith(baseRoute) && pathname.split('/').length === allowedRoute.split('/').length) {
+                return true;
+            }
+        }
+        // Handle dynamic routes like /templates/edit/[id]
+        if (allowedRoute.includes('[id]')) {
+             const regex = new RegExp(`^${allowedRoute.replace(/\[.*?\]/g, '[^/]+')}$`);
+             return regex.test(pathname);
+        }
+        return false;
     });
 
     if (!hasAccess) {
-      // If user is trying to access a forbidden page, redirect them to their default page.
-      // For simplicity, we'll redirect all unauthorized access to the dashboard.
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      const fallbackRoute = userPermissions.routes[0] || '/login';
+      return NextResponse.redirect(new URL(fallbackRoute, req.url));
     }
 
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: () => true, // Let the middleware function handle all auth logic
+      authorized: ({ token }) => !!token,
+    },
+     pages: {
+        signIn: '/login',
     },
   }
 );

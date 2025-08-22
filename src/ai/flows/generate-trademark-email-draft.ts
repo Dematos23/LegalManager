@@ -1,5 +1,5 @@
 
-// use server'
+'use server';
 
 /**
  * @fileOverview Generates personalized HTML email drafts for contacts, including a table of their trademarks and expiration dates, with a tool to analyze and summarize key points.
@@ -88,7 +88,12 @@ const generateTrademarkEmailDraftFlow = ai.defineFlow(
     outputSchema: GenerateTrademarkEmailDraftOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await ai.generate({
+        model: 'googleai/gemini-pro',
+        prompt: prompt.prompt,
+        input: input,
+        tools: [summarizeTrademarksTool]
+    });
     return output!;
   }
 );

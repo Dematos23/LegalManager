@@ -56,7 +56,7 @@ export function LoginForm() {
     });
 
     if (result?.ok) {
-      router.push('/dashboard');
+      router.push('/trademarks');
     } else {
       toast({
         variant: 'destructive',
