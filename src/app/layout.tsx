@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/context/language-context';
 
 export const metadata: Metadata = {
-  title: 'Legal CRM',
+  title: 'Delion',
   description: 'Manage your legal trademarks with ease and intelligence.',
 };
 

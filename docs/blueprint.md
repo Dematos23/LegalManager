@@ -1,8 +1,8 @@
-# **App Name**: LegalIntel CRM
+# **App Name**: Delion
 
 ## Core Features:
 
-- Excel Import: Import trademark data from Excel (xlsx) files, mapping fields like Titular, Marca, Clase, Certificado, Fecha de vencimiento, Agente, Contacto, Email, while matching to data from the source, in order to prepare the LegalIntel CRM database
+- Excel Import: Import trademark data from Excel (xlsx) files, mapping fields like Titular, Marca, Clase, Certificado, Fecha de vencimiento, Agente, Contacto, Email, while matching to data from the source, in order to prepare the Delion database
 - Trademark Dashboard: Display a searchable, sortable, filterable list of trademarks. Users can select different views to quickly find marks expiring in the next 30, 60, or 90 days.
 - Personalized Email Generation: Generate personalized HTML email drafts for each contact, including a table of their trademarks and relevant expiration dates, before sending it by email to be edited using a tool that analyzes and summarizes key points of the table and other CRM data
 - Expiration Reminders: Schedule reminders to perform administrative actions and prepare for trademark renewals ahead of time.
